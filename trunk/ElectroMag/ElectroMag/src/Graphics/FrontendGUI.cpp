@@ -23,9 +23,9 @@ void FrontendGUI::Draw()
 void FrontendGUI::frontendDisplay()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glColor3f(1.0, 1.0, 1.0);
+    glColor3f(0.8, 0.0, 0.0);
     PrintGlutString("Experimental Frontend for Electromag",GLUT_BITMAP_HELVETICA_12, 40, 40, 0);
+	PrintGlutString("This window informs you that Electromag is running,\n but does nothing else.",GLUT_BITMAP_HELVETICA_12, 40, 60, 0);
     glutSwapBuffers();
 }
 
@@ -55,7 +55,7 @@ void FrontendGUI::GLInit()
 	glutMouseFunc(mouse);		
 	glutMotionFunc(motion);
 	glutIdleFunc((void (*)(void))glutPostRedisplay);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.1f, 0.0f);
 	glClearDepth(1.0f);
 
 }
@@ -74,8 +74,10 @@ void FrontendGUI::Start()
 
 void FrontendGUI::reshape(int w, int h)
 {
-	glViewport(0, 0 , w, h);
-    glOrtho(0, 0 , w, h, - 10, 10);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, w, h);
+    gluOrtho2D(0, w, h, 0);
 };
 
 void FrontendGUI::keyboard(unsigned char key, int x, int y)
