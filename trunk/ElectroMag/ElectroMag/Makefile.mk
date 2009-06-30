@@ -1,7 +1,7 @@
 # generic makefile for ElectroMag library
 include ../Config.mk
 
-# Change this to Makefile-GNU.mk if the Intel compuler is unavailable,
+# Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
 # but by all means, use the Intel compiler if at all posible
 include Makefile-Intel.mk
 #include Makefile-GNU.mk # AKA The Headache Compiler
@@ -42,19 +42,19 @@ clean:
 	rm -r -f $(OBJDIR)
 
 # The heavy procesing part
-$(OBJDIR)/ElectroMag.o: pre-build
+$(OBJDIR)/ElectroMag.o: pre-build src/ElectroMag.cpp
 	$(CXX) -c $(CXXFLAGS) src/ElectroMag.cpp -o $(OBJDIR)/ElectroMag.o
-$(OBJDIR)/CPU_Implement.o: pre-build
+$(OBJDIR)/CPU_Implement.o: pre-build src/CPU_Implement.cpp
 	$(CXX) -c $(CXXFLAGS) src/CPU_Implement.cpp -o $(OBJDIR)/CPU_Implement.o
-$(OBJDIR)/stdafx.o: pre-build
+$(OBJDIR)/stdafx.o: pre-build src/stdafx.cpp
 	$(CXX) -c $(CXXFLAGS) src/stdafx.cpp -o $(OBJDIR)/stdafx.o
-$(OBJDIR)/Renderer.o: pre-build
+$(OBJDIR)/Renderer.o: pre-build src/Graphics/Renderer.cpp
 	$(CXX) -c $(CXXFLAGS) src/Graphics/Renderer.cpp -o $(OBJDIR)/Renderer.o
-$(OBJDIR)/FieldRender.o: pre-build
+$(OBJDIR)/FieldRender.o: pre-build src/Graphics/FieldRender.cpp
 	$(CXX) -c $(CXXFLAGS) src/Graphics/FieldRender.cpp -o $(OBJDIR)/FieldRender.o
-$(OBJDIR)/CPUID.o: pre-build
+$(OBJDIR)/CPUID.o: pre-build src/CPUID/CPUID.cpp
 	$(CXX) -c $(CXXFLAGS) src/CPUID/CPUID.cpp -o $(OBJDIR)/CPUID.o
-$(OBJDIR)/FrontendGUI.o: pre-build
+$(OBJDIR)/FrontendGUI.o: pre-build src/Graphics/FrontendGUI.cpp
 	$(CXX) -c $(CXXFLAGS) src/Graphics/FrontendGUI.cpp -o $(OBJDIR)/FrontendGUI.o
 
 
