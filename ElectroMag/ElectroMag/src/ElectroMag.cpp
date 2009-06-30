@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 	clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<endl;
     
     // Now that checks are perfromed, start the Frontend
-    MainGUI.StartAsync();
+    if(display) MainGUI.StartAsync();
 
 	// Statistics show that users are happier when the program outputs fun information abot their toys
 	GlobalCudaManager.ListAllDevices();
@@ -124,6 +124,7 @@ int main(int argc, char* argv[])
 	ofstream data, regress;
 	if (saveData)
 		data.open("data.txt");
+    MainGUI.RegisterProgressIndicator((double * volatile)&CPUperf.progress);
 
 #pragma message("TODO: add allocation checks here")
 	// Do not activate if memory allocation fails
@@ -213,6 +214,7 @@ int main(int argc, char* argv[])
             }
             // Second section monitors progress
             #pragma omp section
+            if(!display)
             {
                 const double step = (double)1/60;
                 cout<<"[__________________________________________________________]"<<endl;
@@ -263,7 +265,7 @@ int main(int argc, char* argv[])
 	GLdata.nlines = n;
 	GLdata.lineLen = len;
 	FieldDisp.RenderPacket(GLdata);
-    FieldDisp.StartAsync();
+    //if(display) FieldDisp.StartAsync();
 
 	// do stuff here; This will generate files non-worthy of FAT32
 	if(saveData && (CPUenable || GPUenable))

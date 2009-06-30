@@ -97,6 +97,6 @@ struct perfPacket
 	// Used for tracking the execution times of individual steps
 	Array<double> stepTimes;
 	// Used to keep track of the total completed processing
-	// 0 signales nothing, 1.0 signals full completeion
+	// 0 signales nothing done, 1.0 signals full completeion
 	double volatile progress;
 };
