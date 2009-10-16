@@ -23,19 +23,23 @@ NVCCFLAGS=-c --ptxas-options=-v -I ./../ElectroMag/src -I ./ -I $(CUDA_SDK_INC_P
 LIB_OUT= libGPGPU_segment.a
 
 OBJDIR=obj
+SRCDIR=src
 
 # C++ Sources
-CPPsources= src/Electrostatics.cpp src/GPU_manager.cpp
+CPPsources= $(SRCDIR)/Electrostatics.cpp $(SRCDIR)/GPU_manager.cpp
 CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/GPU_manager.o
 
 # CUDA objects and targets
-CUDA_SOURCES= src/Electrostatics.cu
+CUDA_SOURCES= $(SRCDIR)/Electrostatics.cu
 CUDA_OBJS= $(OBJDIR)/CUDA_Electrostatics.o
 
 # All for dummies
 all: $(LIB_OUT)
 
-CUDA-pre:
+pre-build:
+	@echo off
+
+CUDA-pre: pre-build
 	@echo =======================================================
 	@echo Compiling GPU segment
 	@echo
@@ -50,10 +54,10 @@ CUDA-all: CUDA-post
 CUDA-main:
 	
 $(OBJDIR)/CUDA_Electrostatics.o: CUDA-pre
-	$(NVCC) $(NVCCFLAGS) -o $(OBJDIR)/CUDA_Electrostatics.o src/Electrostatics.cu
+	$(NVCC) $(NVCCFLAGS) -o $(OBJDIR)/CUDA_Electrostatics.o $(SRCDIR)/Electrostatics.cu
 
 
-HOST-pre:
+HOST-pre: pre-build
 	@echo ======================================================
 	@echo Compiling Host segment
 	@echo
@@ -65,12 +69,14 @@ HOST-all: HOST-post
 
 # Rule for compiling C++ files and creating library
 
-#$(CPU_OBJS): HOST-pre
-#	$(CXX) -c $(CXXFLAGS) -nostdlibs  $(CPPsources)
-$(OBJDIR)/Electrostatics.o:
-	$(CXX) -c $(CXXFLAGS) -nostdlibs  src/Electrostatics.cpp -o $(OBJDIR)/Electrostatics.o
-$(OBJDIR)/GPU_manager.o:
-	$(CXX) -c $(CXXFLAGS) -nostdlibs  src/GPU_manager.cpp -o $(OBJDIR)/GPU_manager.o
+#$(OBJDIR)/Electrostatics.o: HOST-pre
+#	$(CXX) -c $(CXXFLAGS) -nostdlibs  $(SRCDIR)/Electrostatics.cpp -o $(OBJDIR)/Electrostatics.o
+#$(OBJDIR)/GPU_manager.o: HOST-pre
+#	$(CXX) -c $(CXXFLAGS) -nostdlibs  $(SRCDIR)/GPU_manager.cpp -o $(OBJDIR)/GPU_manager.o
+
+obj/%.o: src/%.cpp HOST-pre
+	$(CXX) -c $(CXXFLAGS) -nostdlibs  $< -o $@
+
 
 $(LIB_OUT): CUDA-all HOST-all
 	@echo =======================================================
@@ -86,9 +92,10 @@ clean:
 	rm -f *.o
 	rm -f $(LIB_OUT)
 	rm -r -f $(OBJDIR)
-	##$(NVCC) -keep -clean $(NVCCFLAGS) -o $(CUDA_OBJS) $(CUDA_SOURCES)
 
 #keeps temporary  files from CUDA compilation
 keep:
 	$(NVCC) -keep $(NVCCFLAGS) -o $(CUDA_OBJS) $(CUDA_SOURCES)
+keep-clean:
+	$(NVCC) -keep -clean $(NVCCFLAGS) -o $(CUDA_OBJS) $(CUDA_SOURCES)
 

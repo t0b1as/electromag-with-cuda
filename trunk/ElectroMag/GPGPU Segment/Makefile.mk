@@ -51,9 +51,11 @@ $(LIB_OUT): $(CUDA_OBJ)
 clean:
 	rm -f *.o
 	rm -f $(LIB_OUT)
-	$(NVCC) -keep -clean $(NVCCFlags) -o $(CUDA_OBJ) $(CUDA_SOURCES)
-
+	
 #keeps temporary  files from CUDA compilation
 keep:
 	$(NVCC) -keep $(NVCCFlags) -o $(CUDA_OBJ) $(CUDA_SOURCES)
+clean-keep:
+	$(NVCC) -keep -clean $(NVCCFlags) -o $(CUDA_OBJ) $(CUDA_SOURCES)
+
 

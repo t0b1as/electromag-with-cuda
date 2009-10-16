@@ -6,12 +6,13 @@ CUDA_BIN_PATH= $(CUDA_TOOLKIT_PATH)/bin
 CUDA_LIB_PATH= $(CUDA_TOOLKIT_PATH)/lib
 CUDA_INC_PATH= $(CUDA_TOOLKIT_PATH)/include
 
-CUDA_SDK_PATH= ~/NVIDIA_CUDA_SDK
-CUDA_SDK_INC_PATH= $(CUDA_SDK_PATH)/common/inc
+#CUDA_SDK_PATH= ~/NVIDIA_CUDA_SDK
+CUDA_SDK_PATH= ~/NVIDIA_GPU_Computing_SDK
+CUDA_SDK_INC_PATH= $(CUDA_SDK_PATH)/C/common/inc
 
 # Generic target
 TARGET= Electromag
-TARGET_DIR = ./../bin/linux
+TARGET_DIR = ./../bin
 
 #Include directories
 CXXINCLUDE += -I. -I./src -I $(CUDA_INC_PATH)

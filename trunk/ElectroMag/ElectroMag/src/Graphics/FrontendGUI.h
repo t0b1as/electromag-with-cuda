@@ -26,6 +26,7 @@ private:
     void AsyncStartFunc();
     //
     static void frontendDisplay();
+    static void idleRedisplay();
     //
 	static void reshape(int w, int h);
     //

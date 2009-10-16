@@ -16,7 +16,6 @@ In order to compile,
 	and uncomment
 	#include Makefile-GNU.mk
 3) $make
-
 /////////////////////////////////////////////////////////////////////////////
 Required compile setup (Windows):
 	Visual Studio 2008

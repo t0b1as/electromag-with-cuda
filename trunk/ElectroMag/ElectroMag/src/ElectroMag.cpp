@@ -60,6 +60,8 @@ int main(int argc, char* argv[])
 	SimulationParams simConfig = DefaultParams;
 	bool saveData = false, CPUenable = false, GPUenable = true, display = true;
 	bool useCurvature = true;
+        bool visualProgressBar = false;
+        bool randseed = false;
 	// Get command-line options;
 	for(int i = 1; i < argc; i++)
 	{
@@ -73,6 +75,10 @@ int main(int argc, char* argv[])
 			display = false;
 		else if( !strcmp(argv[i], "enhanced") )
 			simConfig = EnhancedParams;
+                else if( !strcmp(argv[i], "GUI") )
+			visualProgressBar = true;
+                else if( !strcmp(argv[i], "randseed") )
+			randseed = true;
 		else
 			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
 	}
@@ -95,7 +101,7 @@ int main(int argc, char* argv[])
 	clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<endl;
     
     // Now that checks are perfromed, start the Frontend
-    if(display) MainGUI.StartAsync();
+    if(visualProgressBar) MainGUI.StartAsync();
 
 	// Statistics show that users are happier when the program outputs fun information abot their toys
 	GlobalCudaManager.ListAllDevices();
@@ -132,8 +138,8 @@ int main(int argc, char* argv[])
 	if(!GPUlines.GetSize()) GPUenable = false;
 
 	__int64 pseudoSeed; QueryHPCTimer(&pseudoSeed);
-	//srand(pseudoSeed%RAND_MAX);
-	srand(1);
+	if (randseed) srand(pseudoSeed%RAND_MAX);
+        else srand(1);
 	// Initialize values
 	for(size_t i = 0; i < p ; i++)
 	{
@@ -214,7 +220,7 @@ int main(int argc, char* argv[])
             }
             // Second section monitors progress
             #pragma omp section
-            if(!display)
+            if(!visualProgressBar)
             {
                 const double step = (double)1/60;
                 cout<<"[__________________________________________________________]"<<endl;
@@ -265,7 +271,7 @@ int main(int argc, char* argv[])
 	GLdata.nlines = n;
 	GLdata.lineLen = len;
 	FieldDisp.RenderPacket(GLdata);
-    //if(display) FieldDisp.StartAsync();
+    if(display) FieldDisp.StartAsync();
 
 	// do stuff here; This will generate files non-worthy of FAT32
 	if(saveData && (CPUenable || GPUenable))
