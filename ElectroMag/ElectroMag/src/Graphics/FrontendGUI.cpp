@@ -52,6 +52,7 @@ double dummyZeroDouble = 0;
 
 static ProgressBar CPUprogress;
 
+#ifndef ENABLE_GL_SUPPORT
 FrontendGUI::FrontendGUI()
 {
     calcProgress = &dummyZeroDouble;
@@ -70,9 +71,14 @@ void FrontendGUI::Draw()
 {
 }
 
-void FrontendGUI::frontendDisplay()
+void FrontendGUI::idleRedisplay()
 {
     Pause(100);
+    glutPostRedisplay();
+}
+
+void FrontendGUI::frontendDisplay()
+{
     CPUprogress.x=20; CPUprogress.y=100;
     CPUprogress.width=200; CPUprogress.height=10;
     CPUprogress.backgroundR=CPUprogress.backgroundG=CPUprogress.backgroundB=0.5f;
@@ -90,7 +96,7 @@ void FrontendGUI::frontendDisplay()
         CPUprogress.Draw();
         
     }
-    //glutSwapBuffers();
+    glutSwapBuffers();
 }
 
 void FrontendGUI::GLInit()
@@ -100,7 +106,7 @@ void FrontendGUI::GLInit()
 		
 	// GLUT window management initialization
 	glutCreateWindow ("Electromag");
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     ::glutInitWindowPosition(100,100);
     ::glutInitWindowSize(600, 400);
 	//glutFullScreen();
@@ -118,8 +124,8 @@ void FrontendGUI::GLInit()
 	glutKeyboardFunc(keyboard);
 	glutMouseFunc(mouse);		
 	glutMotionFunc(motion);
-	glutIdleFunc((void (*)(void))glutPostRedisplay);
-	glClearColor(0.0f, 0.0f, 0.1f, 0.0f);
+	glutIdleFunc((void (*)(void))idleRedisplay);
+	glClearColor(0.0f, 0.0f, 0.1f, 1.0f);
 	glClearDepth(1.0f);
 
 }
@@ -158,3 +164,30 @@ void FrontendGUI::motion(int x, int y)
 {
     
 }
+
+#else
+FrontendGUI::FrontendGUI(){}
+
+FrontendGUI::~FrontendGUI(){}
+
+void FrontendGUI::RegisterProgressIndicator(double * volatile progress){}
+
+void FrontendGUI::Draw(){}
+
+void FrontendGUI::frontendDisplay(){}
+
+void FrontendGUI::GLInit(){}
+
+void FrontendGUI::AsyncStartFunc(){}
+
+void FrontendGUI::Start(){}
+
+
+void FrontendGUI::reshape(int w, int h){};
+
+void FrontendGUI::keyboard(unsigned char key, int x, int y){};
+
+void FrontendGUI::mouse(int button, int state, int x, int y){};
+
+void FrontendGUI::motion(int x, int y){};
+#endif

@@ -3,7 +3,6 @@ GL/glew.h and GL/glut.h are found in the nVidia CUDA SDK
 For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.dll and glew64.dll in the application path
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 #include <GL/glew.h>
-//#include <GL/glut.h>
 #include "GL/freeglut.h"
 #include "GL/glutExtra.h"
 #include "FieldRender.h"
@@ -193,7 +192,7 @@ void FieldRender::Start()
 
 void FieldRender::GLInit()
 {
-	// Display initialization
+    // Display initialization
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 		
 	// GLUT window management initialization

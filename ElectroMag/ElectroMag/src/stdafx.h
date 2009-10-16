@@ -10,8 +10,8 @@
 //#include <stdio.h>
 //#include <tchar.h>
 
-#pragma once
-
+#define ENABLE_CUDA_SUPPORT
+#define ENABLE_GL_SUPPORT
 // TODO: reference additional headers your program requires here
 #include <iostream>
 #include <fstream>

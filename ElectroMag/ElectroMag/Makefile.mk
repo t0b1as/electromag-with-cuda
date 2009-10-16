@@ -19,7 +19,7 @@ OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJD
 all: $(TARGET_DIR)/$(TARGET)
 
 run: $(TARGET_DIR)/$(TARGET)
-	export LD_LIBRARY_PATH=$(CUDA_LIB_PATH)/
+	LD_LIBRARY_PATH+=;$(CUDA_LIB_PATH)/
 	$(TARGET_DIR)/$(TARGET)
 
 pre-build:
@@ -36,12 +36,7 @@ $(TARGET_DIR)/$(TARGET): $(OBJS)
 	@echo Done Linking Everything
 	@echo
 
-#Merciless seek and delete
-clean:
-	rm -r -f $(TARGET_DIR)
-	rm -r -f $(OBJDIR)
-
-# The heavy procesing part
+# The heavy processing part
 $(OBJDIR)/ElectroMag.o: pre-build src/ElectroMag.cpp
 	$(CXX) -c $(CXXFLAGS) src/ElectroMag.cpp -o $(OBJDIR)/ElectroMag.o
 $(OBJDIR)/CPU_Implement.o: pre-build src/CPU_Implement.cpp
@@ -56,5 +51,11 @@ $(OBJDIR)/CPUID.o: pre-build src/CPUID/CPUID.cpp
 	$(CXX) -c $(CXXFLAGS) src/CPUID/CPUID.cpp -o $(OBJDIR)/CPUID.o
 $(OBJDIR)/FrontendGUI.o: pre-build src/Graphics/FrontendGUI.cpp
 	$(CXX) -c $(CXXFLAGS) src/Graphics/FrontendGUI.cpp -o $(OBJDIR)/FrontendGUI.o
+
+#Merciless seek and delete
+clean:
+	rm -r -f $(TARGET_DIR)
+	rm -r -f $(OBJDIR)
+
 
 

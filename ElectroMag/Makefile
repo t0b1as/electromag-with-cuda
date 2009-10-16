@@ -11,7 +11,7 @@ Electromag: GPGPU_segment
 GPGPU_segment:
 	make --directory=GPGPU\ Segment
 		
-Electromag-clean: GPGPU_segment
+Electromag-clean:
 	make clean --directory=ElectroMag
 
 GPGPU_segment-clean:
