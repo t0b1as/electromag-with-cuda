@@ -1,3 +1,20 @@
+/***********************************************************************************************
+This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
+
 /*////////////////////////////////////////////////////////////////////////////////
 compile with:
 
@@ -48,7 +65,7 @@ int CalcField_CPU_T(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& poin
 		When compiling with the Intel C++ compiler, the OpenMP runtime will automatically choose  the
 		ideal number of threads based oh the runtime system's cache resources. The code will therefore
 		run faster if omp_set_num_threads is not specified.
-		Not tested on GNU or the Microsoft compiler
+		Not tested on GNU or the Visual Studio compiler
 	*/
 	//omp_set_num_threads(16);
 	#pragma unroll_and_jam
@@ -62,7 +79,6 @@ int CalcField_CPU_T(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& poin
 			// Set temporary cummulative field vector to zero
 			Vector3<T> temp = {0,0,0},
 				prevPoint = lines[n*(step - 1) + line];
-			#pragma unroll(4)
 			for(__int64 point = 0; point < p; point++)
 			{
 				// Add partial vectors to the field vector

@@ -1,14 +1,11 @@
 # generic makefile for ElectroMag library
 include ../Config.mk
 
-# Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
-# but by all means, use the Intel compiler if at all posible
-include Makefile-Intel.mk
-#include Makefile-GNU.mk # AKA The Headache Compiler
 
 # C++ Sources
-CXXsources= src/ElectroMag.cpp src/CPU_Implement.cpp src/stdafx.cpp\
-	src/CPUID/CPUID.cpp src/Graphics/Renderer.cpp src/Graphics/FieldRender.cpp
+SRCDIR= src
+CXXsources= $(SRCDIR)/ElectroMag.cpp $(SRCDIR)/CPU_Implement.cpp $(SRCDIR)/stdafx.cpp\
+	$(SRCDIR)/CPUID/CPUID.cpp $(SRCDIR)/Graphics/Renderer.cpp $(SRCDIR)/Graphics/FieldRender.cpp
 
 OBJDIR= obj
 OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJDIR)/CPUID.o \
@@ -16,7 +13,11 @@ OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJD
 
 
 # Explicit
-all: $(TARGET_DIR)/$(TARGET)
+all: post-build
+
+post-build: $(TARGET_DIR)/$(TARGET)
+	#copy .ptx files, as those contain the GPU kernel code
+	cp -f $(GPU_LIB_PATH)/*.ptx $(TARGET_DIR)
 
 run: $(TARGET_DIR)/$(TARGET)
 	LD_LIBRARY_PATH+=;$(CUDA_LIB_PATH)/
@@ -36,21 +37,12 @@ $(TARGET_DIR)/$(TARGET): $(OBJS)
 	@echo Done Linking Everything
 	@echo
 
-# The heavy processing part
-$(OBJDIR)/ElectroMag.o: pre-build src/ElectroMag.cpp
-	$(CXX) -c $(CXXFLAGS) src/ElectroMag.cpp -o $(OBJDIR)/ElectroMag.o
-$(OBJDIR)/CPU_Implement.o: pre-build src/CPU_Implement.cpp
-	$(CXX) -c $(CXXFLAGS) src/CPU_Implement.cpp -o $(OBJDIR)/CPU_Implement.o
-$(OBJDIR)/stdafx.o: pre-build src/stdafx.cpp
-	$(CXX) -c $(CXXFLAGS) src/stdafx.cpp -o $(OBJDIR)/stdafx.o
-$(OBJDIR)/Renderer.o: pre-build src/Graphics/Renderer.cpp
-	$(CXX) -c $(CXXFLAGS) src/Graphics/Renderer.cpp -o $(OBJDIR)/Renderer.o
-$(OBJDIR)/FieldRender.o: pre-build src/Graphics/FieldRender.cpp
-	$(CXX) -c $(CXXFLAGS) src/Graphics/FieldRender.cpp -o $(OBJDIR)/FieldRender.o
-$(OBJDIR)/CPUID.o: pre-build src/CPUID/CPUID.cpp
-	$(CXX) -c $(CXXFLAGS) src/CPUID/CPUID.cpp -o $(OBJDIR)/CPUID.o
-$(OBJDIR)/FrontendGUI.o: pre-build src/Graphics/FrontendGUI.cpp
-	$(CXX) -c $(CXXFLAGS) src/Graphics/FrontendGUI.cpp -o $(OBJDIR)/FrontendGUI.o
+#1 The heavy processing part
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp pre-build
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+# Rule for files that are located in src/somedir/
+$(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp pre-build
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #Merciless seek and delete
 clean:

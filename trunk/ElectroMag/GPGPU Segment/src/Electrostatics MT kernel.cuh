@@ -2,7 +2,6 @@
 
 #include "Config.h"
 #include "Electrostatics.h"
-#include "Electrodynamics.h"
 
 template<class T>
 struct pointChargeBankConflictKill
@@ -50,7 +49,7 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 		// The field vectors are arranged as structure of arrays in order to enable coalesced reads
 		// The x and y coordinates are interleaved in one array, producing coalesced 64-byte reads,
 		// and the z coordinates are placed in a separate array, producing coalesced 32-byte reads
-		ptXY = ((float2*)xyInterleaved)[xyPitchOffset * (fieldIndex - 1) + ti];
+		ptXY = ((float2 *)xyInterleaved)[xyPitchOffset * (fieldIndex - 1) + ti];
 		// Once the xy coordinates are read, place them in the appriopriate variable
 		point.x = ptXY.x;
 		point.y = ptXY.y;
@@ -59,10 +58,10 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 		// Place the point in shared memory for other threads to access
 		kData.smPoint[tx] = point;
 		// Read the previous field vector
-		ptXY = ((float2*)xyInterleaved)[ti];
+		ptXY = ((float2 *)xyInterleaved)[ti];
 		prevVec.x = ptXY.x;
 		prevVec.y = ptXY.y;
-		prevVec.z = z[ti];
+		prevVec.z = ((float*)z)[ti];
 	}
 	
 	for(unsigned int bigStep = 0; bigStep < LineSteps; bigStep ++)

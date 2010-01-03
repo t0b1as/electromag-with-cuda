@@ -1,85 +1,100 @@
 #pragma once
-#include "cuda_runtime.h"
 #include "X-Compat/Threading.h"
 #include <iostream>
+
+#ifndef CUdevice
+typedef int CUdevice;
+#endif
+
 class CudaManager
 {
 public:
-	CudaManager()
+
+	enum DeviceComputeMode
 	{
-		// Do a one-time scan for compatible GPUs
-		if(!scanComplete) ScanDevices();
-		scanComplete = true;
-		// Now initialize minimumProperties to default values
-		minimumProperties.major = 1;	// Compute capability 1.0 or higher
-		minimumProperties.minor = 0;
-		minimumProperties.multiProcessorCount = 1;	// Just in case
-		minimumProperties.clockRate = 0;	// No minimum clock rate
-		// Mark that no scan has completed before perfoming scan
-		userScanComplete = false;
-		// Do a scan of compatible devices. This will select the default properties if the user
-		// doesn't explicitly initiated a scan
-		ScanCompatible();
+		DeviceComputeMode_Default    = 0,     ///< Default compute mode (Multiple contexts allowed per device)
+		DeviceComputeMode_Exclusive  = 1,     ///< Compute-exclusive mode (Only one context can be present on this device at a time)
+		DeviceComputeMode_Prohibited = 2 
 	};
+    struct CUDeviceProp
+    {
+        char   name[256];                 ///< ASCII string identifying device
+        size_t totalGlobalMem;            ///< Global memory available on device in bytes
+        size_t sharedMemPerBlock;         ///< Shared memory available per block in bytes
+        int    regsPerBlock;              ///< 32-bit registers available per block
+        int    warpSize;                  ///< Warp size in threads
+        size_t memPitch;                  ///< Maximum pitch in bytes allowed by memory copies
+        int    maxThreadsPerBlock;        ///< Maximum number of threads per block
+        int    maxThreadsDim[3];          ///< Maximum size of each dimension of a block
+        int    maxGridSize[3];            ///< Maximum size of each dimension of a grid
+        int    clockRate;                 ///< Clock frequency in kilohertz
+        size_t totalConstMem;             ///< Constant memory available on device in bytes
+        int    major;                     ///< Major compute capability
+        int    minor;                     ///< Minor compute capability
+        size_t textureAlignment;          ///< Alignment requirement for textures
+        int    deviceOverlap;             ///< Device can concurrently copy memory and execute a kernel
+        int    multiProcessorCount;       ///< Number of multiprocessors on device
+        int    kernelExecTimeoutEnabled;  ///< Specified whether there is a run time limit on kernels
+        int    integrated;                ///< Device is integrated as opposed to discrete
+        int    canMapHostMemory;          ///< Device can map host memory with cudaHostAlloc/cudaHostGetDevicePointer
+        DeviceComputeMode computeMode;    ///< Compute mode (See ::cudaComputeMode)
+    };
+
+	CudaManager();
 	~CudaManager()
 	{
 	};
-	// Scans for compatible devices as requested by minimumProperties
+
+	/// Scans for compatible devices as requested by minimumProperties
 	void ScanCompatible();
 	//------------------------------------------Simple accessors------------------------------//
-	int GetCompatibleDevNo()const{return compatibleDevices;};
+    /// Returns the number of compatible devices found
+	int GetCompatibleDevNo()const{return nrCompatible;};
 
-	// Call the given functor from a new thread with the device in GPU index as the given device
-	// The returned handle can be used for thread syncronization
-	ThreadHandle CallFunctor(unsigned long (*functor)(void*), void* functorParams, int GPUindex);
-	// Sets the active device for the local thread
-	static int SetActive(int deviceIndex)
-	{
-		// Make sure a compatible device exists
-		if(!compatibleDevices) return 1;
-		// Check to see that the device index does not exceed the number of vompatible devices
-		if(deviceIndex >= compatibleDevices) deviceIndex = 0;
-		cudaSetDevice(compatibleDevIndex[deviceIndex]);
-		return 0;
-	};
+	/// Calls the given functor from a new thread with an active context created for the device
+    /// in GPU index as the given device
+	/// The returned handle can be used for thread syncronization
+	ThreadHandle CallFunctor(unsigned long (*functor)(void*),   ///< Pointer to a function that will perform the calculations
+                            void* functorParams,                ///< Pointer to the parameters that will be passed to the functor
+                            int GPUindex                        ///< The GPU on which to create the context the functor will be given
+    );
+
 	//------------------------------------------Simple modfifiers------------------------------//
-	// Sets the minimium compute capability
+	/// Sets the minimium compute capability when scanning for devices
 	void setMinimumCC(int major, int minor)
 	{
 		minimumProperties.major = major;
 		minimumProperties.minor = minor;
 	};
-	// Sets the minimum number of multiprocessors for the device
+	/// Sets the minimum number of multiprocessors for the device when scanning for devices
 	void setMinimumMPCount(int MP)
 	{
 		minimumProperties.multiProcessorCount = MP;
 	}
-	// Sets the minimum frequency for the device
+	/// Sets the minimum frequency for the device when scanning for devices
 	void setMinimumClockRate(int clockRate)
 	{
 		minimumProperties.clockRate = clockRate;
 	}
-	//
-	//int QueryActive()
-	//{
-	//};
 
-	//static void ListAllDevices();
+
 private:
 
 
 	//----------------------------------------Global Context tracking---------------------------//
-	// Records wether a scan for compatible devices has already completed
+	/// Records wether a scan for compatible devices has already completed
 	static bool scanComplete;
-	// Records the number of devices as reported by the driver
+	/// Records the number of devices as reported by the driver
 	static int deviceCount;
-	// Records the number of devices compatible with application requirements
-	static int compatibleDevices;
-	// Records the properties of all devices reported by the driver
-	static cudaDeviceProp *deviceProperties;
-	// Contains the indexes of the compatible devices in deviceProperties[]
+    /// Keeps handles to all obects reported by the CUDA driver
+    static CUdevice* devices;
+	/// Records the number of devices compatible with application requirements
+	static int nrCompatible;
+	/// Records the properties of all devices reported by the driver
+	static CUDeviceProp *deviceProperties;
+	/// Contains the indexes of the compatible devices in deviceProperties[]
 	static int *compatibleDevIndex;
-	// Performs a one-time scan to determine the number of devices
+	/// Performs a one-time scan to determine the number of devices
 	static void ScanDevices();
 
 	//-------------------------------------User Defined Context tracking---------------------------//
@@ -87,28 +102,39 @@ private:
 	// CUDA kernels are to be executed. This feature is especially useful when running kernels
 	// compiled for a higher compute capability that 1.0, or kernels that require a large amount of
 	// memory in order to complete.
-	// Records the minimum device requirements
-	cudaDeviceProp minimumProperties;
-	// Records whether a scan for compatible devices that meet user requirements has already completed
+	/// Records the minimum device requirements
+	CUDeviceProp minimumProperties;
+	/// Records whether a scan for compatible devices that meet user requirements has already completed
 	bool userScanComplete;
-	// Records the number of devices compatible with application requirements
-	int userCompatibleDevices;
-	// Contains the indexes of the compatible devices in deviceProperties
+	/// Records the number of devices compatible with application requirements
+	int userNrCompatible;
+	/// Contains the indexes of the compatible devices in deviceProperties
 	int *userCompatibleDevIndex;
-	
+
 	struct FunctorParams
 	{
 		void* originalParams;
 		unsigned long (*functor)(void*);
 		int GPUindex;
 	};
-	// The function in the new thread that sets the GPU and calls the functor
+	/// The function in the new thread that sets the GPU and calls the functor
 	static unsigned long ThreadFunctor(FunctorParams* params);
-	
-	
+
+	/// Replacement for runtime cudaGetDeviceProperies
+	static int cuGpuDeviceGetProperties(CUDeviceProp *prop, CUdevice dev);
+
+    /// Loads the CUDA driver
+	static int LoadDriver();
+    /// Indicates wheter the CUDA driver has loaded succesfuly
+	static bool driverLoaded;
+
 public:
-	// Lists all devices that were found during the last scan, including non-compatible ones
+
+    /// If the driver is not loaded, it loads the driver. this function is not thread safe
+	static int WaitForDriver();
+	/// Lists all devices that were found during the last scan, including non-compatible ones
 	static void ListAllDevices(std::ostream &out = std::cout);
 };
 
+/// Static GPU Manager that automatically initializes the driver at application startup
 extern CudaManager GlobalCudaManager;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="11.0"
+	Version="11.1"
 	Name="GPGPU Segment"
 	ProjectGUID="{B95A3BB1-8B3E-4A30-A761-F5CD6B215B5F}"
 	VCNestedProjectGUID="{425AB656-0FB7-464C-87BD-349253555BA0}"
@@ -32,7 +32,7 @@
 				Optimization="1000"
 				EnableEnhancedInstructionSet="1000"
 				FloatingPointModel="1000"
-				GenerateAlternateCodePaths="6"
+				GenerateAlternateCodePaths="0"
 				Parallelization="true"/>
 		</Configuration>
 		<Configuration

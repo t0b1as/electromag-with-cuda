@@ -7,10 +7,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 	
-	You may add your name to the list of authors if you make any noteworthy
-	and useful changes, but must preserve the  names of the original author/authors.
-
-    This program is distributed in the hope that it will be useful,
+	This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -27,6 +24,7 @@
 #include "Graphics/FieldRender.h"
 #include "Graphics/FrontendGUI.h"
 #include <omp.h>
+#include"./../../GPGPU Segment/src/GPU manager.h"
 
  using namespace std;
  // Use float or double; 16-bit single will generate erors
@@ -75,9 +73,9 @@ int main(int argc, char* argv[])
 			display = false;
 		else if( !strcmp(argv[i], "enhanced") )
 			simConfig = EnhancedParams;
-                else if( !strcmp(argv[i], "GUI") )
+		else if( !strcmp(argv[i], "GUI") )
 			visualProgressBar = true;
-                else if( !strcmp(argv[i], "randseed") )
+		else if( !strcmp(argv[i], "randseed") )
 			randseed = true;
 		else
 			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
@@ -107,7 +105,6 @@ int main(int argc, char* argv[])
 	GlobalCudaManager.ListAllDevices();
 	// Initialize GPUs
 	int cudaDev = GlobalCudaManager.GetCompatibleDevNo();
-	GlobalCudaManager.SetActive(cudaDev-1);
 	if(cudaDev > 0)
 	{
 		cout<<endl<<" Found "<<cudaDev<<" compatible devices."<<endl;
@@ -120,7 +117,7 @@ int main(int argc, char* argv[])
 		simConfig = CpuModeParams;
 	}
 	// Initialze data containers
-	int nw = simConfig.nx, nh = simConfig.ny, nd = simConfig.nz,  n = nh * nw * nd, p = simConfig.pStatic, len = simConfig.len;
+	int nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
 	Array<pointCharge<FPprecision> > charges(p, true);
 	// Only allocate memory if cpu comparison mode is specified
@@ -132,7 +129,6 @@ int main(int argc, char* argv[])
 		data.open("data.txt");
     MainGUI.RegisterProgressIndicator((double * volatile)&CPUperf.progress);
 
-#pragma message("TODO: add allocation checks here")
 	// Do not activate if memory allocation fails
 	if(!CPUlines.GetSize()) CPUenable = false;
 	if(!GPUlines.GetSize()) GPUenable = false;
@@ -159,13 +155,13 @@ int main(int argc, char* argv[])
 	}
 
     // Initialize field line grid
-	{FPprecision zVal = ((FPprecision)-nd/2 + 1E-5);
+	{FPprecision zVal = (FPprecision)((FPprecision)-nd/2 + 1E-5);
 	for(size_t k = 0; k < nd; k++, zVal++)// z coord
 	{
-		FPprecision yVal = ((FPprecision)-nh/2 + 1E-5);
+		FPprecision yVal = (FPprecision)((FPprecision)-nh/2 + 1E-5);
 		for(size_t j = 0; j < nh; j++, yVal++)// y coord
 		{
-			FPprecision xVal = ((FPprecision)-nw/2 + 1E-5);
+			FPprecision xVal = (FPprecision)((FPprecision)-nw/2 + 1E-5);
 			for(size_t i = 0; i < nw; i++, xVal++)// x coord
 			{
 				(*arrMain)[k*nw*nh + j*nw + i].x = (FPprecision) 10*xVal;
@@ -176,7 +172,7 @@ int main(int argc, char* argv[])
 	}}
 
     // If both CPU and GPU modes are initialized, the GPU array will have been initialized
-    // Copy the same starting alues to the CPU array
+    // Copy the same starting values to the CPU array
 	if(CPUenable && GPUenable)
 	for(size_t i = 0; i < n; i++)
 	{
@@ -194,7 +190,7 @@ int main(int argc, char* argv[])
 	{
 		cout<<" GPU"<<endl;
 		QueryHPCTimer(&start);
-		CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
+		if (CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature)) display = false;
 		QueryHPCTimer(&end);
 		cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<endl;
 		cout<<" Effective performance:\t\t"<<GPUperf.performance<<" GFLOP/s"<<endl;
@@ -254,11 +250,12 @@ int main(int argc, char* argv[])
 		cout<<endl<<" Execution unit "<<i<<endl;
 																	
 		cout<<" ==== Operation ======= Batch size ==== Time ========== Speed======="<<endl;
-		cout<<" xy Device to host \t"<<base[xySize]/1024/1024<<"\t\t"<<base[xyDtoH] <<"\t"<<base[xySize]/1024/1024/base[xyDtoH]<<endl;
-		cout<<" z  Device to host \t"<<base[zSize] /1024/1024<<"\t\t"<<base[zDtoH]  <<"\t"<<base[zSize] /1024/1024/base[zDtoH] <<endl;
-		cout<<" xy Host to host \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<endl;
-		cout<<" z  Host to host \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<endl;
+		cout<<" xy Device to host\t"<<base[xySize]/1024/1024<<"\t\t"<<base[xyDtoH] <<"\t"<<base[xySize]/1024/1024/base[xyDtoH]<<endl;
+		cout<<" z  Device to host\t"<<base[zSize] /1024/1024<<"\t\t"<<base[zDtoH]  <<"\t"<<base[zSize] /1024/1024/base[zDtoH] <<endl;
+		cout<<" xy Host to host  \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<endl;
+		cout<<" z  Host to host  \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<endl;
 		cout<<" ==================================================================="<<endl;
+		cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<endl;
 		cout<<"  devMalloc overhead "<<base[devMalloc]<<"s"<<endl;
 		cout<<" hostMalloc overhead "<<base[hostMalloc]<<"s"<<endl;
 		cout<<" Associated overhead "<<base[devMalloc] + base[hostMalloc] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
@@ -273,7 +270,7 @@ int main(int argc, char* argv[])
 	FieldDisp.RenderPacket(GLdata);
     if(display) FieldDisp.StartAsync();
 
-	// do stuff here; This will generate files non-worthy of FAT32
+	// do stuff here; This will generate files non-worthy of FAT32 or non-RAID systems
 	if(saveData && (CPUenable || GPUenable))
 	{
 		cout<<" Beginning save procedure"<<endl;
