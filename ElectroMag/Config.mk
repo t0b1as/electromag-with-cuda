@@ -14,13 +14,15 @@ CUDA_SDK_INC_PATH= $(CUDA_SDK_PATH)/C/common/inc
 TARGET= Electromag
 TARGET_DIR = ./../bin
 
+GPU_LIB_PATH= ../common/lib
+
 #Include directories
-CXXINCLUDE += -I. -I./src -I $(CUDA_INC_PATH)
-
+INCLUDE += -I. -I./../GPGPU\ Segment/src -I./../common/src -I./src -I $(CUDA_INC_PATH)
+CXXINCLUDE= $(INCLUDE)
 #Library options
-LDFLAGS = -lpthread -lglut -lGLU -lGLEW ../GPGPU\ Segment/libGPGPU_segment.a $(CUDA_LIB_PATH)/libcudart.so
+LDFLAGS += -lpthread -lglut -lGLU -lGLEW $(GPU_LIB_PATH)/libGPGPU_segment.a
 
-# C++ Sources
-CXXsources= src/ElectroMag.cpp src/CPU_Implement.cpp src/stdafx.cpp\
-	src/CPUID/CPUID.cpp src/Graphics/Renderer.cpp src/Graphics/FieldRender.cpp
-OBJS= ElectroMag.o CPU_Implement.o stdafx.o CPUID.o Renderer.o FieldRender.o
+# Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
+# but by all means, use the Intel compiler if at all posible
+include ../Makefile-Intel.mk
+#include ../Makefile-GNU.mk # AKA The Headache Compiler

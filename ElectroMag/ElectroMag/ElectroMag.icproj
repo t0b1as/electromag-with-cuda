@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="11.0"
+	Version="11.1"
 	Name="ElectroMag"
 	ProjectGUID="{2E0B952A-578D-4527-9C6A-B912C857E9F8}"
 	VCNestedProjectGUID="{6116EAE3-3FE1-4C60-9C1C-5CB414864E2A}"
@@ -26,7 +26,7 @@
 				Name="CppCmplrTool"
 				Optimization="1000"
 				EnableEnhancedInstructionSet="1000"
-				GenerateAlternateCodePaths="6"
+				GenerateAlternateCodePaths="0"
 				Parallelization="true"/>
 		</Configuration>
 		<Configuration
@@ -35,7 +35,7 @@
 				Name="CppCmplrTool"
 				EnableEnhancedInstructionSet="1000"
 				FloatingPointModel="1000"
-				GenerateAlternateCodePaths="6"
+				GenerateAlternateCodePaths="0"
 				Parallelization="true"/>
 		</Configuration>
 		<Configuration

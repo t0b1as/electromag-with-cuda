@@ -34,12 +34,13 @@ Required dependencies (Linux):
 	freeglut 2.6.0 RC1 (freeglut.sourceforge.net) 
 		freeglut 2.4.0 will not work
 
-Environment variables (Windows):
+To set the needed environment variables in Windows,
+run the following cmmands from an elevated prompt:
 
 setx CUDA_SDK_INC_PATH "%NVSDKCUDA_ROOT%\common\inc"
 setx CUDA_SDK_LIB_PATH "%NVSDKCUDA_ROOT%\common\lib"
 setx CUDA_BIN_PATH_32 "%CUDA_BIN_PATH%\..\CUDA32\bin"
-setx CUDA_LIB_PATH_32 "%CUDA_BIN_PATH%\..\CUDA32\lib"
+setx CUDA_LIB_PATH_32 "%CUDA_LIB_PATH%\..\CUDA32\lib"
 /////////////////////////////////////////////////////////////////////////////
 Other standard files:
 
@@ -53,12 +54,8 @@ Known issues
  when the data size is a multiple of the number of multiprocesors.
 - Under 64-bit mode, when not compiling with -maxrregcount 18, 19, or 20, the "multithreaded"
  kernel uses 21 registers, which reduces its throughput significantly.
-- With the 182.06 driver, non-paged to device memory copies seem to be capped around 3.3GB/s.
 - Other unknown issues may exist under 32-bit mode, as I did not intensivley test
  under 32-bit mode.
-
-Linux cross-compatibility issues:
-- The code will need small adjustments to compile with GCC or Intel C++ under linux,
 	
 
 

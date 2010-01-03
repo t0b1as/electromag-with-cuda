@@ -111,7 +111,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -428,6 +428,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\src\cuda_drvapi_dynlink.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\Electrostatics.cpp"
 				>
 			</File>
@@ -439,8 +443,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH_32)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/O2,/Zi,/MTd -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -448,8 +452,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot;  -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\Electrostatics.cubin -cubin src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(PlatformName)\$(ConfigurationName)\Electrostatics.cubin"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -457,8 +461,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH_32)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/O2,/Zi,/MT -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -466,8 +470,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/O2,/Zi,/MT -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -475,8 +479,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH32)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/O2,/Zi,/MT -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\..\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -484,8 +488,80 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot;   -maxrregcount 16 -keep -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs=".\..\$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\src\Electrostatics_Multistep.cu"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.cubin -cubin src\Electrostatics_Multistep.cu&#x0D;&#x0A;"
+						Outputs="$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.cubin"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="EmuDebug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="EmuDebug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
+						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\src\Electrostatics_sm13.cu"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -arch sm_13 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics_sm13.obj src\Electrostatics_sm13.cu&#x0D;&#x0A;"
+						Outputs="$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics_sm13.obj"
 					/>
 				</FileConfiguration>
 			</File>
@@ -508,7 +584,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\CUDA Interop.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\cuda_drvapi_dynlink.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\Electrostatics Housekeeping.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Electrostatics Kernel Launch.h"
 				>
 			</File>
 			<File
@@ -524,14 +612,14 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\Electrostatics.ptx"
+		<Filter
+			Name="PTX"
 			>
-		</File>
-		<File
-			RelativePath=".\Electrostatics.sm_10.cubin"
-			>
-		</File>
+			<File
+				RelativePath=".\x64\Debug\Electrostatics.ptx"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

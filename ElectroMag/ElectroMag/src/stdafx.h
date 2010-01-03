@@ -25,6 +25,6 @@
 #include "Newton FEMA.h"
 #include "Electrostatics.h"
 #include "Electrodynamics.h"
-#include "CUDA Interop.h"
+#include "./../../GPGPU Segment/src/CUDA Interop.h"
 #include "CPU Implement.h"
 #include "CPUID/CpuID.h"
