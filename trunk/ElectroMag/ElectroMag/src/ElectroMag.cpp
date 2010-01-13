@@ -1,6 +1,6 @@
 /***********************************************************************************************
 	Electromag - Electomagnestism simulation application using CUDA accelerated computing
-	Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+	Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 #include "Graphics/FieldRender.h"
 #include "Graphics/FrontendGUI.h"
 #include <omp.h>
-#include"./../../GPGPU Segment/src/GPU manager.h"
+#include"./../../GPGPU_Segment/src/CUDA manager.h"
+#include "./../../GPGPU_Segment/src/CL Manager.h"
 
  using namespace std;
  // Use float or double; 16-bit single will generate erors
@@ -41,8 +42,11 @@ struct SimulationParams
 	size_t len;			// Number of steps of a field line
 };
 SimulationParams DefaultParams = {128, 128, 1, 1000, 0, 2500};
-SimulationParams EnhancedParams = {256, 112, 1, 2000, 0, 5000};
-SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};
+SimulationParams EnhancedParams = {256, 112, 1, 2000, 0, 5000};			// Expect to fail on systems with under 3GB
+SimulationParams ExtremeParams = {256, 256, 1, 2000, 0, 5000};			// Expect to fail on systems with under 6GB
+SimulationParams InsaneParams = {512, 512, 1, 2000, 0, 5000};			// Requires minimum 16GB system RAM
+SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5000, 0, 10000};	// Requires minimum 24GB system RAM
+SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work acceptably on most multi-core CPUs
 //SimulationParams CpuModeParams = {16, 16, 1, 1000, 0, 1000};
 
 // to redirect stdout and stderr to out.txt use:
@@ -52,14 +56,21 @@ int main(int argc, char* argv[])
 	cout<<" Electromagnetism simulation application"<<endl;
 	cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<endl;
 
-	//freopen( "file.txt", "a", stdout );
+	OpenCL::GlobalClManager.ListAllDevices();
+
+#ifndef _DEBUG
+	freopen( "file.txt", "w", stderr );
+#endif//DEBUG
 	
+	enum ParamLevel{__cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
+	ParamLevel paramLevel = __normal;
 
 	SimulationParams simConfig = DefaultParams;
 	bool saveData = false, CPUenable = false, GPUenable = true, display = true;
 	bool useCurvature = true;
         bool visualProgressBar = false;
         bool randseed = false;
+		bool randfieldinit = false;
 	// Get command-line options;
 	for(int i = 1; i < argc; i++)
 	{
@@ -72,14 +83,24 @@ int main(int argc, char* argv[])
 		else if( !strcmp(argv[i], "nodisp") )
 			display = false;
 		else if( !strcmp(argv[i], "enhanced") )
-			simConfig = EnhancedParams;
+			{if(paramLevel < __enhanced) paramLevel = __enhanced;}
+		else if( !strcmp(argv[i], "extreme") )
+			{if(paramLevel < __enhanced) paramLevel = __extreme;}
+		else if( !strcmp(argv[i], "insane") )
+			{if(paramLevel < __insane) paramLevel = __insane;}
+		else if( !strcmp(argv[i], "fuckingInsane") )
+			{if(paramLevel < __fuckingInsane) paramLevel = __fuckingInsane;}
 		else if( !strcmp(argv[i], "GUI") )
 			visualProgressBar = true;
 		else if( !strcmp(argv[i], "randseed") )
 			randseed = true;
+		else if( !strcmp(argv[i], "randfieldinit") )
+			randfieldinit = true;
 		else
 			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
 	}
+
+	
 	CpuidString cpuString;
 	GetCpuidString(&cpuString);
 	
@@ -102,9 +123,9 @@ int main(int argc, char* argv[])
     if(visualProgressBar) MainGUI.StartAsync();
 
 	// Statistics show that users are happier when the program outputs fun information abot their toys
-	GlobalCudaManager.ListAllDevices();
+	cuda::GlobalCudaManager.ListAllDevices();
 	// Initialize GPUs
-	int cudaDev = GlobalCudaManager.GetCompatibleDevNo();
+	int cudaDev = cuda::GlobalCudaManager.GetCompatibleDevNo();
 	if(cudaDev > 0)
 	{
 		cout<<endl<<" Found "<<cudaDev<<" compatible devices."<<endl;
@@ -114,15 +135,37 @@ int main(int argc, char* argv[])
 	{
 		GPUenable = false; CPUenable = true;	// And force CPU mode
 		cout<<" Warning! No compatible GPU found. Using optimized CPU mode with reduced parameter set."<<endl;
+		paramLevel = __cpu;
+	}
+	// Set correct parameter configuration
+	switch(paramLevel)
+	{
+	case __normal:
+		simConfig = DefaultParams;
+		break;
+	case __enhanced:
+		simConfig = EnhancedParams;
+		break;
+	case __extreme:
+		simConfig = ExtremeParams;
+		break;
+	case __insane:
+		simConfig = InsaneParams;
+		break;
+	case __fuckingInsane:
+		simConfig = FuckingInsaneParams;
+		break;
+	case __cpu:	//Fall Through
+	default:
 		simConfig = CpuModeParams;
 	}
 	// Initialze data containers
 	int nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
-	Array<pointCharge<FPprecision> > charges(p, true);
+	Array<pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
-	if(GPUenable) GPUlines.AlignAlloc(n*len);
-	if(CPUenable) CPUlines.AlignAlloc(n*len);
+	if(GPUenable) GPUlines.AlignAlloc(n*len, 256);
+	if(CPUenable) CPUlines.AlignAlloc(n*len, 256);
 	perfPacket CPUperf = {0, 0}, GPUperf = {0, 0};
 	ofstream data, regress;
 	if (saveData)
@@ -151,10 +194,23 @@ int main(int argc, char* argv[])
 	else 
 	{
 		cerr<<" Could not allocate sufficient memory. Halting execution."<<endl;
+		size_t neededRAM = n*len*sizeof(Vector3<FPprecision>)/1024/1024;
+		std::cerr<<" "<<neededRAM<<" MB needed for initial allocation"<<std::endl;
 		return 666;
 	}
 
     // Initialize field line grid
+	if(randfieldinit)
+	{
+		// Random Filed line initialization
+		for(size_t i = 0; i < n ; i++)
+		{
+			(*arrMain)[i].x = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
+			(*arrMain)[i].y = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
+			(*arrMain)[i].z = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
+		}
+	}
+	else
 	{FPprecision zVal = (FPprecision)((FPprecision)-nd/2 + 1E-5);
 	for(size_t k = 0; k < nd; k++, zVal++)// z coord
 	{
@@ -170,6 +226,7 @@ int main(int argc, char* argv[])
 			}
 		}
 	}}
+	
 
     // If both CPU and GPU modes are initialized, the GPU array will have been initialized
     // Copy the same starting values to the CPU array
@@ -189,13 +246,16 @@ int main(int argc, char* argv[])
 	if(GPUenable)
 	{
 		cout<<" GPU"<<endl;
+		int failedFunctors;
 		QueryHPCTimer(&start);
-		if (CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature)) display = false;
+		failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
 		QueryHPCTimer(&end);
-		cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<endl;
-		cout<<" Effective performance:\t\t"<<GPUperf.performance<<" GFLOP/s"<<endl;
+		if(failedFunctors >= cudaDev) display = false;
+		if(failedFunctors) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
+		std::cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<std::endl;
+		std::cout<<" Effective performance:\t\t"<<GPUperf.performance<<" GFLOP/s"<<std::endl;
 		GPUtime = double(end-start)/freq;
-		cout<<" True kernel execution time:\t"<<GPUtime<<" seconds"<<endl;
+		std::cout<<" True kernel execution time:\t"<<GPUtime<<" seconds"<<std::endl;
 	}
 	if(CPUenable)
 	{
@@ -255,11 +315,11 @@ int main(int argc, char* argv[])
 		cout<<" xy Host to host  \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<endl;
 		cout<<" z  Host to host  \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<endl;
 		cout<<" ==================================================================="<<endl;
+		cout<<" kernel execution    "<<base[kernelExec]<<"s"<<endl;
 		cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<endl;
-		cout<<"  devMalloc overhead "<<base[devMalloc]<<"s"<<endl;
-		cout<<" hostMalloc overhead "<<base[hostMalloc]<<"s"<<endl;
-		cout<<" Associated overhead "<<base[devMalloc] + base[hostMalloc] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
-			base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree]<<"s"<<endl; 
+		cout<<" resAlloc   overhead "<<base[resAlloc]<<"s"<<endl;
+		cout<<" Associated overhead "<<base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
+			base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree]<<"s"<<endl;
 	}
 
 	GLpacket<FPprecision> GLdata;
@@ -268,6 +328,7 @@ int main(int argc, char* argv[])
 	GLdata.nlines = n;
 	GLdata.lineLen = len;
 	FieldDisp.RenderPacket(GLdata);
+	FieldDisp.SetPerfGFLOP(GPUperf.performance);
     if(display) FieldDisp.StartAsync();
 
 	// do stuff here; This will generate files non-worthy of FAT32 or non-RAID systems
@@ -316,7 +377,7 @@ int main(int argc, char* argv[])
 					break;
 				}
 			}while(++step < len);
-            // Small anti-boring indicator
+            // Small anti-boredom indicator
 			if(!(line%256)) cout<<" "<<(double)line/n*100<<" % complete"<<endl;
 		}
         // When done, close file to prevent crashes from resulting in incomplete regressions

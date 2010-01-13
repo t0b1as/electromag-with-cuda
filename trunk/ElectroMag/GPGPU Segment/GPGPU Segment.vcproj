@@ -17,6 +17,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<ToolFile
+			RelativePath="D:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK\C\common\Cuda.Rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -33,6 +36,10 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="CUDA Build Rule"
+				NvccCompilation="3"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -44,7 +51,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -97,6 +104,15 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="CUDA Build Rule"
+				Include="../common/src"
+				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -166,6 +182,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="CUDA Build Rule"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -176,7 +195,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="0"
@@ -230,6 +249,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="CUDA Build Rule"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -245,7 +267,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="0"
@@ -299,6 +321,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="CUDA Build Rule"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -310,7 +335,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -365,6 +390,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="CUDA Build Rule"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -377,7 +405,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\ElectroMag\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -428,7 +456,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\src\Abstract_Functor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CL_Manager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\cuda_drvapi_dynlink.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CUDA_Electrostatics.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CUDA_manager.cpp"
 				>
 			</File>
 			<File
@@ -448,25 +492,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot;  -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\Electrostatics.cubin -cubin src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(PlatformName)\$(ConfigurationName)\Electrostatics.cubin"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
@@ -506,25 +532,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.cubin -cubin src\Electrostatics_Multistep.cu&#x0D;&#x0A;"
-						Outputs="$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.cubin"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
@@ -560,13 +568,19 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -arch sm_13 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -c -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics_sm13.obj src\Electrostatics_sm13.cu&#x0D;&#x0A;"
-						Outputs="$(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics_sm13.obj"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\src\GPU_manager.cpp"
+				RelativePath=".\src\OpenCL_Dyn_Load.c"
 				>
 			</File>
 		</Filter>
@@ -575,6 +589,14 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\src\Abstract Functor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CL Manager.h"
+				>
+			</File>
 			<File
 				RelativePath=".\src\Config.h"
 				>
@@ -588,7 +610,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\CUDA manager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\cuda_drvapi_dynlink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CUDA_Electrostatics.h"
 				>
 			</File>
 			<File
@@ -608,15 +638,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\GPU manager.h"
+				RelativePath=".\src\OpenCL_Dyn_Load.h"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="PTX"
+			Name="Device code"
 			>
 			<File
-				RelativePath=".\x64\Debug\Electrostatics.ptx"
+				RelativePath=".\data\Electrostatics.cubin"
+				>
+			</File>
+			<File
+				RelativePath=".\data\Electrostatics.ptx"
+				>
+			</File>
+			<File
+				RelativePath=".\data\Electrostatics_Multistep.cubin"
+				>
+			</File>
+			<File
+				RelativePath=".\data\Electrostatics_Multistep.ptx"
 				>
 			</File>
 		</Filter>

@@ -21,7 +21,9 @@ SRCDIR=src
 
 # C++ Sources
 CPPsources= $(SRCDIR)/Electrostatics.cpp $(SRCDIR)/GPU_manager.cpp $(SRCDIR)/cuda_drvapi_dynlink.c
-CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/GPU_manager.o $(OBJDIR)/cuda_\drvapi_dynlink.o
+CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/GPU_manager.o \
+	$(OBJDIR)/cuda_\drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o
+
 
 # CUDA objects and targets
 CUDA_SOURCES= $(SRCDIR)/Electrostatics.cu

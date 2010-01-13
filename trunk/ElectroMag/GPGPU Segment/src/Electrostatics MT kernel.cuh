@@ -1,3 +1,20 @@
+/***********************************************************************************************
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
 #pragma once
 
 #include "Config.h"
@@ -28,13 +45,22 @@ union kernelData
 // Computes the step lenght based on curvature
 // Stores field vector information in the first step
 template<unsigned int LineSteps>
-__global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleaved, float* z, pointCharge<float> *Charges,
-								unsigned int xyPitchOffset, unsigned int zPitchOffset,
-								unsigned int p, unsigned int fieldIndex, float resolution)
+__global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleaved,	///<[in,out] Pointer to the interleaved XY components
+													float* z,						///<[in,out] Pointer to z components
+													pointCharge<float> *Charges,	///<[in] Pointer to the array of structures of point charges
+													const unsigned int xyPitch,		///<[in] Row pitch in bytes for the xy components
+													const unsigned int zPitch,		///<[in] Row pitch in bytes for the z components
+													const unsigned int p,			///<[in] Number of point charges
+													const unsigned int fieldIndex,	///<[in] The index of the row that needs to be calcculated
+													const float resolution			///<[in] The resolution to apply to the inndividual field vectors
+													)
 {
 	unsigned int tx = threadIdx.x;
 	unsigned int ty = threadIdx.y;
 	unsigned int ti = blockDim.x * blockIdx.x + tx;
+	// base pointers that point to the operational row
+	float2 * xyBase = (float2*)(Vector2<float>*) ((char*)xyInterleaved + (fieldIndex - 1) * xyPitch);
+	float * zBase = (float*) ((char*)z + (fieldIndex - 1) * zPitch);
 	// Using a unoin between all needed data types allows massive smem economy
 	__shared__ kernelData<float> kData;
 
@@ -49,12 +75,13 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 		// The field vectors are arranged as structure of arrays in order to enable coalesced reads
 		// The x and y coordinates are interleaved in one array, producing coalesced 64-byte reads,
 		// and the z coordinates are placed in a separate array, producing coalesced 32-byte reads
-		ptXY = ((float2 *)xyInterleaved)[xyPitchOffset * (fieldIndex - 1) + ti];
+		//ptXY = ((float2)xyInterleaved)[xyPitchOffset * (fieldIndex - 1) + ti];
+		ptXY = xyBase[ti];
 		// Once the xy coordinates are read, place them in the appriopriate variable
 		point.x = ptXY.x;
 		point.y = ptXY.y;
 		// Now read the z coordinate
-		point.z = z[zPitchOffset * (fieldIndex - 1) + ti];
+		point.z = zBase[ti];
 		// Place the point in shared memory for other threads to access
 		kData.smPoint[tx] = point;
 		// Read the previous field vector
@@ -123,13 +150,16 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 			// Finally, add the unit vector of the field divided by the resolution to the previous point to get the next point
 			// We increment the curvature by one to prevent a zero curvature from generating #NaN or #Inf, though any positive constant should work
 			point += vec3SetInvLen(temp, (k+1)*resolution);// 15 FLOPs (10 set len + 2 add-mul + 3 vec add)
+			// Since we need to write the results, we can increment the row in the base pointers now
+			xyBase = (float2*)((char*)xyBase + xyPitch);
+			zBase = (float*)((char*)zBase + zPitch);
 			// The results must be written back as interleaved xy and separate z coordinates
 			ptXY.x = point.x;
 			ptXY.y = point.y;
-			((float2*)xyInterleaved)[xyPitchOffset * fieldIndex + ti] = ptXY;
-			z[zPitchOffset * fieldIndex + ti] = point.z;
+			xyBase[ti] = ptXY;
+			zBase[ti] = point.z;
 			kData.smPoint[tx] = point;
-			fieldIndex ++;
+			
 			prevVec = temp;
 			// 45 total FLOPs in this step
 		}
@@ -137,6 +167,8 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 	if(!ty)
 	{
 		// Finally, store the field vector globally
+		// Row 0 will not be overwritten, so it can be used as a buffer to store the unnormalized
+		// field vector. The unnormalized field vector is needed for curvature computation
 		ptXY.x = temp.x;
 		ptXY.y = temp.y;
 		((float2*)xyInterleaved)[ti] = ptXY;
@@ -146,12 +178,15 @@ __global__ void CalcField_MTkernel_CurvatureCompute(Vector2<float>* xyInterleave
 
 template<unsigned int LineSteps>
 __global__ void CalcField_MTkernel(Vector2<float>* xyInterleaved, float* z, pointCharge<float> *Charges,
-								unsigned int xyPitchOffset, unsigned int zPitchOffset,
-								unsigned int p, unsigned int fieldIndex, float resolution)
+								const unsigned int xyPitch, const unsigned int zPitch,
+								const unsigned int p, const unsigned int fieldIndex, const float resolution)
 {
 	unsigned int tx = threadIdx.x;
 	unsigned int ty = threadIdx.y;
 	unsigned int ti = blockDim.x * blockIdx.x + tx;
+	// Base pointers that point to the operational row
+	float2 * xyBase = (float2*)(Vector2<float>*) ((char*)xyInterleaved + (fieldIndex - 1) * xyPitch);
+	float * zBase = (float*) ((char*)z + (fieldIndex - 1) * zPitch);
 	// Using a unoin between all needed data types allows massive smem economy
 	__shared__ kernelData<float> kData;
 
@@ -166,12 +201,12 @@ __global__ void CalcField_MTkernel(Vector2<float>* xyInterleaved, float* z, poin
 		// The field vectors are arranged as structure of arrays in order to enable coalesced reads
 		// The x and y coordinates are interleaved in one array, producing coalesced 64-byte reads,
 		// and the z coordinates are placed in a separate array, producing coalesced 32-byte reads
-		ptXY = ((float2*)xyInterleaved)[xyPitchOffset * (fieldIndex - 1) + ti];
+		ptXY = xyBase[ti];
 		// Once the xy coordinates are read, place them in the appriopriate variable
 		point.x = ptXY.x;
 		point.y = ptXY.y;
 		// Now read the z coordinate
-		point.z = z[zPitchOffset * (fieldIndex - 1) + ti];
+		point.z = zBase[ti];
 		// Place the point in shared memory for other threads to access
 		kData.smPoint[tx] = point;
 	}
@@ -230,13 +265,15 @@ __global__ void CalcField_MTkernel(Vector2<float>* xyInterleaved, float* z, poin
 			}
 			// Finally, add the unit vector of the field divided by the resolution to the previous point to get the next point
 			point += vec3SetInvLen(temp, resolution);// 13 FLOPs (10 set len + 3 add)
+			// Since we need to write the results, we can increment the row in the base pointers now
+			xyBase = (float2*)((char*)xyBase + xyPitch);
+			zBase = (float*)((char*)zBase + zPitch);
 			// The results must be written back as interleaved xy and separate z coordinates
 			ptXY.x = point.x;
 			ptXY.y = point.y;
-			((float2*)xyInterleaved)[xyPitchOffset * fieldIndex + ti] = ptXY;
-			z[zPitchOffset * fieldIndex + ti] = point.z;
+			xyBase[ti] = ptXY;
+			zBase[ti] = point.z;
 			kData.smPoint[tx] = point;
-			fieldIndex ++;
 		}
 	}
 }//*/

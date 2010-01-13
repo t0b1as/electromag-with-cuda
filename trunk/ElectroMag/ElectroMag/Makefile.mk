@@ -11,7 +11,6 @@ OBJDIR= obj
 OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJDIR)/CPUID.o \
 	$(OBJDIR)/Renderer.o $(OBJDIR)/FieldRender.o $(OBJDIR)/FrontendGUI.o
 
-
 # Explicit
 all: post-build
 

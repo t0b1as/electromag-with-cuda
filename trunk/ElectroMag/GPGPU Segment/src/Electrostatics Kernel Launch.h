@@ -1,3 +1,20 @@
+/***********************************************************************************************
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
 #pragma once
 
 #include"cuda_drvapi_dynlink.h"
@@ -34,21 +51,29 @@ return errCode;}
 	if(errCode != CUDA_SUCCESS)\
 	{std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;}\
 
+#define DEBUG_CUDA_KERNEL_SYNC(call) errCode = call;\
+	if(errCode != CUDA_SUCCESS)\
+	{\
+		std::cerr<<" Failed kernel sync at line line "<<__LINE__<<" with code: "<<errCode<<std::endl;\
+		std::cerr<<" Current unprocessed fieldIndex "<<i<<std::endl;\
+		return errCode;\
+	}
+
 template<>
 CUresult CalcField_selectKernel<float>(CUmodule multistepMod, CUmodule singlestepMod,
                         CUfunction *multistepKernel, CUfunction *singlestepKernel,
                         bool useMT, bool useCurvature)
 {
 	CUresult errCode;
-    if(useCurvature)
+    if(useCurvature)	// Curvature computation is only available in the MT kernel
 	{
             DEBUG_CUDA_CALL(cuModuleGetFunction(multistepKernel, multistepMod, "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf"));
             DEBUG_CUDA_CALL(cuModuleGetFunction(singlestepKernel, singlestepMod, "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf"));
 	}
 	else if(useMT)	// Has the wrapper padded the memory for the MT kernel?
 	{
-            DEBUG_CUDA_CALL(cuModuleGetFunction(multistepKernel, multistepMod, "CalcField_MTkernel"));
-            DEBUG_CUDA_CALL(cuModuleGetFunction(singlestepKernel, singlestepMod, "CalcField_MTkernel"));
+            DEBUG_CUDA_CALL(cuModuleGetFunction(multistepKernel, multistepMod, "_Z18CalcField_MTkernelILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf"));
+            DEBUG_CUDA_CALL(cuModuleGetFunction(singlestepKernel, singlestepMod, "_Z18CalcField_MTkernelILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf"));
 	}
 	else	// Nope, just for the regular kernel
 	{
@@ -81,6 +106,30 @@ CUresult CalcField_selectKernel<double>(CUmodule multistepMod, CUmodule singlest
     return CUDA_SUCCESS;
 }
 
+CUresult CalcField_loadModules(CUmodule *multistepMod, CUmodule *singlestepMod)
+{
+	// Attempt to first load a cubin module. If that fails, load the slower ptx module
+	CUresult errCode;
+	if(cuModuleLoad(singlestepMod, "Electrostatics.cubin") != CUDA_SUCCESS)
+	{
+		// Try to load from ptx code
+		errCode = cuModuleLoad(singlestepMod, "Electrostatics.ptx");
+		if(errCode != CUDA_SUCCESS)
+			return errCode;
+	}
+	if(cuModuleLoad(multistepMod, "Electrostatics_Multistep.cubin") != CUDA_SUCCESS)
+	{
+		// Try to load from ptx code
+		errCode = cuModuleLoad(multistepMod, "Electrostatics.ptx");
+		if(errCode != CUDA_SUCCESS)
+			return errCode;
+	}
+
+   
+    return CUDA_SUCCESS;
+}
+
+
 // Calls the kernel, given pointers to device memory
 // For this function to execute correctly, device memory must already be allocated and relevant data copied to device
 // The non-wrapped function is useful when recalculating lines with memory already allocated
@@ -88,8 +137,8 @@ CUresult CalcField_selectKernel<double>(CUmodule multistepMod, CUmodule singlest
 #include "X-Compat/HPC timing.h"
 
 template<class T>
- CUresult CalcField_core(Vec3SOA<CUdeviceptr> &fieldLines, unsigned int steps, unsigned int lines,
-						unsigned int xyPitchOffset, unsigned int zPitchOffset,
+ CUresult CalcField_core(Vec3SOA<CUdeviceptr> &fieldLines, unsigned int steps, unsigned int nLines,
+						unsigned int xyPitch, unsigned int zPitch,
 						CUdeviceptr pointCharges, unsigned int points,
 						T resolution, bool useMT, bool useCurvature,
 						GPUkernels kernels)
@@ -98,7 +147,7 @@ template<class T>
 	unsigned int bY = useMT ? BLOCK_Y_MT : 1;
 	// Compute dimension requirements
 	dim3 block(bX, bY, 1),
-		grid( ((unsigned int)lines + bX - 1)/bX, 1, 1 );
+		grid( ((unsigned int)nLines + bX - 1)/bX, 1, 1 );
 	CUresult errCode = CUDA_SUCCESS;
 
 	// Load the multistep kernel parameters
@@ -126,14 +175,14 @@ template<class T>
 	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&pointChargeParam, size));
 	offset += size;
 
-	size = sizeof(xyPitchOffset);
-	DEBUG_CUDA_CALL(cuParamSetv(kernels.multistepKernel, offset, (void*)&xyPitchOffset, size));
-	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&xyPitchOffset, size));
+	size = sizeof(xyPitch);
+	DEBUG_CUDA_CALL(cuParamSetv(kernels.multistepKernel, offset, (void*)&xyPitch, size));
+	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&xyPitch, size));
 	offset += size;
 	
-	size = sizeof(zPitchOffset);
-	DEBUG_CUDA_CALL(cuParamSetv(kernels.multistepKernel, offset, (void*)&zPitchOffset, size));
-	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&zPitchOffset, size));
+	size = sizeof(zPitch);
+	DEBUG_CUDA_CALL(cuParamSetv(kernels.multistepKernel, offset, (void*)&zPitch, size));
+	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&zPitch, size));
 	offset += size;
 	
 	size = sizeof(points);
@@ -142,7 +191,7 @@ template<class T>
 	offset += size;
 
 	const int fieldIndexParamSize = sizeof(unsigned int);
-	// Do not set field index here
+	// Do not set field index here, but before Launching the kernel
 	const unsigned int fieldIndexParamOffset = offset;
 	offset += fieldIndexParamSize;
 	
@@ -158,21 +207,18 @@ template<class T>
 	DEBUG_CUDA_CALL(cuFuncSetBlockShape(kernels.multistepKernel, block.x, block.y, block.z));
 	DEBUG_CUDA_CALL(cuFuncSetBlockShape(kernels.singlestepKernel, block.x, block.y, block.z));
 
-	__int64 start, end, freq;
-	QueryHPCFrequency(&freq);
-	QueryHPCTimer(&start);
 	// LAUNCH THE KERNEL
 	unsigned int i = 1;
 	while(i < (steps - KERNEL_STEPS) )
 	{
-		DEBUG_CUDA_CALL(cuCtxSynchronize());
+		DEBUG_CUDA_KERNEL_SYNC(cuCtxSynchronize());// <- Remove this to crash the video driver
 		cuParamSetv(kernels.multistepKernel, fieldIndexParamOffset, (void*)&i, fieldIndexParamSize);
 		cuLaunchGrid(kernels.multistepKernel, grid.x, grid.y);
 		i += KERNEL_STEPS;
 	}
 	while(i < steps)
 	{
-		DEBUG_CUDA_CALL(cuCtxSynchronize());
+		DEBUG_CUDA_KERNEL_SYNC(cuCtxSynchronize());// <- Remove this to crash the video driver
 		cuParamSetv(kernels.singlestepKernel, fieldIndexParamOffset, (void*)&i, fieldIndexParamSize);
 		cuLaunchGrid(kernels.singlestepKernel, grid.x, grid.y);
 		i++;

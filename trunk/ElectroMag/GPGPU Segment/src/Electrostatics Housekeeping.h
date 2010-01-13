@@ -1,5 +1,28 @@
-#pragma once
+/***********************************************************************************************
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
+
+#ifndef _ELECTROSTATICS_HOUSEKEEPING_H
+#define _ELECTROSTATICS_HOUSEKEEPING_H
+
+
 #include "cuda_drvapi_dynlink.h"
+#include "Electrostatics.h"
+#include <cstdio>
 
 template<class T>
 struct CoalescedFieldLineArray
@@ -29,15 +52,21 @@ template<class T>
 struct PointChargeArray
 {
 	pointCharge<T> *chargeArr;
-	size_t charges, paddedSize;
+	size_t nCharges, paddedSize;
 };
 
 template<>
 struct PointChargeArray<CUdeviceptr>
 {
 	CUdeviceptr chargeArr;
-	size_t charges, paddedSize;
+	size_t nCharges, paddedSize;
 };
+
+// Macro for compacting timing calls
+#define TIME_CALL(call, time) QueryHPCTimer(&start);\
+			call;\
+			QueryHPCTimer(&end);\
+			time = ((double)(end - start) / freq);
 
 //////////////////////////////////////////////////////////////////////////////////
 ///\brief GPU memory allocation function
@@ -60,7 +89,7 @@ CUresult CalcField_GPUmalloc(
             CoalescedFieldLineArray<CUdeviceptr> *GPUlines, ///< [in,out]
             const unsigned int bDim,                        ///< [in]
             size_t *segments,                               ///< [out] Returns the number of segments in which the memory was split.
-            size_t* blocksPerSeg,                           ///< [out]
+            size_t *blocksPerSeg,                           ///< [out]
             size_t blockMultiplicity = 0                    ///< [in] Specifies a multiple to the number of blocks per kernel call that must be maintained.
         )
 {
@@ -75,7 +104,7 @@ CUresult CalcField_GPUmalloc(
         unsigned int free, total;
         cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
 	// Find the memory needed for the point charges
-	chargeData->paddedSize = ((chargeData->charges + bDim -1)/bDim) * bDim * sizeof(pointCharge<T>);
+	chargeData->paddedSize = ((chargeData->nCharges + bDim -1)/bDim) * bDim * sizeof(pointCharge<T>);
 	// Compute the available safe memory for the field lines
 	size_t freeRAM = (size_t)free - chargeData->paddedSize;	// Now find the amount remaining for the field lines
 	// FInd the total amount of memory required by the field lines
@@ -88,6 +117,7 @@ CUresult CalcField_GPUmalloc(
 	if(gridRAM > freeRAM)
 	{
 		// Otherwise, the allocation cannot continue with specified multiplicity
+		fprintf(stderr, " Memory allocation error on device: %u\n", currentGPU);
 		fprintf(stderr, " Cannot assign enough memory for requested multplicity: %u\n", blockMultiplicity);
 		fprintf(stderr, " Minimum of %uMB available video RAM needed, driver reported %uMB available\n",
 			(gridRAM + chargeData->paddedSize)/1024/1024, free/1024/1024);
@@ -147,32 +177,5 @@ CUresult CalcField_GPUmalloc(
 
 	return CUDA_SUCCESS;
 }
-//template<class T>
-CUresult CalcField_GPUfree(CUdeviceptr chargeData, CoalescedFieldLineArray<CUdeviceptr> *GPUlines)
-{
-	enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
-	CUresult errCode, lastBadError = CUDA_SUCCESS;
-        CUdevice currentGPU;  
-	errCode = cuCtxGetDevice(&currentGPU);
-	if(errCode != CUDA_SUCCESS) fprintf(stderr, " Error: %i getting device ID in function %s\n", errCode, __FUNCTION__);
-	errCode = cuMemFree(chargeData);
-	if(errCode != CUDA_SUCCESS)
-	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
-		lastBadError = errCode;
-	};
-	errCode = cuMemFree(GPUlines->coalLines.xyInterleaved);
-	if(errCode != CUDA_SUCCESS)
-	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
-		lastBadError = errCode;
-	};
-	errCode = cuMemFree(GPUlines->coalLines.z);
-	if(errCode != CUDA_SUCCESS)
-	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
-		lastBadError = errCode;
-	};
 
-	return lastBadError;
-}
+#endif//_ELECTROSTATICS_HOUSEKEEPING_H

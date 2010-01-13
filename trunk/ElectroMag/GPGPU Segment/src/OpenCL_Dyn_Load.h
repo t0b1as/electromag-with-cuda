@@ -1,5 +1,5 @@
 /***********************************************************************************************
-Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
  * This file is part of ElectroMag.
 
     ElectroMag is free software: you can redistribute it and/or modify
@@ -934,7 +934,7 @@ extern __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
 /// @return Returns CL_DEVICE_NOT_AVAILABLE if the OpenCL Library is not found
 /// @return CL_DEVICE_NOT_AVAILABLE  if a library function is not found.
 /// @return and CL_SUCCESS if all modules are loaded succesfully.
-extern cl_int CL_API_ENTRY clLibLoad();
+extern cl_int clLibLoad();
 
 
 #ifdef __cplusplus

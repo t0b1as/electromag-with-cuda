@@ -52,7 +52,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH)"
+				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -226,7 +226,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH)"
+				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
 				PreprocessorDefinitions="WIN32;NODEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -314,7 +314,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH)"
+				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="0"
@@ -403,7 +403,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH)"
+				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -488,7 +488,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH)"
+				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -670,35 +670,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\CUDA Definitions.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\CUDA Interop.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\Data Structures.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Electrodynamics.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Electrostatics.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Newton FEMA.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Vector.h"
 				>
 			</File>
 		</Filter>
@@ -959,20 +935,48 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="X-Compat"
+			Name="Common src"
 			>
 			<File
-				RelativePath=".\src\X-Compat\HPC timing.h"
+				RelativePath="..\common\src\CUDA Definitions.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\X-Compat\Memman.h"
+				RelativePath="..\common\src\Data Structures.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\X-Compat\Threading.h"
+				RelativePath="..\common\src\Electrodynamics.h"
 				>
 			</File>
+			<File
+				RelativePath="..\common\src\Electrostatics.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\src\Newton FEMA.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\src\Vector.h"
+				>
+			</File>
+			<Filter
+				Name="X-Compat"
+				>
+				<File
+					RelativePath="..\common\src\X-Compat\HPC timing.h"
+					>
+				</File>
+				<File
+					RelativePath="..\common\src\X-Compat\Memman.h"
+					>
+				</File>
+				<File
+					RelativePath="..\common\src\X-Compat\Threading.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\data.txt"

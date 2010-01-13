@@ -5,12 +5,15 @@ CUDA_TOOLKIT_PATH= /usr/local/cuda
 CUDA_LIB_PATH= $(CUDA_TOOLKIT_PATH)/lib
 CUDA_INC_PATH= $(CUDA_TOOLKIT_PATH)/include
 
+NVIDIA_SDK_ROOT= ~/NVIDIA_GPU_Computing_SDK
+OPENCL_INC_PATH= $(NVIDIA_SDK_ROOT)/OpenCL/common/inc
+
 # Generic target
 TARGET= Electromag
 TARGET_DIR = ./../bin/linux64
 
 #Include directories
-CXXINCLUDE += -I. -I./src -I $(CUDA_INC_PATH)
+CXXINCLUDE += -I. -I./src -I $(CUDA_INC_PATH) -I $(OPENCL_INC_PATH)
 
 #Library options
 LDFLAGS = -lpthread -lglut -lGLEW ../GPGPU\ Segment/libGPGPU_segment.a $(CUDA_LIB_PATH)/libcudart.so

@@ -1,14 +1,33 @@
+/***********************************************************************************************
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
+
 #include "CUDA Interop.h"
 #include "Config.h"
 #include <cstdio>
 #include "X-Compat/HPC timing.h"
 #include "X-Compat/Threading.h"
 #include "cuda_drvapi_dynlink.h"
-#include "GPU manager.h"
+#include "CUDA manager.h"
+#include "CUDA_Electrostatics.h"
 #include "Electrostatics Housekeeping.h"
 #include "Electrostatics Kernel Launch.h"
-#pragma warning(disable:181)
 
+#pragma warning(disable:181)
 
 /* x64 release compilation parameters
 "$(CUDA_BIN_PATH)\nvcc.exe" -maxrregcount 18 -keep -ccbin "$(VCInstallDir)bin" -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS
@@ -32,32 +51,19 @@ struct CalcFieldParams {
     perfPacket *perfData;
     bool useCurvature;
 };
-#define exit(x);// We like to catch errors, but not killing the app on error
-
-// Macro for compacting timing calls
-#define TIME_CALL(call, time) QueryHPCTimer(&start);\
-			call;\
-			QueryHPCTimer(&end);\
-			time = ((double)(end - start) / freq);
 
 #define CUDA_SAFE_CALL(call) errCode = call;\
 	if(errCode != CUDA_SUCCESS)\
-{std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
-return errCode;}
+	{\
+		std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
+		return errCode;\
+	}
 
-#define CUDA_SAFE_CALL_FREE_HOST(call) errCode = call;\
+#define CUDA_SAFE_CALL_FREE_ALL(call) errCode = call;\
 	if(errCode != CUDA_SUCCESS)\
 	{\
-		CUresult __macro_error;\
 		std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
-		if((__macro_error = cuMemFreeHost(hostVec.xyInterleaved))!= CUDA_SUCCESS)\
-		{\
-			std::cerr<<" Failed freeing host xy array after error. Code "<<__macro_error<<std::endl;\
-		}\
-        if((__macro_error = cuMemFreeHost(hostVec.z)) != CUDA_SUCCESS)\
-		{\
-			std::cerr<<" Failed freeing host  z array after error. Code "<<__macro_error<<std::endl;\
-		}\
+		CalcField_resourceRelease(gpuFieldStruct, gpuCharges, hostVec);\
 		return errCode;\
 	}
 
@@ -84,19 +90,23 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
     // Multiple of alignment for the number of threads
     const size_t segAlign = 256;
     // Determine the maximum number of parallel segments as the number of GPUs
-    const int segments = GlobalCudaManager.GetCompatibleDevNo();
+	const int segments = cuda::GlobalCudaManager.GetCompatibleDevNo();
     // Determine the number of lines to be processed by each GPU, and aling it to a multiple of segAlign
     // This prevents empty threads from being created on more than one GPU
     const size_t segSize = (((n / segments) + segAlign - 1) / segAlign) * segAlign;
     // Create data for performance info
     //size_t timingSize = CalcField_timingSteps::timingSize;
     perfData.stepTimes.Alloc(timingSize * segments);
+	perfData.stepTimes.Memset((T)0);
     // Create arrays
     CalcFieldParams<T> *parameters = new CalcFieldParams<T>[segments];
     perfPacket *perf = new perfPacket[segments];
     ThreadHandle *handles = new ThreadHandle[segments];
+	// Records if a specific functor has failed; If a functor failed, it can be transferred to a different device
+	bool *execFailed = new bool[segments];
+	int completedFunctors = 0;
     size_t remainingLines = n;
-    for (int i = 0; i < segments; i++) {
+    for (size_t i = 0; i < segments; i++) {
         // Initialize parameter arrays
         size_t segDataSize = (remainingLines < segSize) ? remainingLines : segSize;
         parameters[i].fieldLines = &fieldLines;
@@ -110,12 +120,12 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
         // And start processing the data
         // We need to first cast CalcField_functor to its own type before casting it to something else
         // because g++ is a complete utter twit, and will generate an error otherwise. Intel C++ works flawlessly
-        handles[i] = GlobalCudaManager.CallFunctor((unsigned long (*)(void*))
-                (unsigned long (*)(CalcFieldParams<T>*)) CalcField_functor<T>, &parameters[i], i);
+		handles[i] = cuda::GlobalCudaManager.CallFunctor((unsigned long (*)(void*))
+                (unsigned long (*)(CalcFieldParams<T>*)) CalcField_functor<T>, &parameters[i], (int)i);
         remainingLines -= segSize;
     }
     double FLOPS = 0;
-	unsigned long exitCode = 0;
+	unsigned long exitCode;
 	// Records the number of functors that have failed to execute correctly
 	unsigned long failedFunctors = 0;
     // Now wait for the threads to return
@@ -124,9 +134,13 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 		if(exitCode != CUDA_SUCCESS)
 		{
 			failedFunctors ++;
+			execFailed[i] = true;
 			continue;
 		}
+		execFailed[i] = false;
         FLOPS += perf[i].performance * perf[i].time;
+		// Recover individual kernel execution time
+		perf[i].stepTimes[kernelExec] = perf[i].time;
         // Recover timing information from each individual GPU
         for (size_t j = timingSize * i, k = 0; k < timingSize; j++, k++) {
             perfData.stepTimes[j] = perf[i].stepTimes[k];
@@ -134,6 +148,60 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
         // Find the GPU with the highest execution time
         if (perf[i].time > perfData.time) perfData.time = perf[i].time;
     }
+
+	// If some functors failed, it may have been due to several reasons. We consider the devices with
+	// failed functors unusable, and transfer the remaining data to devices that succeeded.
+	// If all functors have failed, then we consider processing the current dataset a lost cause.
+	// NOTE that this method is lees than optimal, considering that the contexts on succesfull devices
+	// will be recreated, and all page-locked and device memory realocated
+	// It is also possible that a segment that is transferred will fail on the new device.
+	// In that case the segment is not transferred to a third device for execution
+	if(failedFunctors && ((int)failedFunctors < segments))
+
+	{
+		// Find the first failed functor
+		// Use a for loop to limit the number of iterations; a bug in flagging the corect failed device
+		// may create an infinite loop with a while loop;
+		int failedID;
+		for(failedID = 0; failedID < segments; failedID++)
+		{
+			// Leave the loop once the first failed functor is identified
+			if(execFailed[failedID]) break;
+		}
+		// Do the same to find the first working device
+		int workingID;
+		for(workingID = 0; workingID < segments; workingID++)
+		{
+			// Leave the loop once the first failed functor is identified
+			if(!execFailed[workingID]) break;
+		}
+
+		std::cerr<<" Remapping functor "<<failedID<<" to device "<<workingID<<std::endl;
+		// Even though we may have several failed functors, and several working devices,
+		// having a failed functor can be considered an error condition,
+		// therefore we serialize relaunching functors for simplicity, on the first available device
+		// TODO: This behaviiour should be changed to a more performance-centered implementation
+		// Now call the functor on the new device
+		handles[failedID] = cuda::GlobalCudaManager.CallFunctor((unsigned long (*)(void*))
+               (unsigned long (*)(CalcFieldParams<T>*)) CalcField_functor<T>, &parameters[failedID], workingID);
+
+		exitCode = WaitForThread(handles[failedID]);
+		// If the functor succeded, we have one less failed functor
+		if(exitCode == CUDA_SUCCESS) failedFunctors-- ;
+		//else continue;	// Otherwise, do not record timing information
+
+		FLOPS += perf[failedID].performance * perf[failedID].time;
+		perf[failedID].stepTimes[kernelExec] = perf[failedID].time;
+		perf[workingID].stepTimes[kernelExec] += perf[failedID].time;
+		// Recover timing information from each individual GPU
+		for (size_t j = timingSize * failedID, k = 0; k < timingSize; j++, k++)
+		{
+			perfData.stepTimes[j] = perf[failedID].stepTimes[k];
+		}
+		// Since the execution is serialized, we add to the total time rather than check for the GPU with the highest execution time
+		perfData.time += perf[failedID].time;
+
+	}
 
     // Clean up
     delete parameters;
@@ -145,6 +213,98 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
     return failedFunctors;
 }
 
+
+CUresult CalcField_GPUfree(CUdeviceptr chargeData, CoalescedFieldLineArray<CUdeviceptr> *GPUlines)
+{
+	enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
+	CUresult errCode, lastBadError = CUDA_SUCCESS;
+        CUdevice currentGPU;  
+	errCode = cuCtxGetDevice(&currentGPU);
+	if(errCode != CUDA_SUCCESS) fprintf(stderr, " Error: %i getting device ID in function %s\n", errCode, __FUNCTION__);
+	errCode = cuMemFree(chargeData);
+	if(errCode != CUDA_SUCCESS)
+	{
+		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		lastBadError = errCode;
+	};
+	errCode = cuMemFree(GPUlines->coalLines.xyInterleaved);
+	if(errCode != CUDA_SUCCESS)
+	{
+		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		lastBadError = errCode;
+	};
+	errCode = cuMemFree(GPUlines->coalLines.z);
+	if(errCode != CUDA_SUCCESS)
+	{
+		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		lastBadError = errCode;
+	};
+
+	return lastBadError;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////
+///\brief Resource allocation function for current context
+//
+/// Allocates memory based on available resources
+/// Returns false if any memory allocation fails
+/// NOTES: This must be called from the same context
+/// that performs memory copies and calls the kernel
+///
+//////////////////////////////////////////////////////////////////////////////////
+template<class T>
+CUresult CalcField_resourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec,
+								 const unsigned int bDim, size_t *pKernSegments, size_t *pBlocksPerSeg)
+{
+	//----------------------------------GPU memory allocation----------------------------------//
+	// Device memory needs to be allocated before host memory, since the cuda functions will
+	// supply the pitch that needs to be used when allocating host memory
+
+	CUresult errCode;
+
+	errCode = CalcField_GPUmalloc<T>(&gpuCharges, &gpuFieldStruct, bDim, pKernSegments, pBlocksPerSeg);
+    if (errCode != CUDA_SUCCESS) return errCode;
+
+	const size_t xyPitch = gpuFieldStruct.xyPitch,
+		zPitch = gpuFieldStruct.zPitch,
+		steps = gpuFieldStruct.steps;
+
+    // With the known pitches, it is possible to allocate host memory that mimics the arangement of the device memory
+    //----------------------------------Page-locked allocation----------------------------------//
+    // Allocate the needed host memory
+	errCode = cuMemAllocHost((void**) &hostVec.xyInterleaved, (unsigned int) (xyPitch * steps));
+    if (errCode != CUDA_SUCCESS) {
+        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+		fprintf(stderr, " xy host malloc failed with %u MB request.\n", xyPitch * steps / 1024 / 1024);
+		return errCode;
+    }
+    if ((errCode = cuMemAllocHost((void**) & hostVec.z, (unsigned int)(zPitch * steps))) != CUDA_SUCCESS) {
+        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+		fprintf(stderr, " z host malloc failed.with %u MB request.\n", zPitch * steps / 1024 / 1024);
+		cuMemFreeHost(hostVec.xyInterleaved);
+        return errCode;
+    }
+	return CUDA_SUCCESS;
+}
+
+
+template<class T>
+CUresult CalcField_resourceRelease(CoalescedFieldLineArray<CUdeviceptr> gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec)
+{
+	CUresult errCode, lastBadErrCode = CUDA_SUCCESS;
+	errCode = CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+	if(errCode != CUDA_SUCCESS) lastBadErrCode = errCode;
+	errCode = cuMemFreeHost(hostVec.xyInterleaved);
+	if(errCode != CUDA_SUCCESS) lastBadErrCode = errCode;
+    errCode = cuMemFreeHost(hostVec.z);
+	if(errCode != CUDA_SUCCESS) lastBadErrCode = errCode;
+
+	return lastBadErrCode;
+}
+
+
+
 //////////////////////////////////////////////////////////////////////////////////
 /// The multi GPU kernel wrapper.
 ///
@@ -152,15 +312,15 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 ///////////////////////////////////////////////////////////////////////////////////
 template<class T>
 inline CUresult CalcField_wrap(
-            Array<Vector3<T> >& fieldLines,         ///< [in,out]Reference to array holding the field lines
-            Array<pointCharge<T> >& pointCharges,   ///< [in]   Reference to array holding the static charges
-            const size_t n,                         ///< [in]   Number of field lines in the array
-            const size_t startIndex,                ///< [in]   The index of the field line where processing should start
-            const size_t elements,                  ///< [in]   Number of field lines to process starting with 'startIndex'
-            const T resolution,                     ///< [in]   Resolution by which to divide the normalized lenght of a field vector.
+            Array<Vector3<T> >& fieldLines,         ///<[in,out]Reference to array holding the field lines
+            Array<pointCharge<T> >& pointCharges,   ///<[in]   Reference to array holding the static charges
+            const size_t n,                         ///<[in]   Number of field lines in the array
+            const size_t startIndex,                ///<[in]   The index of the field line where processing should start
+            const size_t elements,                  ///<[in]   Number of field lines to process starting with 'startIndex'
+            const T resolution,                     ///<[in]   Resolution by which to divide the normalized lenght of a field vector.
                                                     ///< If curvature is computed, then the resultant vector is divided by the resolution.
-            perfPacket& perfData,                   ///< [out]  Reference to packet to store performance information
-            const bool useCurvature                 ///< [in]   If true, the lenght of an individual vector is inversely proportional to the curvature of the line at that point
+            perfPacket& perfData,                   ///<[out]  Reference to packet to store performance information
+            const bool useCurvature                 ///<[in]   If true, the lenght of an individual vector is inversely proportional to the curvature of the line at that point
             )
 {
     //Used to mesure execution time
@@ -191,8 +351,7 @@ inline CUresult CalcField_wrap(
 		//Load the module containing the kernel
 	CUmodule electrostaticsModuleSinglestep, electrostaticsModuleMultistep;
 	TIME_CALL(
-	CUDA_SAFE_CALL(cuModuleLoad(&electrostaticsModuleSinglestep, "Electrostatics.cubin"));
-	CUDA_SAFE_CALL(cuModuleLoad(&electrostaticsModuleMultistep, "Electrostatics_Multistep.cubin"));
+	CUDA_SAFE_CALL(CalcField_loadModules(&electrostaticsModuleMultistep, &electrostaticsModuleSinglestep));
 
 	// Load the appropriate kernel
 	errCode = CalcField_selectKernel<T>(electrostaticsModuleMultistep, electrostaticsModuleSinglestep,
@@ -202,66 +361,32 @@ inline CUresult CalcField_wrap(
 	if(errCode != CUDA_SUCCESS) return errCode;
 	timing[kernelLoad] = time;
 
+	//--------------------------------Resource Allocation--------------------------------------//
+	size_t size;
+	const size_t steps = fieldLines.GetSize() / n;
+	const size_t p = pointCharges.GetSize();
+	PointChargeArray<CUdeviceptr> gpuCharges = {0, p, 0};
+	CoalescedFieldLineArray<CUdeviceptr> gpuFieldStruct = {
+		{0, 0}, elements, steps, 0, 0};
+	Vec3SOA<T> hostVec;
+	size_t kernSegments, blocksPerSeg;
+	
+	TIME_CALL(
+		errCode = CalcField_resourceAlloc<T>(gpuFieldStruct, gpuCharges, hostVec, bDim, &kernSegments, &blocksPerSeg)
+		,time);
+	if(errCode != CUDA_SUCCESS) return errCode;
+	timing[resAlloc] = time;
 
-    //--------------------------------Generic sizing determination--------------------------------------//
-    // Get sizing information
-    const size_t steps = fieldLines.GetSize() / n;
-    size_t size;
-
-    // Place Runtime checks here
-
-
-    //----------------------------------GPU memory allocation----------------------------------//
-	// Device memory needs to be allocated before host memory, since the cuda functions will
-	// supply the pitch that needs to be used when allocating host memory
-    const size_t p = pointCharges.GetSize();
-    PointChargeArray<CUdeviceptr> gpuCharges = {0, p, 0};
-    CoalescedFieldLineArray<CUdeviceptr> gpuFieldStruct = {
-        {0, 0}, elements, steps, 0, 0};
-    size_t kernSegments, blocksPerSeg;
-
-    TIME_CALL(errCode = CalcField_GPUmalloc<T>(&gpuCharges, &gpuFieldStruct, bDim, &kernSegments, &blocksPerSeg), time);
-    timing[devMalloc] = time;
-    if (errCode != CUDA_SUCCESS) {
-        fprintf(stderr, " GPU malloc failed. It really did.\n");
-        return errCode;
-    }
-
-    const size_t xyPitch = gpuFieldStruct.xyPitch;
+	const size_t xyPitch = gpuFieldStruct.xyPitch;
     const size_t zPitch = gpuFieldStruct.zPitch;
 
-    const size_t xyCompSize = (fieldLines.GetElemSize()*2) / 3;
+	const size_t xyCompSize = (fieldLines.GetElemSize()*2) / 3;
     const size_t zCompSize = (fieldLines.GetElemSize()) / 3;
 
-    // The kernel is interested in the element offset, not the pitch in bytes
-    // This prevents bullshitical pointer casts within the kernel
-    const size_t xyPitchOffset = xyPitch / xyCompSize;
-    const size_t zPitchOffset = zPitch / zCompSize;
-    // With the known pitches, it is possible to allocate host memory that mimics the arangement of the device memory
-    //----------------------------------Page-locked allocation----------------------------------//
-    Vec3SOA<T> hostVec;
-    // Allocate the needed host memory
-    TIME_CALL(
-            errCode = cuMemAllocHost((void**) &hostVec.xyInterleaved, (unsigned int) (xyPitch * steps));
-    if (errCode != CUDA_SUCCESS) {
-        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
-		fprintf(stderr, " xy host malloc failed with %u MB request.\n", xyPitch * steps / 1024 / 1024);
-		//fprintf(stderr, "\t: %s\n", cudaGetErrorString(errCode));
-		return errCode;
-    }
-    if ((errCode = cuMemAllocHost((void**) & hostVec.z, zPitch * steps)) != CUDA_SUCCESS) {
-        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
-		cuMemFreeHost(hostVec.xyInterleaved);
-		fprintf(stderr, " z host malloc failed.with %u MB request.\n", zPitch * steps / 1024 / 1024);
-		//fprintf(stderr, "\t: %s\n", cudaGetErrorString(errCode));
-        return errCode;
-    }, time);
-    timing[hostMalloc] = time;
-
-    //----------------------------------Copy point charges----------------------------------//
-    size = gpuCharges.charges * sizeof (pointCharge<T>);
-    CUDA_SAFE_CALL_FREE_HOST(cuMemcpyHtoD( gpuCharges.chargeArr, pointCharges.GetDataPointer(),(unsigned int) size));
-    CUDA_SAFE_CALL_FREE_HOST(cuMemsetD32( gpuCharges.chargeArr + (CUdeviceptr)(gpuCharges.charges * sizeof(pointCharge<T>)), 0,
+	//----------------------------------Copy point charges----------------------------------//
+    size = gpuCharges.nCharges * sizeof (pointCharge<T>);
+    CUDA_SAFE_CALL_FREE_ALL(cuMemcpyHtoD( gpuCharges.chargeArr, pointCharges.GetDataPointer(),(unsigned int) size));
+    CUDA_SAFE_CALL_FREE_ALL(cuMemsetD32( gpuCharges.chargeArr + (CUdeviceptr)(gpuCharges.nCharges * sizeof(pointCharge<T>)), 0,
             (unsigned int)((gpuCharges.paddedSize - size) * sizeof (T)) / 4));
 
     const size_t elementsPerSegment = blocksPerSeg * bDim;
@@ -280,12 +405,12 @@ inline CUresult CalcField_wrap(
             0, 0, CU_MEMORYTYPE_HOST, hostVec.xyInterleaved, 0, 0, (unsigned int)xyCompSize,
             (unsigned int)xyCompSize, (unsigned int)segmentElements
         };
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpy2D(&copyParams)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpy2D(&copyParams)), time);
         size = segmentElements*xyCompSize;
         timing[xyHtoH] += time;
 
         // Now transfer the data to the device
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpyHtoD((CUdeviceptr) gpuFieldStruct.coalLines.xyInterleaved, hostVec.xyInterleaved, (unsigned int)size)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpyHtoD((CUdeviceptr) gpuFieldStruct.coalLines.xyInterleaved, hostVec.xyInterleaved, (unsigned int)size)), time);
         timing[xyHtoD] += time;
 
         //--------------------------------------Copy z components-------------------------------------//
@@ -295,37 +420,37 @@ inline CUresult CalcField_wrap(
             0, 0, CU_MEMORYTYPE_HOST, hostVec.z, 0, 0, (unsigned int)zCompSize,
             (unsigned int)zCompSize, (unsigned int)segmentElements
         };
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpy2D(&copyParams2)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpy2D(&copyParams2)), time);
         size = segmentElements*zCompSize;
         timing[zHtoH] += time;
 
         // Now transfer the data to the device
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpyHtoD((CUdeviceptr) gpuFieldStruct.coalLines.z, hostVec.z, (unsigned int)size)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpyHtoD((CUdeviceptr) gpuFieldStruct.coalLines.z, hostVec.z, (unsigned int)size)), time);
         timing[zHtoD] += time;
 
 
-        //---------------------------------------Kernel Invocation-----------------------------------------//
+        //---------------------------------------Kernel Invocation-----------------------------------------//;
         QueryHPCTimer(&start);
         // Call the core function
         errCode = CalcField_core<T>(gpuFieldStruct.coalLines, (unsigned int) steps, (unsigned int) segmentElements,
-                (unsigned int) xyPitchOffset, (unsigned int) zPitchOffset, gpuCharges.chargeArr, (unsigned int) p, resolution, useMT, useCurvature,
+                (unsigned int) xyPitch, (unsigned int) zPitch, gpuCharges.chargeArr, (unsigned int) p, resolution, useMT, useCurvature,
 				kernels);
-        //errCode = cuCtxSynchronize();
         QueryHPCTimer(&end);
 		if(errCode == CUDA_ERROR_LAUNCH_TIMEOUT)
 		{
 			fprintf(stderr, "Kernel timed out.\n");
-			CUDA_SAFE_CALL_FREE_HOST(errCode);
+			CUDA_SAFE_CALL_FREE_ALL(errCode);
 		}
 		else if(errCode == CUDA_ERROR_UNKNOWN)
 		{
 			fprintf(stderr, "Unknown error in kernel\n");
 			// Usually, the context is no longer usable after such an error. 
+			CUDA_SAFE_CALL_FREE_ALL(errCode);
 			return errCode;
 		}
         else if(errCode != CUDA_SUCCESS){
 			fprintf(stderr, "Error: %i in kernel. Halting.\n", errCode);
-			CUDA_SAFE_CALL_FREE_HOST(errCode);
+			CUDA_SAFE_CALL_FREE_ALL(errCode);
         }
 
         // Add proper time
@@ -338,7 +463,7 @@ inline CUresult CalcField_wrap(
         Vector2<T> *xyDM = (Vector2<T>*) hostVec.xyInterleaved + elementsPerSegment;
         size = xyPitch*steps;
         // Get data from the device
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpyDtoH((void *)hostVec.xyInterleaved, gpuFieldStruct.coalLines.xyInterleaved, (unsigned int)size)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpyDtoH((void *)hostVec.xyInterleaved, gpuFieldStruct.coalLines.xyInterleaved, (unsigned int)size)), time);
         timing[xyDtoH] += time;
         timing[xySize] += size;
 
@@ -363,7 +488,7 @@ inline CUresult CalcField_wrap(
         T *zDM = hostVec.z + elementsPerSegment;
         size = zPitch*steps;
         // Get data back from device
-        TIME_CALL(CUDA_SAFE_CALL_FREE_HOST(cuMemcpyDtoH(hostVec.z, (CUdeviceptr) gpuFieldStruct.coalLines.z, (unsigned int)size)), time);
+        TIME_CALL(CUDA_SAFE_CALL_FREE_ALL(cuMemcpyDtoH(hostVec.z, (CUdeviceptr) gpuFieldStruct.coalLines.z, (unsigned int)size)), time);
         timing[zDtoH] += time;
         timing[zSize] += size;
 
@@ -386,9 +511,7 @@ inline CUresult CalcField_wrap(
     //-----------------------------------------Cleanup-------------------------------------------//
     // Free device memory
     TIME_CALL(
-            CUDA_SAFE_CALL_FREE_HOST(CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct));
-            CUDA_SAFE_CALL(cuMemFreeHost(hostVec.xyInterleaved));
-            CUDA_SAFE_CALL(cuMemFreeHost(hostVec.z));
+		CalcField_resourceRelease(gpuFieldStruct, gpuCharges, hostVec)
             , time);
     timing[mFree] = time;
 
@@ -407,8 +530,21 @@ export library
  */////////////////////////////////////////////////////////////////////////////////
 
 int CalcField(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
-        size_t n, float resolution, perfPacket& perfData, bool useCurvature) {
-    return CalcField_multiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
+        size_t n, float resolution, perfPacket& perfData, bool useCurvature)
+{
+    //return CalcField_multiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
+	
+	CudaElectrosFunctor<float> multiGpuFunctor;
+	CudaElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+	perfData.time =1.0f;
+	multiGpuFunctor.BindData((void*) &dataParams);
+
+	unsigned long retVal = multiGpuFunctor.Run();
+
+	retVal;
+
+	return 0;
+	/**/
 };
 
 int CalcField(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,

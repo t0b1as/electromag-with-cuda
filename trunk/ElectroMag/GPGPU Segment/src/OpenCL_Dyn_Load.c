@@ -1,5 +1,5 @@
 /***********************************************************************************************
-Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
  * This file is part of ElectroMag.
 
     ElectroMag is free software: you can redistribute it and/or modify
@@ -99,7 +99,7 @@ __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
 
     typedef HMODULE CL_LIBRARY;
 
-    cl_int LOAD_LIBRARY(CL_LIBRARY *pInstance)
+    cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
     {
         *pInstance = LoadLibrary(__ClLibName);
         if (*pInstance == NULL)
@@ -125,7 +125,7 @@ __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
 
     typedef void * CL_LIBRARY;
 
-    cl_int LOAD_LIBRARY(CL_LIBRARY *pInstance)
+    cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
     {
         *pInstance = dlopen(__ClLibName, RTLD_NOW);
         if (*pInstance == NULL)
@@ -142,11 +142,11 @@ __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
 #endif
 
 
-cl_int CL_API_ENTRY clLibLoad()
+cl_int CL_API_CALL clLibLoad()
 {
     CL_LIBRARY ClLib;
     cl_int result;
-    result = LOAD_LIBRARY(&ClLib);
+    result = CL_LOAD_LIBRARY(&ClLib);
     if(result != CL_SUCCESS)
     {
         return result;
