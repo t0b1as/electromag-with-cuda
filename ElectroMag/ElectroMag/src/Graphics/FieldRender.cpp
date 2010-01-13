@@ -1,3 +1,20 @@
+/***********************************************************************************************
+Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************************************/
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 GL/glew.h and GL/glut.h are found in the nVidia CUDA SDK
 For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.dll and glew64.dll in the application path
@@ -6,7 +23,7 @@ For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.d
 #include "GL/freeglut.h"
 #include "GL/glutExtra.h"
 #include "FieldRender.h"
-#include "./../X-Compat/HPC timing.h"
+#include "X-Compat/HPC timing.h"
 #include <stdio.h> // for sprintf()
 
 #pragma warning(disable:1786)
@@ -19,9 +36,11 @@ GLpacket<float> FieldRender::GLdata;
 GLuint FieldRender::chargesVBO;
 GLuint FieldRender::colorVBO;
 GLuint *FieldRender::linesVBOs;
+size_t FieldRender::nrLinesVBO;
 GLfloat *FieldRender::colors;
 size_t FieldRender::lineSkip;
 size_t FieldRender::RenderData::bufferedLines;
+double FieldRender::perfGFLOP;
 
 static __int64 HPCfreq;
 // DEBUG
@@ -29,6 +48,68 @@ static __int64 HPCfreq;
 Vector2<GLint> winDim = {250, 250};
 GLdouble Zmin = 1, Zmax = 10000;
 
+FieldRender::FieldRender()
+{
+	PM = Perspective;
+	lineSkip = 1;
+	nrLinesVBO = 0;
+	perfGFLOP = 0;
+};
+
+FieldRender::~FieldRender()
+{
+	//glDeleteBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
+	//__glewDeleteBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
+}
+void FieldRender::DrawOverlay()//const Camera mainCam)
+{
+	// draw menus
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0, winDim.x, winDim.y, 0);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	// Draw Background
+	GLfloat bgHeight = 110, bgWidth = 176;
+	glColor4f(0.0, 0.4, 0.0, 0.5);
+	glBegin(GL_POLYGON);
+	glVertex3f(0,0,0);
+	glVertex3f(bgWidth, 0,0);
+	glVertex3f(bgWidth,bgHeight,0);
+	glVertex3f(0,bgHeight,0);
+	glEnd();
+	// Draw the G-Tech logo
+	glLoadIdentity();
+	glColor3f(1.0, 0.0, 0.0);
+	PrintGlutString("G-Tech", GLUT_BITMAP_TIMES_ROMAN_24, 40, 40);
+	char fovString[20];
+	sprintf(fovString, "FOV: %.0f", mainCam.GetFOV());
+	PrintGlutString(fovString, GLUT_BITMAP_HELVETICA_12, 20, 60);
+	char camPosStr[32];
+	sprintf(camPosStr, "Pos:<%.0f, %.0f, %.0f>", mainCam.GetPosition().x, mainCam.GetPosition().y, mainCam.GetPosition().z);
+	PrintGlutString(camPosStr, GLUT_BITMAP_HELVETICA_12, 20, 75);
+	char perf[512];
+	sprintf(perf, "Perf: %4.0f GFLOP/s", perfGFLOP);
+	PrintGlutString(perf, GLUT_BITMAP_HELVETICA_12, 20, 105);
+
+	// Compute and print FPS
+	static __int64 start = 0;
+	static __int64 end = 0;
+	static size_t frames = 0;
+	static char fps[32];
+	QueryHPCTimer(&end);
+	double elapsed = (double)(end - start)/HPCfreq;
+	if( (elapsed > 1.0) && frames)
+	{
+		sprintf(fps, "FPS: %.1f", (double)frames/elapsed);
+		frames = 0;
+		start = end;
+	}
+	frames++;
+	PrintGlutString(fps, GLUT_BITMAP_HELVETICA_12, 20, 90);
+
+}
 
 void FieldRender::fieldDisplay()
 {
@@ -99,9 +180,9 @@ void FieldRender::fieldDisplay()
 	glVertex3f(176,99,0);
 	glVertex3f(0,99,0);
 	glEnd();
-	glLoadIdentity();
-	glColor3f(1.0, 0.0, 0.0);
-	PrintGlutString("G-Tech", GLUT_BITMAP_TIMES_ROMAN_24, 40, 40);
+	
+	// Draw infobar
+	DrawOverlay();//mainCam);
 
 	// Flush the buffer to ensure everything is displayed correctly
 	glutSwapBuffers();
@@ -132,6 +213,8 @@ void FieldRender::Start()
 	// Now release tempBuf
 	tempBuf = 0;
 
+	nrLinesVBO = 0;
+
 	// Enable VBOs if supported and copy data to GPU, and use VBOs for increased performance
 	if(VBOsupported)
 	{
@@ -147,18 +230,18 @@ void FieldRender::Start()
 
 
 		// Create VBO index array
-		const size_t dispElems = (elements + lineSkip - 1)/lineSkip;
-		RenderData::bufferedLines = dispElems;
-		linesVBOs = new GLuint[dispElems];
+		nrLinesVBO = (elements + lineSkip - 1)/lineSkip;
+		RenderData::bufferedLines = nrLinesVBO;
+		linesVBOs = new GLuint[nrLinesVBO];
 		tempBuf = new Vector3<float>[elemLen];
 		// Create the buffers
-		glGenBuffersARB(dispElems, linesVBOs);			
+		__glewGenBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
 		// can replace __glew* with gl*
 		// Copy all the field lines to the GPU in separate arrays
 		// Since the field lines comes arranged in lines by steps, the memory arrangement will be n0_0 n1_0 n2_0 n3_0 n4_0... n0_1 n1_1 n2_1 n3_1 n4_1
 		// In order to display the data, we need it in n0_0, n0_1, n0_2... form, so we need to copy the data to the temporary buffer.
 		// This is easily done by setting the base to ni_0, and for each element adding an offset of GLdata.nlines.
-		for(int i = 0; i < dispElems; i++)
+		for(int i = 0; i < nrLinesVBO; i++)
 		{
 			// Set the base to ni_0
 			Vector3<float> *temp = GLdata.lines->GetDataPointer() + i*lineSkip;
@@ -183,7 +266,7 @@ void FieldRender::Start()
 		// Finally, override the regular display function to use VBOs
 		glutDisplayFunc(fieldDisplayVBO);
 	}
-	else fprintf(stderr, "Warning: Unable to use VBO extensions. Rendering may be painfully slow!!!\n");
+	else fprintf(stderr, "Warning: GL_ARB_vertex_buffer_object extension not supported. Rendering may be painfully slow!!!\n");
 	// Get timer frequency
 	QueryHPCFrequency(&HPCfreq);
 	// Now that data initialization is complete, start glut
@@ -410,52 +493,14 @@ void FieldRender::fieldDisplayVBO()
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, linesVBOs[i]);
 		glVertexPointer(3 , GL_FLOAT, 0, 0);
-		glDrawArrays(GL_LINE_STRIP, 0, GLdata.lineLen);
+		glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)GLdata.lineLen);
 	}
 	glDisableClientState(GL_COLOR_ARRAY);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-	// draw menus
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, winDim.x, winDim.y, 0);
 	
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	// Draw the G-Tech logo
-	glColor4f(0.0, 0.4, 0.0, 0.5);
-	glBegin(GL_POLYGON);
-	glVertex3f(0,0,0);
-	glVertex3f(176, 0,0);
-	glVertex3f(176,99,0);
-	glVertex3f(0,99,0);
-	glEnd();
-	glLoadIdentity();
-	glColor3f(1.0, 0.0, 0.0);
-	PrintGlutString("G-Tech", GLUT_BITMAP_TIMES_ROMAN_24, 40, 40);
-	char fovString[20];
-	sprintf(fovString, "FOV: %.0f", mainCam.GetFOV());
-	PrintGlutString(fovString, GLUT_BITMAP_HELVETICA_12, 20, 60);
-	char camPosStr[32];
-	sprintf(camPosStr, "Pos:<%.0f, %.0f, %.0f>", mainCam.GetPosition().x, mainCam.GetPosition().y, mainCam.GetPosition().z);
-	PrintGlutString(camPosStr, GLUT_BITMAP_HELVETICA_12, 20, 75);
 
-	// Compute and print FPS
-	static __int64 start = 0;
-	static __int64 end = 0;
-	static size_t frames = 0;
-	static char fps[32];
-	QueryHPCTimer(&end);
-	double elapsed = (double)(end - start)/HPCfreq;
-	if( (elapsed > 1.0) && frames)
-	{
-		sprintf(fps, "FPS: %.1f", (double)frames/elapsed);
-		frames = 0;
-		start = end;
-	}
-	frames++;
-	PrintGlutString(fps, GLUT_BITMAP_HELVETICA_12, 20, 90);
+	// Draw infobar in top-right corner
+	DrawOverlay();//mainCam);
 
 	// Flush the buffer to ensure everything is displayed correctly
 	glutSwapBuffers();

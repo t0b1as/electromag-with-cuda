@@ -1,9 +1,24 @@
 /***********************************************************************************************
-	Electromag - Electomagnestism simulation application using CUDA accelerated computing
-	Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
-See Electromag.cpp for license
+Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+ * This file is part of ElectroMag.
+
+    ElectroMag is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    ElectroMag is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-#pragma once
+
+#ifndef _FRONTENDGUI_H
+#define _FRONTENDGUI_H
+
 #include "Renderer.h"
 
 
@@ -40,3 +55,6 @@ private:
 };
 
 static FrontendGUI MainGUI;
+
+#endif _FRONTENDGUI_H
+
