@@ -95,7 +95,7 @@ int Array<T>::Alloc(size_t size)
 	{
 		//itsAllocation = itsData = new T[size];
 		// Since we use free() in the destructor instead of delete[], it is safer to use malloc() here
-		itsAllocation = itsData = (T*)malloc(size*sizeof(T));
+		itsAllocation = itsData = (T*)malloc(size * sizeof(T) );//new T[size];
 		if(itsAllocation != 0)
 		{
 			itsSize = size;
@@ -138,7 +138,6 @@ void Array<T>::Free()
 {
 	if(itsSize)
 	{
-		//delete [] itsData;
 		free(itsAllocation);
 	}
 	itsSize = 0;
