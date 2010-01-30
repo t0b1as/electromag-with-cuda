@@ -1,5 +1,0 @@
-libglut.so.3	-from libglut-devel
-libGLEW.so.1.5	-from libglew-devel
-
-libguide.so(Intel Compiler)
-libcudard.so.2(CUDA)
