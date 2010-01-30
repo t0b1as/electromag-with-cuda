@@ -108,7 +108,7 @@ private:
 
 };
 
-static FieldRender FieldDisp;
+extern FieldRender FieldDisp;
 
 #endif//_FIELDRENDER_H
 

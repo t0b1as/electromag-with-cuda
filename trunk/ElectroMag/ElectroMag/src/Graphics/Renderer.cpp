@@ -15,7 +15,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-#include "GL/freeglut.h"
+#include "GL/freeglut_dynlink.h"
 #include "Renderer.h"
 
 unsigned int GLRenderer::GlRenderers  = 0;
@@ -24,17 +24,40 @@ bool GLRenderer::glutIsInit = false;
 
 void Renderer::StartAsync()
 {
+	unsigned long threadID;
     if(!rendererThread)
-        CreateNewThread((unsigned long (*)(void*))&Renderer::StartAsyncThreadFunc, this, &rendererThread);
+	{
+        Threads::CreateNewThread((unsigned long (*)(void*))&Renderer::StartAsyncThreadFunc, this, &rendererThread, &threadID);
+		Threads::SetThreadName(threadID, "Renderer");
+	}
 }
 
 void Renderer::KillAsync()
 {
     if(rendererThread)
-        KillThread(rendererThread);
+        Threads::KillThread(rendererThread);
 }
+
+#include <iostream>
+bool GLRenderer::glutLibIsLoaded = false;
+
 GLRenderer::GLRenderer()
 {
+	FG_LibLoadCode errCode;
+	// Have we loaded the glut library?
+	if(!this->glutLibIsLoaded)
+	{
+		errCode = glutLoadLibrary();
+		if(errCode != FG_SUCCESS)
+		{
+			// We couldn't load freeglut
+			std::cerr<<" Could not load freeglut library. Rendering disabled."<<std::endl;
+		}
+		else
+		{
+			this->glutLibIsLoaded = true;
+		}
+	}
 	isActive = false;
 }
 
@@ -51,9 +74,14 @@ GLRenderer::~GLRenderer()
 		isActive = false;
 	}
 }
-                                                                                                                        
+                                                                                                                      
 void GLRenderer::Init()
 {
+	if(!this->glutLibIsLoaded)
+	{
+		throw(" 'freeglut' module is not loaded");
+		return;
+	}
 	if(isActive) return; // Do nothing
 
 	if(GlRenderers >= maxGlRenderers)

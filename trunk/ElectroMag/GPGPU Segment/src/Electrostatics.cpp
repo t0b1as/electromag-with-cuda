@@ -39,7 +39,8 @@ x64 debug parameters
 -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\ -I"$(CUDA_INC_PATH)" -I"$(CUDA_SDK_INC_PATH)" -I./
 -o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj Electrostatics.cu
  */
-
+namespace CalcFieldEs
+{
 template<class T>
 struct CalcFieldParams {
     Array<Vector3<T> > *fieldLines;
@@ -63,17 +64,18 @@ struct CalcFieldParams {
 	if(errCode != CUDA_SUCCESS)\
 	{\
 		std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
-		CalcField_resourceRelease(gpuFieldStruct, gpuCharges, hostVec);\
+		ResourceRelease(gpuFieldStruct, gpuCharges, hostVec);\
 		return errCode;\
 	}
 
 template<class T>
-inline CUresult CalcField_wrap(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
+inline CUresult Wrap(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
 const size_t n, const size_t startIndex, const size_t elements, const T resolution, perfPacket& perfData, bool useCurvature);
 
 template<class T>
-unsigned long CalcField_functor(CalcFieldParams<T> *params) {
-    return (unsigned long) CalcField_wrap<T> (*params->fieldLines, *params->pointCharges,
+unsigned long AsyncFunctor(CalcFieldParams<T> *params)
+{
+    return (unsigned long)  Wrap<T> (*params->fieldLines, *params->pointCharges,
             params->n, params->startIndex, params->elements, params->resolution, *params->perfData, params->useCurvature);
 }
 
@@ -84,7 +86,7 @@ unsigned long CalcField_functor(CalcFieldParams<T> *params) {
 //////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-inline unsigned long CalcField_multiGPU(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
+inline unsigned long MultiGPU(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
 const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 {
     // Multiple of alignment for the number of threads
@@ -101,7 +103,7 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
     // Create arrays
     CalcFieldParams<T> *parameters = new CalcFieldParams<T>[segments];
     perfPacket *perf = new perfPacket[segments];
-    ThreadHandle *handles = new ThreadHandle[segments];
+	Threads::ThreadHandle *handles = new Threads::ThreadHandle[segments];
 	// Records if a specific functor has failed; If a functor failed, it can be transferred to a different device
 	bool *execFailed = new bool[segments];
 	int completedFunctors = 0;
@@ -121,7 +123,7 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
         // We need to first cast CalcField_functor to its own type before casting it to something else
         // because g++ is a complete utter twit, and will generate an error otherwise. Intel C++ works flawlessly
 		handles[i] = cuda::GlobalCudaManager.CallFunctor((unsigned long (*)(void*))
-                (unsigned long (*)(CalcFieldParams<T>*)) CalcField_functor<T>, &parameters[i], (int)i);
+                (unsigned long (*)(CalcFieldParams<T>*)) AsyncFunctor<T>, &parameters[i], (int)i);
         remainingLines -= segSize;
     }
     double FLOPS = 0;
@@ -130,7 +132,7 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 	unsigned long failedFunctors = 0;
     // Now wait for the threads to return
     for (int i = 0; i < segments; i++) {
-        exitCode = WaitForThread(handles[i]);
+        exitCode = Threads::WaitForThread(handles[i]);
 		if(exitCode != CUDA_SUCCESS)
 		{
 			failedFunctors ++;
@@ -183,9 +185,9 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 		// TODO: This behaviiour should be changed to a more performance-centered implementation
 		// Now call the functor on the new device
 		handles[failedID] = cuda::GlobalCudaManager.CallFunctor((unsigned long (*)(void*))
-               (unsigned long (*)(CalcFieldParams<T>*)) CalcField_functor<T>, &parameters[failedID], workingID);
+               (unsigned long (*)(CalcFieldParams<T>*)) AsyncFunctor<T>, &parameters[failedID], workingID);
 
-		exitCode = WaitForThread(handles[failedID]);
+		exitCode = Threads::WaitForThread(handles[failedID]);
 		// If the functor succeded, we have one less failed functor
 		if(exitCode == CUDA_SUCCESS) failedFunctors-- ;
 		//else continue;	// Otherwise, do not record timing information
@@ -214,7 +216,7 @@ const size_t n, const T resolution, perfPacket& perfData, bool useCurvature)
 }
 
 
-CUresult CalcField_GPUfree(CUdeviceptr chargeData, CoalescedFieldLineArray<CUdeviceptr> *GPUlines)
+CUresult GPUfree(CUdeviceptr chargeData, CoalescedFieldLineArray<CUdeviceptr> *GPUlines)
 {
 	enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
 	CUresult errCode, lastBadError = CUDA_SUCCESS;
@@ -254,8 +256,8 @@ CUresult CalcField_GPUfree(CUdeviceptr chargeData, CoalescedFieldLineArray<CUdev
 ///
 //////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CUresult CalcField_resourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec,
-								 const unsigned int bDim, size_t *pKernSegments, size_t *pBlocksPerSeg)
+CUresult ResourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec,
+								 const unsigned int bDim, const unsigned int bX, size_t *pKernSegments, size_t *pBlocksPerSeg)
 {
 	//----------------------------------GPU memory allocation----------------------------------//
 	// Device memory needs to be allocated before host memory, since the cuda functions will
@@ -263,24 +265,25 @@ CUresult CalcField_resourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldS
 
 	CUresult errCode;
 
-	errCode = CalcField_GPUmalloc<T>(&gpuCharges, &gpuFieldStruct, bDim, pKernSegments, pBlocksPerSeg);
+	errCode = GPUmalloc<T>(&gpuCharges, &gpuFieldStruct, bDim, bX, pKernSegments, pBlocksPerSeg);
     if (errCode != CUDA_SUCCESS) return errCode;
 
 	const size_t xyPitch = gpuFieldStruct.xyPitch,
 		zPitch = gpuFieldStruct.zPitch,
-		steps = gpuFieldStruct.steps;
+		steps = gpuFieldStruct.nSteps;
 
     // With the known pitches, it is possible to allocate host memory that mimics the arangement of the device memory
     //----------------------------------Page-locked allocation----------------------------------//
     // Allocate the needed host memory
 	errCode = cuMemAllocHost((void**) &hostVec.xyInterleaved, (unsigned int) (xyPitch * steps));
-    if (errCode != CUDA_SUCCESS) {
-        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+    if (errCode != CUDA_SUCCESS)
+	{
+        GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
 		fprintf(stderr, " xy host malloc failed with %u MB request.\n", xyPitch * steps / 1024 / 1024);
 		return errCode;
     }
     if ((errCode = cuMemAllocHost((void**) & hostVec.z, (unsigned int)(zPitch * steps))) != CUDA_SUCCESS) {
-        CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+        GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
 		fprintf(stderr, " z host malloc failed.with %u MB request.\n", zPitch * steps / 1024 / 1024);
 		cuMemFreeHost(hostVec.xyInterleaved);
         return errCode;
@@ -290,10 +293,10 @@ CUresult CalcField_resourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldS
 
 
 template<class T>
-CUresult CalcField_resourceRelease(CoalescedFieldLineArray<CUdeviceptr> gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec)
+CUresult ResourceRelease(CoalescedFieldLineArray<CUdeviceptr> gpuFieldStruct, PointChargeArray<CUdeviceptr> &gpuCharges, Vec3SOA<T> &hostVec)
 {
 	CUresult errCode, lastBadErrCode = CUDA_SUCCESS;
-	errCode = CalcField_GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
+	errCode = GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
 	if(errCode != CUDA_SUCCESS) lastBadErrCode = errCode;
 	errCode = cuMemFreeHost(hostVec.xyInterleaved);
 	if(errCode != CUDA_SUCCESS) lastBadErrCode = errCode;
@@ -311,7 +314,7 @@ CUresult CalcField_resourceRelease(CoalescedFieldLineArray<CUdeviceptr> gpuField
 /// Procesess only 'elements' lines starting with the one pointed by 'startIndex'
 ///////////////////////////////////////////////////////////////////////////////////
 template<class T>
-inline CUresult CalcField_wrap(
+inline CUresult Wrap(
             Array<Vector3<T> >& fieldLines,         ///<[in,out]Reference to array holding the field lines
             Array<pointCharge<T> >& pointCharges,   ///<[in]   Reference to array holding the static charges
             const size_t n,                         ///<[in]   Number of field lines in the array
@@ -331,6 +334,7 @@ inline CUresult CalcField_wrap(
     // Must be multithreaded when using the curvature kernel
     const bool useMT = useCurvature ? true : true; //(elements < (BLOCK_DIM_MT * MT_OCCUPANCY *112))?true:false;
     const unsigned int bDim = useMT ? BLOCK_DIM_MT : BLOCK_X;
+	const unsigned int bX   = useMT ? BLOCK_X_MT : BLOCK_X;
 
     // We want to record the time it takes for each step to complete, but we do not know for sure whether enough memory
     // has been allocated in perfData.stepTimes. If enough memory is not available, we can't use the pointer supplied by
@@ -372,7 +376,7 @@ inline CUresult CalcField_wrap(
 	size_t kernSegments, blocksPerSeg;
 	
 	TIME_CALL(
-		errCode = CalcField_resourceAlloc<T>(gpuFieldStruct, gpuCharges, hostVec, bDim, &kernSegments, &blocksPerSeg)
+		errCode = ResourceAlloc<T>(gpuFieldStruct, gpuCharges, hostVec, bDim, bX, &kernSegments, &blocksPerSeg)
 		,time);
 	if(errCode != CUDA_SUCCESS) return errCode;
 	timing[resAlloc] = time;
@@ -389,7 +393,7 @@ inline CUresult CalcField_wrap(
     CUDA_SAFE_CALL_FREE_ALL(cuMemsetD32( gpuCharges.chargeArr + (CUdeviceptr)(gpuCharges.nCharges * sizeof(pointCharge<T>)), 0,
             (unsigned int)((gpuCharges.paddedSize - size) * sizeof (T)) / 4));
 
-    const size_t elementsPerSegment = blocksPerSeg * bDim;
+    const size_t elementsPerSegment = blocksPerSeg * bX;
     perfData.time = 0;
 
     //----------------------------------The BIG Loop----------------------------------//
@@ -432,7 +436,7 @@ inline CUresult CalcField_wrap(
         //---------------------------------------Kernel Invocation-----------------------------------------//;
         QueryHPCTimer(&start);
         // Call the core function
-        errCode = CalcField_core<T>(gpuFieldStruct.coalLines, (unsigned int) steps, (unsigned int) segmentElements,
+        errCode = Core<T>(gpuFieldStruct.coalLines, (unsigned int) steps, (unsigned int) segmentElements,
                 (unsigned int) xyPitch, (unsigned int) zPitch, gpuCharges.chargeArr, (unsigned int) p, resolution, useMT, useCurvature,
 				kernels);
         QueryHPCTimer(&end);
@@ -472,8 +476,10 @@ inline CUresult CalcField_wrap(
         // indexing rather than assune vector indexing will occur; this will prevent future gray-hair bugs in this section
         char* pLineElem = (char*) linesBase + n * sizeof (Vector3<float>);
         TIME_CALL(
-        for (size_t j = 1; j < steps; j++) {
-            for (size_t i = 0; i < segmentElements; i++) {
+        for (size_t j = 1; j < steps; j++)
+		{
+            for (size_t i = 0; i < segmentElements; i++)
+			{
                 *(Vector2<T>*)(pLineElem + i * linesPitch) = xyDM[i];
             }
             xyDM = (Vector2<T>*)((char*) xyDM + xyPitch);
@@ -497,8 +503,10 @@ inline CUresult CalcField_wrap(
         // Make pLineElem point to the first z element
         pLineElem = (char *) linesBase + n * sizeof (Vector3<float>) + xyCompSize;
         TIME_CALL(
-        for (size_t j = 1; j < steps; j++) {
-            for (size_t i = 0; i < segmentElements; i++) {
+        for (size_t j = 1; j < steps; j++)
+		{
+            for (size_t i = 0; i < segmentElements; i++)
+			{
                 *(T*) (pLineElem + i * linesPitch) = zDM[i];
             }
             zDM = (T*) ((char*) zDM + zPitch);
@@ -511,7 +519,7 @@ inline CUresult CalcField_wrap(
     //-----------------------------------------Cleanup-------------------------------------------//
     // Free device memory
     TIME_CALL(
-		CalcField_resourceRelease(gpuFieldStruct, gpuCharges, hostVec)
+		ResourceRelease(gpuFieldStruct, gpuCharges, hostVec)
             , time);
     timing[mFree] = time;
 
@@ -521,6 +529,8 @@ inline CUresult CalcField_wrap(
     perfData.performance = (double) FLOPs / perfData.time / 1E9; // Convert from FLOP/s to GFLOP/s
     return CUDA_SUCCESS;
 }
+
+}//namespace CalcFieldEs
 
 
 /*////////////////////////////////////////////////////////////////////////////////
@@ -532,24 +542,23 @@ export library
 int CalcField(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
         size_t n, float resolution, perfPacket& perfData, bool useCurvature)
 {
-    //return CalcField_multiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
+	//return CalcFieldEs::MultiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
 	
 	CudaElectrosFunctor<float> multiGpuFunctor;
 	CudaElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-	perfData.time =1.0f;
 	multiGpuFunctor.BindData((void*) &dataParams);
 
 	unsigned long retVal = multiGpuFunctor.Run();
 
-	retVal;
+	return retVal;
 
-	return 0;
 	/**/
 };
 
 int CalcField(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
-        size_t n, double resolution, perfPacket& perfData, bool useCurvature) {
-    return CalcField_wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);
+        size_t n, double resolution, perfPacket& perfData, bool useCurvature)
+{
+	return CalcFieldEs::Wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);
 };
 
 

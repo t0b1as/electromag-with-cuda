@@ -54,7 +54,7 @@ private:
     static double * volatile calcProgress;
 };
 
-static FrontendGUI MainGUI;
+extern FrontendGUI MainGUI;
 
 #endif _FRONTENDGUI_H
 

@@ -19,8 +19,8 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 GL/glew.h and GL/glut.h are found in the nVidia CUDA SDK
 For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.dll and glew64.dll in the application path
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-#include <GL/glew.h>
-#include "GL/freeglut.h"
+#include "GL/glew_static.h"
+#include "GL/freeglut_dynlink.h"
 #include "GL/glutExtra.h"
 #include "FieldRender.h"
 #include "X-Compat/HPC timing.h"
@@ -41,6 +41,8 @@ GLfloat *FieldRender::colors;
 size_t FieldRender::lineSkip;
 size_t FieldRender::RenderData::bufferedLines;
 double FieldRender::perfGFLOP;
+
+FieldRender FieldDisp;
 
 static __int64 HPCfreq;
 // DEBUG
@@ -89,7 +91,7 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 	char camPosStr[32];
 	sprintf(camPosStr, "Pos:<%.0f, %.0f, %.0f>", mainCam.GetPosition().x, mainCam.GetPosition().y, mainCam.GetPosition().z);
 	PrintGlutString(camPosStr, GLUT_BITMAP_HELVETICA_12, 20, 75);
-	char perf[512];
+	char perf[2048];
 	sprintf(perf, "Perf: %4.0f GFLOP/s", perfGFLOP);
 	PrintGlutString(perf, GLUT_BITMAP_HELVETICA_12, 20, 105);
 
@@ -236,6 +238,9 @@ void FieldRender::Start()
 		tempBuf = new Vector3<float>[elemLen];
 		// Create the buffers
 		__glewGenBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
+		GLenum johnErr;
+		if((johnErr = glGetError()) != GL_NO_ERROR)
+			return;
 		// can replace __glew* with gl*
 		// Copy all the field lines to the GPU in separate arrays
 		// Since the field lines comes arranged in lines by steps, the memory arrangement will be n0_0 n1_0 n2_0 n3_0 n4_0... n0_1 n1_1 n2_1 n3_1 n4_1
@@ -508,7 +513,16 @@ void FieldRender::fieldDisplayVBO()
 
 void FieldRender::AsyncStartFunc()
 {
-	Init();
+	try
+	{
+		Init();
+	}
+	catch(char *errString)
+	{
+		fprintf(stderr, " Initialing field rendering failed.\n %s\n", errString);
+		shouldIQuit = true;
+		return;
+	}
 	SetLineSkip(20);
 	Start();
 }

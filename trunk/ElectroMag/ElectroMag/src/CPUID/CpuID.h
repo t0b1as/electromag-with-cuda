@@ -20,6 +20,8 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #ifndef _CPUID_H
 #define _CPUID_H
 
+namespace CPUID
+{
 enum CPUIDInfoType
 {
 	String = 0, FeatureSupport = 1,
@@ -127,5 +129,7 @@ struct CpuidFeatures
 
 void GetCpuidString(CpuidString *stringStruct);
 void GetCpuidFeatures(CpuidFeatures *featureStruct);
+
+}//namespace CPUID
 
 #endif//_CPUID_H
