@@ -24,7 +24,7 @@
 #include "Graphics/FieldRender.h"
 #include "Graphics/FrontendGUI.h"
 #include <omp.h>
-#include"./../../GPGPU_Segment/src/CUDA manager.h"
+#include "./../../GPGPU_Segment/src/CUDA manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 
  using namespace std;
@@ -41,11 +41,11 @@ struct SimulationParams
 	size_t pDynamic;	// Number of dynamic charge elements
 	size_t len;			// Number of steps of a field line
 };
-SimulationParams DefaultParams = {128, 128, 1, 1000, 0, 2500};
+SimulationParams DefaultParams = {128, 128, 1, 1000, 0, 2500};			// Default size for comparison with CPU performance
 SimulationParams EnhancedParams = {256, 112, 1, 2000, 0, 5000};			// Expect to fail on systems with under 3GB
 SimulationParams ExtremeParams = {256, 256, 1, 2000, 0, 5000};			// Expect to fail on systems with under 6GB
-SimulationParams InsaneParams = {512, 512, 1, 2000, 0, 5000};			// Requires minimum 16GB system RAM
-SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5000, 0, 10000};	// Requires minimum 24GB system RAM
+SimulationParams InsaneParams = {512, 512, 1, 2000, 0, 5000};			// Requires minimum 16GB system RAM + host buffers
+SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5000, 0, 10000};	// Requires minimum 24GB system RAM + host buffers
 SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work acceptably on most multi-core CPUs
 //SimulationParams CpuModeParams = {16, 16, 1, 1000, 0, 1000};
 
@@ -59,18 +59,19 @@ int main(int argc, char* argv[])
 	OpenCL::GlobalClManager.ListAllDevices();
 
 #ifndef _DEBUG
-	freopen( "file.txt", "w", stderr );
+	//freopen( "file.txt", "w", stderr );
 #endif//DEBUG
-	
+
 	enum ParamLevel{__cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
 	ParamLevel paramLevel = __normal;
 
 	SimulationParams simConfig = DefaultParams;
 	bool saveData = false, CPUenable = false, GPUenable = true, display = true;
 	bool useCurvature = true;
-        bool visualProgressBar = false;
-        bool randseed = false;
-		bool randfieldinit = false;
+	bool visualProgressBar = false;
+	bool randseed = false;
+	bool randfieldinit = false;
+	bool debugData = false;
 	// Get command-line options;
 	for(int i = 1; i < argc; i++)
 	{
@@ -96,16 +97,18 @@ int main(int argc, char* argv[])
 			randseed = true;
 		else if( !strcmp(argv[i], "randfieldinit") )
 			randfieldinit = true;
+		else if( !strcmp(argv[i], "postrundebug") )
+			debugData = true;
 		else
 			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
 	}
 
 	
-	CpuidString cpuString;
-	GetCpuidString(&cpuString);
+	CPUID::CpuidString cpuString;
+	CPUID::GetCpuidString(&cpuString);
 	
-	CpuidFeatures cpuInfo;
-	GetCpuidFeatures(&cpuInfo);
+	CPUID::CpuidFeatures cpuInfo;
+	CPUID::GetCpuidFeatures(&cpuInfo);
 
 	char *support[2] = {"not supported", "supported"};
 
@@ -119,7 +122,7 @@ int main(int argc, char* argv[])
 	clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<endl;
 	clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<endl;
     
-    // Now that checks are perfromed, start the Frontend
+    // Now that checks are performed, start the Frontend
     if(visualProgressBar) MainGUI.StartAsync();
 
 	// Statistics show that users are happier when the program outputs fun information abot their toys
@@ -164,8 +167,8 @@ int main(int argc, char* argv[])
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
 	Array<pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
-	if(GPUenable) GPUlines.AlignAlloc(n*len, 256);
-	if(CPUenable) CPUlines.AlignAlloc(n*len, 256);
+	if(GPUenable) GPUlines.AlignAlloc(n*len);
+	if(CPUenable) CPUlines.AlignAlloc(n*len);
 	perfPacket CPUperf = {0, 0}, GPUperf = {0, 0};
 	ofstream data, regress;
 	if (saveData)
@@ -247,9 +250,43 @@ int main(int argc, char* argv[])
 	{
 		cout<<" GPU"<<endl;
 		int failedFunctors;
-		QueryHPCTimer(&start);
-		failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
-		QueryHPCTimer(&end);
+		// If dynamic and nested OMP is not initialized, CalcField may only get
+        // one OMP thread, severely hampering performance on multi-core/CPU systems
+        omp_set_dynamic(true);
+        omp_set_nested(true);
+		#pragma omp parallel
+		{
+        #pragma omp sections nowait
+        {
+			// First section runs the calculations
+            #pragma omp section
+			{
+				
+				QueryHPCTimer(&start);
+				failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
+				QueryHPCTimer(&end);
+			}
+			 // Second section monitors progress
+            #pragma omp section
+			if(!visualProgressBar)
+            {
+                const double step = (double)1/60;
+                cout<<"[__________________________________________________________]"<<endl;
+                for(double next=step; next < (1.0 - 1E-3); next += step)
+                {
+                    while(GPUperf.progress < next)
+					{
+                        Threads::Pause(500);
+					}
+                    cout<<".";
+                    // Flush to make sure progress indicator is displayed immediately
+                    cout.flush();
+                }
+				std::cout<<" Done"<<std::endl;
+				cout.flush();
+            }
+		}
+		}
 		if(failedFunctors >= cudaDev) display = false;
 		if(failedFunctors) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
 		std::cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<std::endl;
@@ -272,7 +309,6 @@ int main(int argc, char* argv[])
                 QueryHPCTimer(&start);
                 CalcField_CPU(CPUlines, charges, n, resolution, CPUperf, useCurvature);
                 QueryHPCTimer(&end);
-                cout<<" Done"<<endl;
             }
             // Second section monitors progress
             #pragma omp section
@@ -283,11 +319,13 @@ int main(int argc, char* argv[])
                 for(double next=step; next < (1.0 - 1E-3); next += step)
                 {
                     while(CPUperf.progress < next)
-                        Pause(500);
+                        Threads::Pause(500);
                     cout<<".";
                     // Flush to make sure progress indicator is displayed immediately
                     cout.flush();
                 }
+				std::cout<<" Done"<<std::endl;
+				cout.flush();
             }
         
         }
@@ -306,6 +344,8 @@ int main(int argc, char* argv[])
 	for(int i = 0; i < GPUperf.stepTimes.GetSize()/timingSize; i++)
 	{
 		double *base = GPUperf.stepTimes.GetDataPointer() + timingSize*i;
+		const double accountedOverhead = base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
+			base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree];
 
 		cout<<endl<<" Execution unit "<<i<<endl;
 																	
@@ -318,8 +358,9 @@ int main(int argc, char* argv[])
 		cout<<" kernel execution    "<<base[kernelExec]<<"s"<<endl;
 		cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<endl;
 		cout<<" resAlloc   overhead "<<base[resAlloc]<<"s"<<endl;
-		cout<<" Associated overhead "<<base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
-			base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree]<<"s"<<endl;
+		cout<<" Associated overhead "<<accountedOverhead<<"s"<<endl;
+		cout<<" Unacounted overhead "<<GPUtime - accountedOverhead - base[kernelExec]<<"s"<<endl;
+			
 	}
 
 	GLpacket<FPprecision> GLdata;
@@ -329,7 +370,18 @@ int main(int argc, char* argv[])
 	GLdata.lineLen = len;
 	FieldDisp.RenderPacket(GLdata);
 	FieldDisp.SetPerfGFLOP(GPUperf.performance);
-    if(display) FieldDisp.StartAsync();
+    if(display)
+	{
+		try
+		{
+			FieldDisp.StartAsync();
+		}
+		catch(char * errString)
+		{
+			std::cerr<<" Could not initialize field rendering"<<std::endl;
+			std::cerr<<errString<<std::endl;
+		}
+	}
 
 	// do stuff here; This will generate files non-worthy of FAT32 or non-RAID systems
 	if(saveData && (CPUenable || GPUenable))
@@ -380,23 +432,27 @@ int main(int argc, char* argv[])
             // Small anti-boredom indicator
 			if(!(line%256)) cout<<" "<<(double)line/n*100<<" % complete"<<endl;
 		}
-        // When done, close file to prevent crashes from resulting in incomplete regressions
+        // When done, close file to prevent system crashes from resulting in incomplete regressions
 		regress.close();
 		cout<<" Verification complete"<<endl;
 	}
 
-	/*while(1)
+	while(debugData)
 	{
 		size_t line, step;
 		cin>> line>>step;
 		cin.clear();
 		cin.ignore(100, '\n');
-		int i = step*n + line;
-		float offset3D = vec3Len(vec3(CPUlines[i],GPUlines[i]));
-		cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl\
-					<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl\
-					<<" 3D offset: "<<offset3D<<endl;
-	}*/
+		size_t i = step*n + line;
+		
+		if(CPUenable) cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
+		if(GPUenable) cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
+		if(CPUenable && GPUenable)
+		{
+			float offset3D = vec3Len(vec3(CPUlines[i],GPUlines[i]));
+			cout<<" 3D offset: "<<offset3D<<endl;
+		}
+	}
 
 
 	// Wait for renderer to close program if active; otherwise quit directly
@@ -404,7 +460,7 @@ int main(int argc, char* argv[])
 	{
 		while(!shouldIQuit)
 		{
-			Pause(1000);
+			Threads::Pause(1000);
 		};
 		FieldDisp.KillAsync();
 	}

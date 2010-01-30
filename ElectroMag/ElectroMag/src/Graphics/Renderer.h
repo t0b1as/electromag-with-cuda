@@ -32,7 +32,7 @@ public:
     virtual void KillAsync();
 protected:  
     // A handle to the thread handling the rendering
-    ThreadHandle rendererThread;
+    Threads::ThreadHandle rendererThread;
     // Pure function that can initialize the renderer asynchronously
     virtual void AsyncStartFunc() = 0;
     // Static function that can be used to create a new thread
@@ -43,7 +43,7 @@ class GLRenderer : public Renderer //abstract
 {
 public:
 	GLRenderer();
-	~GLRenderer();
+	virtual ~GLRenderer();
 	virtual void Init();
 protected:
 	// openGL specific initialization function
@@ -56,6 +56,9 @@ protected:
 	virtual static void Reshape(int width, int height){};
 	virtual static void Motion(int x, int y){};
 	*/
+
+	// 
+	static bool glutLibIsLoaded;
 private:
 	static unsigned int  GlRenderers;
 	static const unsigned int maxGlRenderers;

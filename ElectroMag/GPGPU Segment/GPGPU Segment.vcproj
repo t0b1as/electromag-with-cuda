@@ -37,7 +37,13 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
+				Include="../common/src"
 				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -113,6 +119,7 @@
 				FastMath="true"
 				MaxRegCount="16"
 				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -183,6 +190,13 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
+				Include="../common/src"
+				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -250,6 +264,13 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
+				Include="../common/src"
+				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -322,6 +343,13 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
+				Include="../common/src"
+				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -391,6 +419,13 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
+				Include="../common/src"
+				NvccCompilation="3"
+				compileout="1"
+				FastMath="true"
+				MaxRegCount="16"
+				PtxAsOptionV="true"
+				Optimization="3"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -482,42 +517,6 @@
 			<File
 				RelativePath=".\src\Electrostatics.cu"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics.ptx"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\src\Electrostatics_Multistep.cu"
@@ -532,12 +531,27 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
 						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="CUDA Build Rule"
 					/>
 				</FileConfiguration>
 				<FileConfiguration

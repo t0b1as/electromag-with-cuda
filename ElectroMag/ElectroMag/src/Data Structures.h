@@ -1,3 +1,4 @@
+
 #pragma once
 #include "X-Compat/Memman.h"
 
@@ -6,10 +7,10 @@ class Array
 {
 public:
 	Array();
-	Array(size_t size, bool align256);
+	Array(size_t size, size_t alignment = 256);
 	~Array();
 	int Alloc(size_t size);
-	int AlignAlloc(size_t size);
+	int AlignAlloc(size_t size, size_t alignment = 256);
 	void Free();
 	T& operator[](size_t index){return itsData[index];};
 	size_t GetElemSize(){return sizeof(T);};
@@ -30,11 +31,11 @@ Array<T>::Array()
 	itsSize = 0;
 };
 template <class T>
-Array<T>::Array(size_t size, bool align256)
+Array<T>::Array(size_t size, size_t alignment = 0)
 {
 	itsData = 0;	
 	itsSize = 0;
-	if(align256)
+	if(alignment)
 		AlignAlloc(size);
 	else
 		Alloc(size);
@@ -63,14 +64,14 @@ int Array<T>::Alloc(size_t size)
 }
 
 template<class T>
-int Array<T>::AlignAlloc(size_t size)
+int Array<T>::AlignAlloc(size_t size, size_t alignment = 256)
 {
 	if(!itsSize)
 	{
 		// Allocate just enough more memory than needed to prevent segmentation faults
-		itsAllocation = (T*)malloc(size*sizeof(T) + 255);
+		itsAllocation = (T*)malloc(size*sizeof(T) + alignment - 1);
 		// Then align itsData to a multiple of 256
-		itsData = (T*) ((((size_t)itsAllocation + 255)/256)*256);
+		itsData = (T*) ((((size_t)itsAllocation + alignment - 1)/alignment)*alignment);
 		if(itsAllocation != 0)
 		{
 			itsSize = size;

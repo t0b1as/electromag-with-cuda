@@ -28,7 +28,7 @@ template<class T>
 struct CoalescedFieldLineArray
 {
 	Vec3SOA<T> coalLines;
-	size_t lines, steps,
+	size_t nLines, nSteps,
 		xyPitch, zPitch;
 };
 
@@ -44,7 +44,7 @@ template<>
 struct CoalescedFieldLineArray<CUdeviceptr>
 {
 	Vec3SOA<CUdeviceptr> coalLines;
-	size_t lines, steps,
+	size_t nLines, nSteps,
 		xyPitch, zPitch;
 };
 
@@ -68,6 +68,9 @@ struct PointChargeArray<CUdeviceptr>
 			QueryHPCTimer(&end);\
 			time = ((double)(end - start) / freq);
 
+namespace CalcFieldEs
+{
+
 //////////////////////////////////////////////////////////////////////////////////
 ///\brief GPU memory allocation function
 //
@@ -84,10 +87,11 @@ struct PointChargeArray<CUdeviceptr>
 // While naive, this check should work for most cases.
 //////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CUresult CalcField_GPUmalloc(
+CUresult GPUmalloc(
             PointChargeArray<CUdeviceptr> *chargeData,      ///< [in,out]
             CoalescedFieldLineArray<CUdeviceptr> *GPUlines, ///< [in,out]
             const unsigned int bDim,                        ///< [in]
+			const unsigned int bX,	                        ///< [in]
             size_t *segments,                               ///< [out] Returns the number of segments in which the memory was split.
             size_t *blocksPerSeg,                           ///< [out]
             size_t blockMultiplicity = 0                    ///< [in] Specifies a multiple to the number of blocks per kernel call that must be maintained.
@@ -108,11 +112,28 @@ CUresult CalcField_GPUmalloc(
 	// Compute the available safe memory for the field lines
 	size_t freeRAM = (size_t)free - chargeData->paddedSize;	// Now find the amount remaining for the field lines
 	// FInd the total amount of memory required by the field lines
-	const size_t fieldRAM = GPUlines->steps*GPUlines->lines*sizeof(Vector3<T>);
+	const size_t fieldRAM = GPUlines->nSteps*GPUlines->nLines*sizeof(Vector3<T>);
 	// Find the memory needed for one grid of data, containing 'blockMultiplicity' blocks
-	const size_t gridRAM = blockMultiplicity * bDim * sizeof(Vector3<T>) * GPUlines->steps;
+	const size_t gridRAM = blockMultiplicity * bX * sizeof(Vector3<T>) * GPUlines->nSteps;
 	const size_t availGrids = freeRAM/gridRAM ;
 	const size_t neededGrids = (fieldRAM + gridRAM - 1)/gridRAM;
+
+#if defined(_WIN32) || defined(_WIN64)
+	// On Windows, due to WDDM restrictions, a single allocation is limited 1/4 total GPU memory
+	// Therefore we must ensure that no single allocation will request more than 1/4 total GPU RAM
+	const size_t maxAlloc = total/4;
+
+	// Find the size of the xy allocation, which is the largest (we ignore the point charge allocation)
+	const size_t xyGridAllocSize = (gridRAM * 2) / 3;
+	const size_t xyAllGridsAllocSize = xyGridAllocSize*availGrids;
+	fprintf(stderr, " Need a total xy Allocation size of %uMB\n", neededGrids * xyGridAllocSize/1024/1024);
+	if(xyAllGridsAllocSize > maxAlloc)
+	{
+		fprintf(stderr, " Warning, determined size of %uMB exceeds max permited alocation of %uMB\n",
+			xyAllGridsAllocSize/1024/1024, maxAlloc/1024/1024);
+	}
+#endif//defined(_WIN32) || defined(_WIN64)
+
 	// Make sure enough memory is available for the entire grid
 	if(gridRAM > freeRAM)
 	{
@@ -128,7 +149,7 @@ CUresult CalcField_GPUmalloc(
 	*segments = ( (neededGrids + availGrids - 1) )/ availGrids;	// (neededGrids + availGrids - 1)/availGrids
 	*blocksPerSeg = ( (neededGrids > availGrids) ? ( (neededGrids + *segments -1)/ *segments) : neededGrids ) * blockMultiplicity;		// availGrids * blocksPerGrid ('blockMultiplicity')
 	// Find the number of safely allocatable lines per kernel segment given the
-	const size_t linesPerSeg = (*blocksPerSeg) * bDim;	// blocksPerSegment * blockDim	*(1 linePerThread)
+	const size_t linesPerSeg = (*blocksPerSeg) * bX;	// blocksPerSegment * bX	*(1 linePer'X'Thread)
 	enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
 	CUresult errCode;
 	//--------------------------------Point charge allocation--------------------------------------//
@@ -148,28 +169,30 @@ CUresult CalcField_GPUmalloc(
 	// We use the given pitches to partition the memory on the host to mimic the device
 	// This enables a blazing-fast linear copy between the host and device
 	errCode = cuMemAllocPitch(&GPUlines->coalLines.xyInterleaved,
-                    (unsigned int *)&GPUlines->xyPitch, (unsigned int)(xyCompSize * linesPerSeg), (unsigned int)GPUlines->steps, sizeof(T)*2);
+                    (unsigned int *)&GPUlines->xyPitch, (unsigned int)(xyCompSize * linesPerSeg), (unsigned int)GPUlines->nSteps, sizeof(T)*2);
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, xyAlloc, currentGPU);
-		fprintf(stderr, " Failed %u batches %u bytes each. Error code: %u\n", GPUlines->steps, xyCompSize * linesPerSeg, errCode);
-		fprintf(stderr, " Driver reported %uMB available, requested %u MB\n", free/1024/1024, GPUlines->steps * xyCompSize * linesPerSeg/1024/1024);
+		fprintf(stderr, " Failed %u batches %u bytes each. Error code: %u\n", GPUlines->nSteps, xyCompSize * linesPerSeg, errCode);
+		fprintf(stderr, " Driver reported %uMB available, requested %u MB\n", free/1024/1024, GPUlines->nSteps * xyCompSize * linesPerSeg/1024/1024);
 		// Free any previously allocated memory
 		cuMemFree((CUdeviceptr)chargeData->chargeArr);
 		return errCode;
 	};
+#if defined(_WIN32) || defined(_WIN64)
+	fprintf(stderr, " Allocated: %uMB for GPU xy array\n", GPUlines->xyPitch * GPUlines->nSteps/1024/1024);
+#endif
 	errCode = cuMemAllocPitch(&GPUlines->coalLines.z,
-                    (unsigned int *)&GPUlines->zPitch, (unsigned int)(zCompSize * linesPerSeg), (unsigned int)GPUlines->steps, sizeof(T));
+                    (unsigned int *)&GPUlines->zPitch, (unsigned int)(zCompSize * linesPerSeg), (unsigned int)GPUlines->nSteps, sizeof(T));
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, zAlloc, currentGPU);
-		fprintf(stderr, " Failed %u batches %u bytes each. \n", GPUlines->steps, zCompSize * linesPerSeg);
+		fprintf(stderr, " Failed %u batches %u bytes each. \n", GPUlines->nSteps, zCompSize * linesPerSeg);
 		fprintf(stderr, " Driver reported %uMB available", free/1024/1024);
 		cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
 		fprintf(stderr, " Driver now reports %uMB available", free/1024/1024);
 		fprintf(stderr, " First request allocated %uMB \n Second request for %uMB failed with code %u\n",
-			GPUlines->steps * GPUlines->xyPitch/1024/1024, GPUlines->steps * zCompSize * linesPerSeg/1024/1024, errCode);
-		//fprintf(stderr, "\t: %s\n", cudaGetErrorString(errCode));
+			GPUlines->nSteps * GPUlines->xyPitch/1024/1024, GPUlines->nSteps * zCompSize * linesPerSeg/1024/1024, errCode);
 		// Free any previously allocated memory
 		cuMemFree(chargeData->chargeArr);cuMemFree(GPUlines->coalLines.z);
 		return errCode;
@@ -177,5 +200,7 @@ CUresult CalcField_GPUmalloc(
 
 	return CUDA_SUCCESS;
 }
+
+}//namespace CalcFieldES
 
 #endif//_ELECTROSTATICS_HOUSEKEEPING_H

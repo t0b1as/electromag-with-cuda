@@ -135,9 +135,11 @@ CUresult CalcField_loadModules(CUmodule *multistepMod, CUmodule *singlestepMod)
 // The non-wrapped function is useful when recalculating lines with memory already allocated
 
 #include "X-Compat/HPC timing.h"
+namespace CalcFieldEs
+{
 
 template<class T>
- CUresult CalcField_core(Vec3SOA<CUdeviceptr> &fieldLines, unsigned int steps, unsigned int nLines,
+ CUresult Core(Vec3SOA<CUdeviceptr> &fieldLines, unsigned int steps, unsigned int nLines,
 						unsigned int xyPitch, unsigned int zPitch,
 						CUdeviceptr pointCharges, unsigned int points,
 						T resolution, bool useMT, bool useCurvature,
@@ -157,7 +159,7 @@ template<class T>
 	// host pointers, and passed to the kernel accordingly.
 
 	int offset = 0; unsigned int size = 0;
-	Vector2<T> * xyParam = (Vector2<T> *)fieldLines.xyInterleaved;
+	Vector2<T> * xyParam = (Vector2<T> *)(size_t)fieldLines.xyInterleaved;
 	size = sizeof(xyParam);
 	DEBUG_CUDA_CALL(cuParamSetv(kernels.multistepKernel, offset, (void*)&xyParam, size));
 	DEBUG_CUDA_CALL(cuParamSetv(kernels.singlestepKernel, offset, (void*)&xyParam, size));
@@ -227,4 +229,6 @@ template<class T>
 
 	return CUDA_SUCCESS;
  }
+
+}//namespace CalcField
 
