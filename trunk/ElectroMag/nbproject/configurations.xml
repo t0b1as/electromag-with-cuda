@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="62">
+  <logicalFolder name="root" displayName="root" projectFiles="true">
+    <df name="ElectroMag"
+        root="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag">
+      <df name="common">
+        <df name="lib">
+        </df>
+        <df name="src">
+          <df name="X-Compat">
+            <in>HPC timing.h</in>
+            <in>Memman.h</in>
+            <in>Threading.h</in>
+          </df>
+          <in>CUDA Definitions.h</in>
+          <in>Data Structures.h</in>
+          <in>Electrodynamics.h</in>
+          <in>Electrostatics.h</in>
+          <in>Newton FEMA.h</in>
+          <in>Vector.h</in>
+        </df>
+      </df>
+      <df name="ElectroMag">
+        <df name="src">
+          <df name="CPUID">
+            <in>CPUID.cpp</in>
+            <in>CpuID.h</in>
+          </df>
+          <df name="Graphics">
+            <df name="GL">
+              <in>freeglut.h</in>
+              <in>freeglut_dynlink.c</in>
+              <in>freeglut_dynlink.h</in>
+              <in>freeglut_ext.h</in>
+              <in>freeglut_std.h</in>
+              <in>glew.c</in>
+              <in>glew_static.h</in>
+              <in>glut.h</in>
+              <in>glutExtra.h</in>
+              <in>glxew.h</in>
+              <in>wglew.h</in>
+            </df>
+            <in>Camera.h</in>
+            <in>FieldRender.cpp</in>
+            <in>FieldRender.h</in>
+            <in>FrontendGUI.cpp</in>
+            <in>FrontendGUI.h</in>
+            <in>MainGUI.cpp</in>
+            <in>MainGUI.h</in>
+            <in>Renderer.cpp</in>
+            <in>Renderer.h</in>
+          </df>
+          <in>CPU Implement.h</in>
+          <in>CPU_Implement.cpp</in>
+          <in>Data Structures.h</in>
+          <in>ElectroMag.cpp</in>
+          <in>Electrodynamics.h</in>
+          <in>stdafx.cpp</in>
+          <in>stdafx.h</in>
+        </df>
+      </df>
+      <df name="GPGPU_Segment">
+        <df name="src">
+          <in>Abstract Functor.h</in>
+          <in>Abstract_Functor.cpp</in>
+          <in>CL Manager.h</in>
+          <in>CL_Manager.cpp</in>
+          <in>CPGP Interop.h</in>
+          <in>CUDA Interop.h</in>
+          <in>CUDA manager.h</in>
+          <in>CUDA_Electrostatics.cpp</in>
+          <in>CUDA_Electrostatics.h</in>
+          <in>CUDA_manager.cpp</in>
+          <in>Config.h</in>
+          <in>Electrostatics Housekeeping.h</in>
+          <in>Electrostatics Kernel Launch.h</in>
+          <in>Electrostatics MT kernel.cuh</in>
+          <in>Electrostatics kernel.cuh</in>
+          <in>Electrostatics.cpp</in>
+          <in>Electrostatics.cu</in>
+          <in>Electrostatics_Multistep.cu</in>
+          <in>Electrostatics_sm13.cu</in>
+          <in>GPU manager.h</in>
+          <in>GPU_manager.cpp</in>
+          <in>OpenCL_Dyn_Load.c</in>
+          <in>OpenCL_Dyn_Load.h</in>
+          <in>cuda_drvapi_dynlink.c</in>
+          <in>cuda_drvapi_dynlink.h</in>
+        </df>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false">
+      <itemPath>/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/Makefile</itemPath>
+      <itemPath>Makefile-ElectroMag.mk</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceRootList>
+    <Elem>/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile-ElectroMag.mk</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <compilerSet>GNU|GNU</compilerSet>
+        <platform>2</platform>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag</buildCommandWorkingDir>
+          <buildCommand>$(MAKE) -f Makefile</buildCommand>
+          <cleanCommand>$(MAKE) -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+        </makeTool>
+      </makefileType>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/CPU_Implement.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/ElectroMag.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/Graphics/FieldRender.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/Graphics/FrontendGUI.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/Graphics/Renderer.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/ElectroMag/src/stdafx.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/Abstract_Functor.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/CUDA_Electrostatics.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/CUDA_manager.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/Electrostatics.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>ElectroMag/src</pElem>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/Electrostatics.cu"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/Electrostatics_Multistep.cu"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/Electrostatics_sm13.cu"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="/home/mrnuke/Electromagnetism sim/@Google-SVN/trunk/ElectroMag/GPGPU_Segment/src/GPU_manager.cpp"
+            ex="false"
+            tool="1">
+        <ccTool>
+          <incDir>
+            <pElem>common/src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

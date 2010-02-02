@@ -63,7 +63,7 @@ inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> 
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
 	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
-		lenSq / (T)sqrt(lenSq) );						// 4 FLOP (1 sqrt + 3 mul-div)
+		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul-div)
 };						// Total: 15 FLOP
 #define electroPartFieldFLOP 15
 

@@ -21,7 +21,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 #include "Data Structures.h"
 #include "Electrostatics.h"
-#include "CUDA manager.h"
+#include "CUDA Manager.h"
 
 // Include the GPGPU library if compiling external project
 #ifndef __CUDACC__
@@ -56,4 +56,4 @@ enum CalcField_timingSteps
 // and disable the idiotic warning: "warning #2158: enum qualified name is nonstandard"
 //#pragma warning(disable:2158)
 
-#endif _CUDA_INTEROP_H
+#endif//_CUDA_INTEROP_H

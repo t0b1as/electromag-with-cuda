@@ -19,10 +19,10 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "CUDA Interop.h"
 #include "Config.h"
 #include <cstdio>
-#include "X-Compat/HPC timing.h"
+#include "X-Compat/HPC Timing.h"
 #include "X-Compat/Threading.h"
 #include "cuda_drvapi_dynlink.h"
-#include "CUDA manager.h"
+#include "CUDA Manager.h"
 #include "CUDA_Electrostatics.h"
 #include "Electrostatics Housekeeping.h"
 #include "Electrostatics Kernel Launch.h"

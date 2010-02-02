@@ -10,13 +10,13 @@ Electromag: GPGPU_segment
 	make --directory=ElectroMag
 
 GPGPU_segment:
-	make --directory=GPGPU\ Segment
+	make --directory=GPGPU_Segment
 		
 Electromag-clean:
 	make clean --directory=ElectroMag
 
 GPGPU_segment-clean:
-	make clean --directory=GPGPU\ Segment
+	make clean --directory=GPGPU_Segment
 
 Electromag-debug:
 	make --directory=ElectroMag --file=Makefile-Debug.mk

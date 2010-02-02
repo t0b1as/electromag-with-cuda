@@ -23,7 +23,7 @@ For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.d
 #include "GL/freeglut_dynlink.h"
 #include "GL/glutExtra.h"
 #include "FieldRender.h"
-#include "X-Compat/HPC timing.h"
+#include "X-Compat/HPC Timing.h"
 #include <stdio.h> // for sprintf()
 
 #pragma warning(disable:1786)

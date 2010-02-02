@@ -9,7 +9,8 @@ CXXsources= $(SRCDIR)/ElectroMag.cpp $(SRCDIR)/CPU_Implement.cpp $(SRCDIR)/stdaf
 
 OBJDIR= obj
 OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJDIR)/CPUID.o \
-	$(OBJDIR)/Renderer.o $(OBJDIR)/FieldRender.o $(OBJDIR)/FrontendGUI.o
+	$(OBJDIR)/Renderer.o $(OBJDIR)/FieldRender.o $(OBJDIR)/FrontendGUI.o\
+	$(OBJDIR)/freeglut_dynlink.o  $(OBJDIR)/glew.o
 
 # Explicit
 all: post-build
@@ -31,7 +32,7 @@ $(TARGET_DIR)/$(TARGET): $(OBJS)
 	@echo Linking Everything
 	@echo
 	mkdir -p $(TARGET_DIR)
-	$(CXX) -o $(TARGET_DIR)/$(TARGET)  $(OBJS) $(LDFLAGS)
+	$(CXX) -o $(TARGET_DIR)/$(TARGET)  $(OBJS) $(LDFLAGS) obj/glew.o
 	@echo
 	@echo Done Linking Everything
 	@echo
@@ -41,6 +42,10 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp pre-build
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 # Rule for files that are located in src/somedir/
 $(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp pre-build
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Rule for files that are located in src/somedir/more_nested_dir/
+$(OBJDIR)/%.o: $(SRCDIR)/*/*/%.c pre-build
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #Merciless seek and delete

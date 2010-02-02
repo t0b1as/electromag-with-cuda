@@ -13,21 +13,24 @@ CPP_LIBS = -lpthread $(CUDA_LIB_PATH)/libcudart.so
 
 # CUDA compiler flags
 NVCC=$(CUDA_BIN_PATH)/nvcc
-NVCCFLAGS= --ptxas-options=-v -I ./../common/src -I ./ -I $(CUDA_SDK_INC_PATH)
+NVCCFLAGS= --ptxas-options=-v -use_fast_math -I ./../common/src -I ./ -I $(CUDA_SDK_INC_PATH)
 
 
 OBJDIR=obj
 SRCDIR=src
 
 # C++ Sources
-CPPsources= $(SRCDIR)/Electrostatics.cpp $(SRCDIR)/GPU_manager.cpp $(SRCDIR)/cuda_drvapi_dynlink.c
-CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/GPU_manager.o \
-	$(OBJDIR)/cuda_\drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o
+#CPPsources= $(SRCDIR)/Electrostatics.cpp $(SRCDIR)/CUDA_manager.cpp $(SRCDIR)/cuda_drvapi_dynlink.c
+CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/CUDA_manager.o\
+	$(OBJDIR)/CL_Manager.o\
+	$(OBJDIR)/cuda_\drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o\
+	$(OBJDIR)/Abstract_Functor.o $(OBJDIR)/CUDA_Electrostatics.o
 
 
 # CUDA objects and targets
 CUDA_SOURCES= $(SRCDIR)/Electrostatics.cu
 PTX_OBJS= $(TARGET_DIR)/Electrostatics.ptx $(TARGET_DIR)/Electrostatics_Multistep.ptx
+CUBIN_OBJS= $(TARGET_DIR)/Electrostatics.cubin $(TARGET_DIR)/Electrostatics_Multistep.cubin
 
 # All for dummies
 all: $(TARGET_DIR)/$(TARGET)
@@ -41,7 +44,7 @@ CUDA-pre: pre-build
 	@echo =======================================================
 	@echo = Compiling GPU segment                               =
 	@echo =======================================================
-CUDA-post: $(PTX_OBJS)
+CUDA-post: $(PTX_OBJS) $(CUBIN_OBJS)
 	@echo =======================================================
 	@echo = Done compiling GPU segment                          =
 	@echo =======================================================

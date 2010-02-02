@@ -19,6 +19,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #ifndef _CUDA_ELECTROSTATICS_H
 #define _CUDA_ELECTROSTATICS_H
 
+#include <stddef.h>// To alleviate size_t related error
 #include "cuda_drvapi_dynlink.h"
 #include "Electrostatics Housekeeping.h"
 #include "Electrostatics.h"
@@ -165,5 +166,7 @@ private:
 ///\ingroup DEVICE_FUNCTORS
 ///@}
 ////////////////////////////////////////////////////////////////////////////////////////////////
+//extern CudaElectrosFunctor<float> experimentalFunctor;
+//extern CudaElectrosFunctor<double> doublePrecisionFunctor;
 
 #endif//_CUDA_ELECTROSTATICS_H

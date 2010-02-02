@@ -20,9 +20,9 @@ GPU_LIB_PATH= ../common/lib
 INCLUDE += -I. -I./../GPGPU\ Segment/src -I./../common/src -I./src -I $(CUDA_INC_PATH)
 CXXINCLUDE= $(INCLUDE)
 #Library options
-LDFLAGS += -lpthread -lglut -lGLU -lGLEW $(GPU_LIB_PATH)/libGPGPU_segment.a
+LDFLAGS += -lpthread -lGLU $(GPU_LIB_PATH)/libGPGPU_segment.a
 
 # Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
 # but by all means, use the Intel compiler if at all posible
-include ../Makefile-Intel.mk
-#include ../Makefile-GNU.mk # AKA The Headache Compiler
+#include ../Makefile-Intel.mk
+include ../Makefile-GNU.mk # AKA The Headache Compiler
