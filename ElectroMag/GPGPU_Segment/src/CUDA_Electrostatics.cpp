@@ -5,7 +5,16 @@
 #include "X-Compat/HPC Timing.h"
 #include <iostream>
 
-CudaElectrosFunctor<float> experimentalFunctor;
+CudaElectrosFunctor<float> SPFunctor;
+CudaElectrosFunctor<double> DPFunctor;
+
+void * GiveMeMyConstructorsYouDamnGCC()
+{
+    CudaElectrosFunctor<float> *SP = new CudaElectrosFunctor<float>();
+    CudaElectrosFunctor<double> *DP = new CudaElectrosFunctor<double>();;
+    CudaElectrosFunctor<float>::CudaElectrosFunctor();
+    return (void*) SP;
+}
 template<class T>
 cuda::CudaManager CudaElectrosFunctor<T>::ElectrostaticsManager;
 

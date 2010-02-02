@@ -15,7 +15,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-#include "CUDA manager.h"
+#include "CUDA Manager.h"
 #include "X-Compat/Threading.h"
 #include "cuda_drvapi_dynlink.h"
 

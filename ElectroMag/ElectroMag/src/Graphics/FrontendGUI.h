@@ -56,5 +56,5 @@ private:
 
 extern FrontendGUI MainGUI;
 
-#endif _FRONTENDGUI_H
+#endif//_FRONTENDGUI_H
 

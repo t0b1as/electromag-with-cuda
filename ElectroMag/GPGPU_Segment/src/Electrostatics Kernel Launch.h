@@ -134,7 +134,7 @@ CUresult CalcField_loadModules(CUmodule *multistepMod, CUmodule *singlestepMod)
 // For this function to execute correctly, device memory must already be allocated and relevant data copied to device
 // The non-wrapped function is useful when recalculating lines with memory already allocated
 
-#include "X-Compat/HPC timing.h"
+#include "X-Compat/HPC Timing.h"
 namespace CalcFieldEs
 {
 

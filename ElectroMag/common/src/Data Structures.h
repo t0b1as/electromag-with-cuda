@@ -36,10 +36,10 @@ public:
 	int Alloc(size_t elements);
 	/// Allocates a new segment of memory, WITHOUT releasing the old one
 	/// Only use in cases where the constructor is not called automatically
-	int Array<T>::ReAlloc(size_t size);
+	int ReAlloc(size_t size);
 	/// Allocates 'elements' elements and aligns the first to 'alignment'
 	/// 'alignment should generally be a power of 2
-	int AlignAlloc(size_t elements, size_t alignment);
+	int AlignAlloc(size_t elements, size_t alignment = 256);
 	/// Frees the memory associated with the stored data
 	void Free();
 	/// Indexing operator

@@ -95,7 +95,7 @@ Contains source originally written by Pawel W. Olszta, <olszta@sourceforge.net>
  * Always include OpenGL and GLU headers
  */
 
-#pragma message("these headers may not need to ve included if linking dynamically at runtime")
+//#pragma message("these headers may not need to ve included if linking dynamically at runtime")
 // We include GLEW to prevent name pollution. GLEW includes both basic gl definitions and glu.h
 #include "glew_static.h"
 

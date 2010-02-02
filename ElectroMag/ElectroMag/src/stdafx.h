@@ -33,7 +33,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include <exception>
 #include <stdlib.h>
 #include "X-Compat/Threading.h"
-#include "X-Compat/HPC timing.h"
+#include "X-Compat/HPC Timing.h"
 #include "Data Structures.h"
 #include "Newton FEMA.h"
 #include "Electrostatics.h"

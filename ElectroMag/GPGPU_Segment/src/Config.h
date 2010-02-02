@@ -52,7 +52,7 @@ char* multistepKernel_DP_MT				= "CalcField_MTkernel_DP";
 char* singlestepKernel_DP_MT			= "CalcField_MTkernel_DP";
 char* multistepKernel_DP				= "CalcField_DPkernel";
 char* singlestepKernel_DP				= "CalcField_DPkernel";
-#endif ES_FUNCTOR_INCLUDE
+#endif//ES_FUNCTOR_INCLUDE
 
-#endif _CONFIG_H
+#endif//_CONFIG_H
 

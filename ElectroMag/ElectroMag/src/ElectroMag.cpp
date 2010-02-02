@@ -24,7 +24,7 @@
 #include "Graphics/FieldRender.h"
 #include "Graphics/FrontendGUI.h"
 #include <omp.h>
-#include "./../../GPGPU_Segment/src/CUDA manager.h"
+#include "./../../GPGPU_Segment/src/CUDA Manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 
  using namespace std;

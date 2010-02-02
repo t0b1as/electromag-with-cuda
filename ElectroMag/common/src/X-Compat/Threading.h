@@ -134,7 +134,7 @@ inline void UnlockMutex(MutexHandle hMutex)
 namespace Threads
 {
 typedef pthread_t ThreadHandle;
-inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *handle = 0)
+inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *hThread, unsigned long *threadID =0)
 {
 	ThreadHandle temp;
 	pthread_create(&temp, 0, (void* (*)(void *))startRoutine, parameters);
@@ -144,7 +144,7 @@ inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* paramet
 inline unsigned long WaitForThread(ThreadHandle hThread)
 {
 	unsigned long* pExitCode;
-	pthread_join(hThread, &pExitCode);
+	pthread_join(hThread, (void**)&pExitCode);
 	return *pExitCode;
 };
 
@@ -158,6 +158,39 @@ inline void Pause(unsigned int miliseconds)
 	usleep(miliseconds*1000);
 };
 #endif
+
+inline void SetThreadName( unsigned long threadID, char* threadName)
+{
+    // Void function; don't know how to set thread name in linux
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Mutex Management
+////////////////////////////////////////////////////////////////////////////////////////////////
+typedef pthread_mutex_t MutexHandle;
+
+/// Creates a Mutex
+inline void CreateMutex(MutexHandle *hMutex)
+{
+    pthread_mutex_init(hMutex,0);
+};
+
+/// Destroys hMutex
+inline void DestroyMutex(MutexHandle hMutex)
+{
+	pthread_mutex_destroy(&hMutex);
+};
+
+/// Locks hMutex
+inline void LockMutex(MutexHandle &hMutex)
+{
+	pthread_mutex_lock(&hMutex);
+};
+/// Unlocks hMutex
+inline void UnlockMutex(MutexHandle &hMutex)
+{
+	pthread_mutex_unlock(&hMutex);
+};
 
 
 #ifndef PLATFORM_FOUND

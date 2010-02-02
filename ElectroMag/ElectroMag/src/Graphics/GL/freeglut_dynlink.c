@@ -19,6 +19,16 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include "freeglut_dynlink.h"
 
 
+void* glutStrokeRoman;
+void* glutStrokeMonoRoman;
+void* glutBitmap9By15;
+void* glutBitmap8By13;
+void* glutBitmapTimesRoman10;
+void* glutBitmapTimesRoman24;
+void* glutBitmapHelvetica10;
+void* glutBitmapHelvetica12;
+void* glutBitmapHelvetica18;
+
 __glutMainLoopEvent						*glutMainLoopEvent;
 __glutLeaveMainLoop						*glutLeaveMainLoop;
 __glutExit								*glutExit;

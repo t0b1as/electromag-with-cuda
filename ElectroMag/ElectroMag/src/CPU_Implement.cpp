@@ -28,7 +28,7 @@ for x64, omit /arch:SSE2, as it is the default, and compiler does not recognize 
 while /arch:SSE2 /fp:fast allow the use of SSE registers
 */////////////////////////////////////////////////////////////////////////////////
 #include "CPU Implement.h"
-#include "X-Compat/HPC timing.h"
+#include "X-Compat/HPC Timing.h"
 #include <omp.h>
 #include <iostream>
 #define CoreFunctor electroPartField
