@@ -54,5 +54,24 @@
 				EnableEnhancedInstructionSet="1000"/>
 		</Configuration>
 	</Configurations>
-	<Files/>
+	<Files>
+		<Filter
+			Name="CPU Source Files">
+			<File
+				RelativePath=".\src\CPU_Implement.cpp">
+				<FileConfiguration
+					Name="Debug|x64">
+					<Tool
+						Name="CppCmplrTool"
+						Optimization="1000"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64">
+					<Tool
+						Name="CppCmplrTool"
+						GenerateAlternateCodePaths="5"/>
+				</FileConfiguration>
+			</File>
+		</Filter>
+	</Files>
 </VisualStudioProject>

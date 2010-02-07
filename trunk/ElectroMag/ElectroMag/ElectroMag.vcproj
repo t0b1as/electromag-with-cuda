@@ -338,6 +338,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="false"
+				AdditionalOptions="/LTCG"
 				AdditionalDependencies=""
 				Version=""
 				LinkIncremental="1"
@@ -568,7 +569,9 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+						Optimization="2"
 						UsePrecompiledHeader="0"
+						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -584,7 +587,9 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+						FloatingPointModel="2"
 						UsePrecompiledHeader="0"
+						DebugInformationFormat="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -607,6 +612,14 @@
 			<File
 				RelativePath=".\src\ElectroMag.cpp"
 				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						DebugInformationFormat="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\src\stdafx.cpp"

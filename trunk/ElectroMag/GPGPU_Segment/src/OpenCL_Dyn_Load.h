@@ -25,6 +25,11 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include <CL/cl_platform.h>
 #endif
 
+#ifdef CL_API_ENTRY
+#undef CL_API_ENTRY
+#define CL_API_ENTRY
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

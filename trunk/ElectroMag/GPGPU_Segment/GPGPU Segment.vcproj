@@ -116,6 +116,7 @@
 				Include="../common/src"
 				NvccCompilation="3"
 				compileout="1"
+				Arch="10"
 				FastMath="true"
 				MaxRegCount="16"
 				PtxAsOptionV="true"
@@ -531,14 +532,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="CUDA Build Rule"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
@@ -552,6 +545,7 @@
 					>
 					<Tool
 						Name="CUDA Build Rule"
+						AdditionalOptions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration

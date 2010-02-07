@@ -32,7 +32,7 @@ For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.d
 Camera FieldRender::mainCam;
 ProjectionMode FieldRender::PM;
 volatile bool shouldIQuit = false;
-GLpacket<float> FieldRender::GLdata;
+GLpacket FieldRender::GLdata;
 GLuint FieldRender::chargesVBO;
 GLuint FieldRender::colorVBO;
 GLuint *FieldRender::linesVBOs;

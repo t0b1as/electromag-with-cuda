@@ -24,13 +24,14 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include "Data Structures.h"
 #include "Electrostatics.h"
 #include <stdio.h>
+
 // DEBUG
-template<class T>
 struct GLpacket
 {
-	Array<pointCharge<T> > *charges;
-	Array<Vector3<T> > *lines;
+	Array<pointCharge<float> > *charges;
+	Array<Vector3<float> > *lines;
 	size_t nlines, lineLen;
+	size_t elementSize;//8 for double 4 for float
 };
 
 enum ProjectionMode {Orthogonal, Perspective};
@@ -41,7 +42,7 @@ extern volatile bool shouldIQuit;
 class FieldRender: public GLRenderer
 {
 private:
-	static GLpacket<float> GLdata;
+	static GLpacket GLdata;
 	static ProjectionMode PM;
 	static Camera mainCam;
 	static size_t lineSkip;
@@ -71,7 +72,7 @@ public:
 	{
 	};
 
-	void RenderPacket(GLpacket<float> data)
+	void RenderPacket(GLpacket data)
 	{
 		GLdata = data;
 	}

@@ -37,7 +37,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 char* multistepModuleNameCUBIN	= "Electrostatics_Multistep.cubin";
 char* multistepModuleNamePTX	= "Electrostatics_Multistep.ptx";
 char* singlestepModuleNameCUBIN	= "Electrostatics.cubin";
-char* singlestepModuleNamePTX	= "Electrostatics.cubin";
+char* singlestepModuleNamePTX	= "Electrostatics.ptx";
 
 char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
 char* singlestepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";

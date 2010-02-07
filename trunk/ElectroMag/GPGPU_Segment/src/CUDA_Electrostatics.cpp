@@ -41,6 +41,7 @@ template<class T>
 CudaElectrosFunctor<T>::~CudaElectrosFunctor()
 {
 	ReleaseResources();
+	for(size_t i = 0; i < this->functorParamList.GetSize(); i++) delete functorParamList[i].pPerfData;
 	functorParamList.Free();
 }
 
@@ -132,7 +133,7 @@ void CudaElectrosFunctor<T>::PartitionData()
         size_t segDataSize = (remainingLines < segSize) ? remainingLines : segSize;
         dataParams->startIndex = this->nLines - remainingLines;
         dataParams->elements = segDataSize;
-		dataParams->pPerfData =  new perfPacket;
+		dataParams->pPerfData =  new perfPacket; // Deleted in destructor
 		// Constructor is not called automatically, so we need to use ReAlloc (FIXME: possible source of bugs)
         dataParams->pPerfData->stepTimes.ReAlloc(timingSize);
 		dataParams->pPerfData->stepTimes.Memset(0);
@@ -451,6 +452,7 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		if (errCode != CUDA_SUCCESS)
 		{
 			cuCtxDestroy(data->context);
+			std::cerr<<" Loading kernel modules failed on device "<<devID<<" with code: "<<errCode<<std::endl;
 			data->lastOpErrCode =  errCode;
 			// Skip to next device
 			continue;
@@ -459,6 +461,7 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		if (errCode != CUDA_SUCCESS)
 		{
 			cuCtxDestroy(data->context);
+			std::cerr<<" Loading kernel from module failed on device "<<devID<<" with code: "<<errCode<<std::endl;
 			data->lastOpErrCode =  errCode;
 			// Skip to next device
 			continue;
