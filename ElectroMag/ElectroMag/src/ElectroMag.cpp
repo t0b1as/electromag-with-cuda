@@ -29,7 +29,7 @@
 
  using namespace std;
  // Use float or double; 16-bit single will generate erors
- #define FPprecision float
+ #define FPprecision double
 static int finished = 0;
 
 struct SimulationParams
@@ -41,11 +41,11 @@ struct SimulationParams
 	size_t pDynamic;	// Number of dynamic charge elements
 	size_t len;			// Number of steps of a field line
 };
-SimulationParams DefaultParams = {128, 128, 1, 1000, 0, 2500};			// Default size for comparison with CPU performance
-SimulationParams EnhancedParams = {256, 112, 1, 2000, 0, 5000};			// Expect to fail on systems with under 3GB
-SimulationParams ExtremeParams = {256, 256, 1, 2000, 0, 5000};			// Expect to fail on systems with under 6GB
-SimulationParams InsaneParams = {512, 512, 1, 2000, 0, 5000};			// Requires minimum 16GB system RAM + host buffers
-SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5000, 0, 10000};	// Requires minimum 24GB system RAM + host buffers
+SimulationParams DefaultParams = {128, 128, 1, 1024, 0, 2500};			// Default size for comparison with CPU performance
+SimulationParams EnhancedParams = {256, 112, 1, 2048, 0, 5000};			// Expect to fail on systems with under 3GB
+SimulationParams ExtremeParams = {256, 256, 1, 2048, 0, 5000};			// Expect to fail on systems with under 6GB
+SimulationParams InsaneParams = {512, 512, 1, 2048, 0, 5000};			// Requires minimum 16GB system RAM + host buffers
+SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000};	// Requires minimum 24GB system RAM + host buffers
 SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work acceptably on most multi-core CPUs
 //SimulationParams CpuModeParams = {16, 16, 1, 1000, 0, 1000};
 
@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
 	bool randseed = false;
 	bool randfieldinit = false;
 	bool debugData = false;
+	bool regressData = false;
 	// Get command-line options;
 	for(int i = 1; i < argc; i++)
 	{
@@ -99,6 +100,8 @@ int main(int argc, char* argv[])
 			randfieldinit = true;
 		else if( !strcmp(argv[i], "postrundebug") )
 			debugData = true;
+		else if( !strcmp(argv[i], "autoregress") )
+			regressData = true;
 		else
 			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
 	}
@@ -254,9 +257,7 @@ int main(int argc, char* argv[])
         // one OMP thread, severely hampering performance on multi-core/CPU systems
         omp_set_dynamic(true);
         omp_set_nested(true);
-		#pragma omp parallel
-		{
-        #pragma omp sections nowait
+        #pragma omp parallel sections
         {
 			// First section runs the calculations
             #pragma omp section
@@ -265,6 +266,9 @@ int main(int argc, char* argv[])
 				QueryHPCTimer(&start);
 				failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
 				QueryHPCTimer(&end);
+				// Make sure the next section terminates even if progress is not updated,
+				// or is not updated entirely
+				GPUperf.progress = 1;
 			}
 			 // Second section monitors progress
             #pragma omp section
@@ -285,7 +289,6 @@ int main(int argc, char* argv[])
 				std::cout<<" Done"<<std::endl;
 				cout.flush();
             }
-		}
 		}
 		if(failedFunctors >= cudaDev) display = false;
 		if(failedFunctors) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
@@ -363,11 +366,12 @@ int main(int argc, char* argv[])
 			
 	}
 
-	GLpacket<FPprecision> GLdata;
-	GLdata.charges = &charges;
-	GLdata.lines = arrMain;
+	GLpacket GLdata;
+	GLdata.charges = (Array<pointCharge<float> >*)&charges;
+	GLdata.lines = (Array<Vector3<float> >*)arrMain;
 	GLdata.nlines = n;
 	GLdata.lineLen = len;
+	GLdata.elementSize = sizeof(FPprecision);
 	FieldDisp.RenderPacket(GLdata);
 	FieldDisp.SetPerfGFLOP(GPUperf.performance);
     if(display)
@@ -402,7 +406,7 @@ int main(int argc, char* argv[])
 	}
 	
     // Save points that are significanlty off for regression analysis
-	if(CPUenable && GPUenable)
+	if(regressData && CPUenable && GPUenable)
 	{
 		regress.open("regression.txt");//, ios::app);
 		cout<<" Beginning verfication procedure"<<endl;
