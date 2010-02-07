@@ -63,8 +63,37 @@ inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> 
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
 	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul-div)
+		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
+	// NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
+	// Since we have one division and one multiplication, this should be more efficient due to the
+	// Fact that most architectures perform multiplication way faster than division. Also on some
+	// GPU architectures this yields a more precise result.
 };						// Total: 15 FLOP
+
+#if defined(__CUDACC__)
+// Yet another CUDA optimization:
+// Square root is performed by raciprocal square root followed by reciprocal, which are two expensive operations
+// Since we divide by the square root of lenSq, it makes insanely more sense to multiply by the reciprocal square root of lenSq
+// since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
+// NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
+template <>
+__device__ Vector3<float> electroPartField(pointCharge<float> charge, Vector3<float> point)
+{
+	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
+	float lenSq = vec3LenSq(r);								// 5 FLOP
+	return vec3Mul(r, (float)electro_k * charge.magnitude *	// 3 FLOP (vecMul)
+		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
+};
+template <>
+__device__ Vector3<double> electroPartField(pointCharge<double> charge, Vector3<double> point)
+{
+	Vector3<double> r = vec3(point, charge.position);			// 3 FLOP
+	double lenSq = vec3LenSq(r);								// 5 FLOP
+	return vec3Mul(r, (double)electro_k * charge.magnitude *	// 3 FLOP (vecMul)
+		rsqrt(lenSq) / lenSq );								// 4 FLOP (1 sqrt + 3 mul,div)
+};
+#endif
+
 #define electroPartFieldFLOP 15
 
 // Returns the partial field vector without multiplying by electro_k to save one FLOP
@@ -74,8 +103,32 @@ inline __device__ Vector3<T> electroPartFieldVec(pointCharge<T> charge, Vector3<
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
 	return vec3Mul(r, charge.magnitude /				// 3 FLOP (vecMul)
-		lenSq / (T)sqrt(lenSq) );						// 3 FLOP (1 sqrt + 2 mul-div)
+		(lenSq * (T)sqrt(lenSq)) );						// 3 FLOP (1 sqrt + 2 mul-div)
 };						// Total: 14 FLOP
 #define electroPartFieldVecFLOP 14
+
+#if defined(__CUDACC__)
+// Yet another CUDA optimization:
+// Square root is performed by raciprocal square root followed by reciprocal, which are two expensive operations
+// Since we divide by the square root of lenSq, it makes insanely more sense to multiply by the reciprocal square root of lenSq
+// since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
+// NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
+template <>
+__device__ Vector3<float> electroPartFieldVec(pointCharge<float> charge, Vector3<float> point)
+{
+	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
+	float lenSq = vec3LenSq(r);								// 5 FLOP
+	return vec3Mul(r, charge.magnitude *					// 3 FLOP (vecMul)
+		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
+};
+template <>
+__device__ Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vector3<double> point)
+{
+	Vector3<double> r = vec3(point, charge.position);		// 3 FLOP
+	double lenSq = vec3LenSq(r);							// 5 FLOP
+	return vec3Mul(r, charge.magnitude *					// 3 FLOP (vecMul)
+		rsqrt(lenSq) / lenSq );								// 4 FLOP (1 sqrt + 3 mul,div)
+};
+#endif
 
 #endif// _ELECTROSTATICS_H
