@@ -1,0 +1,30 @@
+#summary This section describes how to compile Electromag under Linux
+#labels Phase-Deploy
+
+= Introduction =
+
+In order to compile ElectroMag you will need either GCC with C++ support (G++), or the Intel C++ compiler. In most cases, decending into the root directory of ElectroMag and typing make in a shell should work.
+
+
+= Details =
+
+ElectroMag does not explicitly depend on any proprietary blob. Therefore, you may still compile ElectroMag even if you do not have the proprietary NVIDIA drivers and/or the CUDA toolkit installed.
+
+==Prerequisites==
+  # GCC or Intel C++ compiler
+  # GNU make
+  # GLU development headers
+
+In the event you do not have the CUDA toolkit installed, you compilaion wol complete succesfully, but GPU executable code will not be created. In that case, you may obtain the GPU modules from the downloads page. Make sure you get the version with the correct bitness for your build. Due to the design of CUDA, 32-bit modules are not interoperable with 64-bit builds of Electromag and vice-versa.Once you obtain the correct modles, simply copy them in the same folder with the ElectroMag executable.
+
+= Using the Intel C++ compiler =
+
+You will first need to edit Config.mk:
+  *uncomment the following line:
+  **include ../Makefile-Intel.mk
+  * comment out the following line
+  **include ../Makefile-GNU.mk # AKA The Headache Compiler
+
+Then you will need to edit Makefile-Intel.mk, and make sure that ICL_PATH points to the correct location of the compiler's executable files.
+
+Descend into the root of ElectroMag and type make at a shell.
