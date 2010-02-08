@@ -173,7 +173,16 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 	return 0;
 }
 
-#if !defined(USE_AUTO_VECTORIZATION)
+// ICC Specific: Inline assembly on x64 with current syntax only works on ICC
+// MSVC does not support it for 64-bit, and GCC uses a different (idiotic) syntax
+// Until GCC finally decides to accept modern inline assembly syntax, I will
+// not support manual vectorization on GCC
+// (One may change my mind by first optimizing current code even furter)
+// I doubt MSVC will ever decide to to support inline assembly for x64
+// compilation, so just switch to ICC, or GCC if you dare >:X
+// Really, if enough people use GCC, and they request that I support GCC inline
+// assembly, and they are willing to help port the code, I will support it.
+#if defined(_M_X64) && defined(__INTEL_COMPILER)
 #include <xmmintrin.h>
 
 #define 	xAccum	xmm0

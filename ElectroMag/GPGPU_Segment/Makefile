@@ -44,14 +44,29 @@ CUDA-pre: pre-build
 	@echo =======================================================
 	@echo = Compiling GPU segment                               =
 	@echo =======================================================
-CUDA-post: $(PTX_OBJS) $(CUBIN_OBJS)
+CUDA-post: CUDA-main
 	@echo =======================================================
 	@echo = Done compiling GPU segment                          =
 	@echo =======================================================
 CUDA-all: CUDA-post
 
 # Rule for compiling CUDA segment
+# We compile the CUDA sources only if nvcc exists and is executable
+# if nvcc is not available, then we can still use pre-compiled PTX or CUBIN
+# objects, or use the non-CUDA functionality
+# This works because we are not generating any code that needs to be linked in
+# the final application. If PTX or CUBIN files are nt found, the CUDA modules
+# will not load, and CUDA functionality will be unavailable.
+# Note that PTX files will be compiled as dependencies for the CUBIN objects
 CUDA-main:
+	if (test -x $(NVCC) ) ;\
+	then\
+		make $(CUBIN_OBJS) ;\
+	else\
+		echo "Warning: " $(NVCC) " not found."\
+		echo "CUDA device code will not be generated" ;\
+	fi
+
 	
 
 
@@ -73,10 +88,15 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp HOST-pre
 $(OBJDIR)/%.o: $(SRCDIR)/%.c HOST-pre
 	$(CC) -c $(CCFLAGS) -nostdlibs  $< -o $@
 
+#Compile to ptx files first; We will need those in case the program runs on a
+# GPU architecture for which cubin files have not been compiled
 $(TARGET_DIR)/%.ptx: $(SRCDIR)/%.cu CUDA-pre
 	$(NVCC) -ptx $(NVCCFLAGS) -o $@ $<
 
-$(TARGET_DIR)/%.cubin: $(SRCDIR)/%.cu CUDA-pre
+# Now compile the cubin files, but use the previously generated PTX files as
+# input; this will save some compilation time as opposed to compiling straight
+# from C/C++ sources :)
+$(TARGET_DIR)/%.cubin: $(TARGET_DIR)/%.ptx CUDA-pre
 	$(NVCC) -cubin $(NVCCFLAGS) -o $@ $<
 
 
@@ -95,4 +115,5 @@ clean:
 	rm -f *.o
 	rm -f $(TARGET_DIR)/$(TARGET)
 	rm -f $(TARGET_DIR)/$(PTX_OBJS)
+	rm -f $(TARGET_DIR)/$(CUBIN_OBJS)
 	rm -r -f $(OBJDIR)
