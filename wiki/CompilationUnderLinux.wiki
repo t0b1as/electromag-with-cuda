@@ -20,10 +20,8 @@ In the event you do not have the CUDA toolkit installed, you compilaion wol comp
 = Using the Intel C++ compiler =
 
 You will first need to edit Config.mk:
-  *uncomment the following line:
-  *     include ../Makefile-Intel.mk
-  * comment out the following line
-  *     include ../Makefile-GNU.mk # AKA The Headache Compiler
+  * uncomment the following line: "include ../Makefile-Intel.mk"
+  * comment out the following line "include ../Makefile-GNU.mk"
 
 Then you will need to edit Makefile-Intel.mk, and make sure that ICL_PATH points to the correct location of the compiler's executable files.
 
