@@ -20,7 +20,7 @@ AS=as
 
 # Macros
 CND_PLATFORM=GNU-Linux-x86
-CND_CONF=Default
+CND_CONF=Debug
 CND_DISTDIR=dist
 
 # Include project Makefile
@@ -50,14 +50,14 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	cd /home/mrnuke/electromag-with-cuda/ElectroMag && $(MAKE) -f Makefile
+	cd /home/mrnuke/electromag-with-cuda/ElectroMag && ${MAKE} debug
 
 # Subprojects
 .build-subprojects:
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
-	cd /home/mrnuke/electromag-with-cuda/ElectroMag && $(MAKE) -f Makefile clean
+	cd /home/mrnuke/electromag-with-cuda/ElectroMag && ${MAKE} clean
 
 # Subprojects
 .clean-subprojects:

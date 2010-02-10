@@ -40,11 +40,11 @@ all: $(LIB_PATH)/$(GPGPU_LIB)
 # Rule for compiling C and C++ files and creating library
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp 
 	@echo Compiling $<
-	@$(CXX) -c $(CXXFLAGS) -nostdlibs  $< -o $@
+	@$(CXX) -c $(CXXFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c 
 	@echo Compiling $<
-	@$(CC) -c $(CCFLAGS) -nostdlibs  $< -o $@
+	@$(CC) -c $(CCFLAGS) $< -o $@
 
 #Compile to ptx files first; We will need those in case the program runs on a
 # GPU architecture for which cubin files have not been compiled

@@ -1,5 +1,5 @@
 #Intel C++ compiler location
-ICL_PATH=/opt/intel/Compiler/11.1/056/bin/ia32
+ICL_PATH=/opt/intel/Compiler/11.1/064/bin/ia32
 
 # Add Intel-specific OpenMP library
 LDFLAGS += -liomp5 -pthread

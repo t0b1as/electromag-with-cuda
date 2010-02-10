@@ -31,16 +31,16 @@ $(TARGET_DIR)/$(TARGET):
 	@echo =======================================================
 
 #1 The heavy processing part
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp .pre-build
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 # Rule for files that are located in src/somedir/
-$(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp .pre-build
+$(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Rule for files that are located in src/somedir/more_nested_dir/
-$(OBJDIR)/%.o: $(SRCDIR)/*/*/%.c .pre-build
+$(OBJDIR)/%.o: $(SRCDIR)/*/*/%.c
 	@echo Compiling $<
 	@$(CC) $(CXXFLAGS) -c $< -o $@
 

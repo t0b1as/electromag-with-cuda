@@ -123,5 +123,20 @@
         </makeTool>
       </makefileType>
     </conf>
+    <conf name="Debug" type="0">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <compilerSet>GNU|GNU</compilerSet>
+        <platform>2</platform>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>/home/mrnuke/electromag-with-cuda/ElectroMag</buildCommandWorkingDir>
+          <buildCommand>${MAKE} debug</buildCommand>
+          <cleanCommand>${MAKE} clean</cleanCommand>
+          <executablePath>bin/Electromag</executablePath>
+        </makeTool>
+      </makefileType>
+    </conf>
   </confs>
 </configurationDescriptor>
