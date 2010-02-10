@@ -845,14 +845,15 @@ template<>
 int CalcField_CPU<float>(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
 			  const __int64 n, float resolution, perfPacket& perfData, bool useCurvature)
 {
-	if(useCurvature) return CalcField_CPU_T_Curvature(fieldLines, pointCharges, n, resolution, perfData);
-	else return CalcField_CPU_T(fieldLines, pointCharges, n, resolution, perfData);
+	if(useCurvature) return CalcField_CPU_T_Curvature<float>(fieldLines, pointCharges, n, resolution, perfData);
+	else return CalcField_CPU_T<float>(fieldLines, pointCharges, n, resolution, perfData);
 }
 
-int CalcField_CPU(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
+template<>
+int CalcField_CPU<double>(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
 			  const __int64 n, double resolution, perfPacket& perfData, bool useCurvature)
 {
-	if(useCurvature) return CalcField_CPU_T_Curvature(fieldLines, pointCharges, n, resolution, perfData);
-	else return CalcField_CPU_T(fieldLines, pointCharges, n, resolution, perfData);
+	if(useCurvature) return CalcField_CPU_T_Curvature<double>(fieldLines, pointCharges, n, resolution, perfData);
+    else return CalcField_CPU_T<double>(fieldLines, pointCharges, n, resolution, perfData);
 }
 
