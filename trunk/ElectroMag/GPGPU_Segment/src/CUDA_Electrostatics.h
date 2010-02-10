@@ -162,11 +162,20 @@ private:
 
 	
 };
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
-///\ingroup DEVICE_FUNCTORS
-///@}
+///\brief Electrostatics functor constructor
+///
+/// Initializes critical variables
 ////////////////////////////////////////////////////////////////////////////////////////////////
-//extern CudaElectrosFunctor<float> experimentalFunctor;
-//extern CudaElectrosFunctor<double> doublePrecisionFunctor;
+template<class T>
+CudaElectrosFunctor<T>::CudaElectrosFunctor()
+{
+	dataBound = false;
+	resourcesAllocated = false;
+	nDevices = this->ElectrostaticsManager.GetCompatibleDevNo();
+	nReadyForExec = 0;
+}
 
 #endif//_CUDA_ELECTROSTATICS_H

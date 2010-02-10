@@ -105,11 +105,13 @@ int CudaManager::LoadDriver()
 	if(drvInit == CUDA_ERROR_FILE_NOT_FOUND)
 	{
 		std::cerr<<" Severe error: Could not find CUDA driver"<<std::endl;
+        return (int)drvInit;
 	}
 	else if(drvInit != CUDA_SUCCESS)
 	{
 
 		std::cerr<<" CUDA driver detected, but loading failed with error "<<drvInit<<std::endl;
+        return (int)drvInit;
 	}
 
 	//Check for correct driver version
@@ -122,6 +124,7 @@ int CudaManager::LoadDriver()
 		std::cerr<<" Loaded version "<<driverVersion<<" , but minimim version "<<CUDA_VERSION<< "is needed"<<std::endl;
 		// Flag this as an error condition
 		drvInit = CUDA_ERROR_UNKNOWN;
+        return (int)drvInit;
 	}
 	driverLoaded = true;
 	return (int)drvInit;

@@ -8,29 +8,9 @@
 CudaElectrosFunctor<float> SPFunctor;
 CudaElectrosFunctor<double> DPFunctor;
 
-void * GiveMeMyConstructorsYouDamnGCC()
-{
-    CudaElectrosFunctor<float> *SP = new CudaElectrosFunctor<float>();
-    CudaElectrosFunctor<double> *DP = new CudaElectrosFunctor<double>();;
-    CudaElectrosFunctor<float>::CudaElectrosFunctor();
-    return (void*) (1?(void*)SP:(void*)DP);
-}
 template<class T>
 cuda::CudaManager CudaElectrosFunctor<T>::ElectrostaticsManager;
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Electrostatics functor constructor
-///
-/// Initializes critical variables
-////////////////////////////////////////////////////////////////////////////////////////////////
-template<class T>
-CudaElectrosFunctor<T>::CudaElectrosFunctor()
-{
-	dataBound = false;
-	resourcesAllocated = false;
-	nDevices = this->ElectrostaticsManager.GetCompatibleDevNo();
-	nReadyForExec = 0;
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Electrostatics functor destructor
