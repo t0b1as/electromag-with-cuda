@@ -267,12 +267,12 @@ CUresult ResourceAlloc(CoalescedFieldLineArray<CUdeviceptr> &gpuFieldStruct, Poi
     if (errCode != CUDA_SUCCESS)
 	{
         GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
-		fprintf(stderr, " xy host malloc failed with %u MB request.\n", xyPitch * steps / 1024 / 1024);
+		fprintf(stderr, " xy host malloc failed with %Zu MB request.\n", xyPitch * steps / 1024 / 1024);
 		return errCode;
     }
     if ((errCode = cuMemAllocHost((void**) & hostVec.z, (unsigned int)(zPitch * steps))) != CUDA_SUCCESS) {
         GPUfree(gpuCharges.chargeArr, &gpuFieldStruct);
-		fprintf(stderr, " z host malloc failed.with %u MB request.\n", zPitch * steps / 1024 / 1024);
+		fprintf(stderr, " z host malloc failed.with %Zu MB request.\n", zPitch * steps / 1024 / 1024);
 		cuMemFreeHost(hostVec.xyInterleaved);
         return errCode;
     }

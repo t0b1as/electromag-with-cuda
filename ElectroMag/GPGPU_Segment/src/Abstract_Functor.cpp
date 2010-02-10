@@ -109,7 +109,7 @@ unsigned long AbstractFunctor::Run()
 
 		// Set the name for the thread
 		char threadName[512];
-		sprintf(threadName, "AbstractFunctor Device %i", i);
+		sprintf(threadName, "AbstractFunctor Device %Zu", i);
 		Threads::SetThreadName(threadID, threadName);
 	}
 

@@ -4,6 +4,8 @@
     <df name="ElectroMag" root="/home/mrnuke/electromag-with-cuda/ElectroMag">
       <df name="bin">
       </df>
+      <df name="bin">
+      </df>
       <df name="common">
         <df name="lib">
         </df>
@@ -22,6 +24,52 @@
         </df>
       </df>
       <df name="ElectroMag">
+        <df name="bin">
+        </df>
+        <df name="common">
+          <df name="lib">
+          </df>
+          <df name="src">
+            <df name="X-Compat">
+              <in>HPC Timing.h</in>
+              <in>Memman.h</in>
+              <in>Threading.h</in>
+            </df>
+            <in>CUDA Definitions.h</in>
+            <in>Data Structures.h</in>
+            <in>Electrodynamics.h</in>
+            <in>Electrostatics.h</in>
+            <in>Newton FEMA.h</in>
+            <in>Vector.h</in>
+          </df>
+        </df>
+        <df name="GPGPU_Segment">
+          <df name="src">
+            <in>Abstract Functor.h</in>
+            <in>Abstract_Functor.cpp</in>
+            <in>CL Manager.h</in>
+            <in>CL_Manager.cpp</in>
+            <in>CPGP Interop.h</in>
+            <in>CUDA Interop.h</in>
+            <in>CUDA Manager.h</in>
+            <in>CUDA_Electrostatics.cpp</in>
+            <in>CUDA_Electrostatics.h</in>
+            <in>CUDA_manager.cpp</in>
+            <in>Config.h</in>
+            <in>Electrostatics Housekeeping.h</in>
+            <in>Electrostatics Kernel Launch.h</in>
+            <in>Electrostatics MT kernel.cuh</in>
+            <in>Electrostatics kernel.cuh</in>
+            <in>Electrostatics.cpp</in>
+            <in>Electrostatics.cu</in>
+            <in>Electrostatics_Multistep.cu</in>
+            <in>Electrostatics_sm13.cu</in>
+            <in>OpenCL_Dyn_Load.c</in>
+            <in>OpenCL_Dyn_Load.h</in>
+            <in>cuda_drvapi_dynlink.c</in>
+            <in>cuda_drvapi_dynlink.h</in>
+          </df>
+        </df>
         <df name="obj">
         </df>
         <df name="src">
@@ -64,7 +112,18 @@
       <df name="GPGPU_Segment">
         <df name="obj">
         </df>
+        <df name="obj">
+        </df>
         <df name="src">
+          <df name="CL">
+            <in>cl.h</in>
+            <in>cl_gl.h</in>
+            <in>cl_platform.h</in>
+          </df>
+          <df name="CUDA">
+            <in>host_defines.h</in>
+            <in>vector_types.h</in>
+          </df>
           <in>Abstract Functor.h</in>
           <in>Abstract_Functor.cpp</in>
           <in>CL Manager.h</in>

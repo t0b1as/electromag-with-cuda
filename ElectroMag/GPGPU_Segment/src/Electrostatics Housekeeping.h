@@ -139,8 +139,8 @@ CUresult GPUmalloc(
 	{
 		// Otherwise, the allocation cannot continue with specified multiplicity
 		fprintf(stderr, " Memory allocation error on device: %u\n", currentGPU);
-		fprintf(stderr, " Cannot assign enough memory for requested multplicity: %u\n", blockMultiplicity);
-		fprintf(stderr, " Minimum of %uMB available video RAM needed, driver reported %uMB available\n",
+		fprintf(stderr, " Cannot assign enough memory for requested multplicity: %Zu\n", blockMultiplicity);
+		fprintf(stderr, " Minimum of %ZuMB available video RAM needed, driver reported %uMB available\n",
 			(gridRAM + chargeData->paddedSize)/1024/1024, free/1024/1024);
 		*segments = 0;
 		return CUDA_ERROR_OUT_OF_MEMORY;
@@ -157,7 +157,7 @@ CUresult GPUmalloc(
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, chargeAlloc, currentGPU);
-		fprintf(stderr, " Failed batch size %u. Error code %u\n", chargeData->paddedSize, errCode);
+		fprintf(stderr, " Failed batch size %Zu. Error code %i\n", chargeData->paddedSize, errCode);
 		return errCode;
 	};
 
@@ -173,8 +173,8 @@ CUresult GPUmalloc(
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, xyAlloc, currentGPU);
-		fprintf(stderr, " Failed %u batches %u bytes each. Error code: %u\n", GPUlines->nSteps, xyCompSize * linesPerSeg, errCode);
-		fprintf(stderr, " Driver reported %uMB available, requested %u MB\n", free/1024/1024, GPUlines->nSteps * xyCompSize * linesPerSeg/1024/1024);
+		fprintf(stderr, " Failed %Zu batches %Zu bytes each. Error code: %i\n", GPUlines->nSteps, xyCompSize * linesPerSeg, errCode);
+		fprintf(stderr, " Driver reported %iMB available, requested %Zu MB\n", free/1024/1024, GPUlines->nSteps * xyCompSize * linesPerSeg/1024/1024);
 		// Free any previously allocated memory
 		cuMemFree((CUdeviceptr)chargeData->chargeArr);
 		return errCode;
@@ -187,11 +187,11 @@ CUresult GPUmalloc(
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, zAlloc, currentGPU);
-		fprintf(stderr, " Failed %u batches %u bytes each. \n", GPUlines->nSteps, zCompSize * linesPerSeg);
+		fprintf(stderr, " Failed %Zu batches %li bytes each. \n", GPUlines->nSteps, zCompSize * linesPerSeg);
 		fprintf(stderr, " Driver reported %uMB available", free/1024/1024);
 		cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
 		fprintf(stderr, " Driver now reports %uMB available", free/1024/1024);
-		fprintf(stderr, " First request allocated %uMB \n Second request for %uMB failed with code %u\n",
+		fprintf(stderr, " First request allocated %ZuMB \n Second request for %ZuMB failed with code %u\n",
 			GPUlines->nSteps * GPUlines->xyPitch/1024/1024, GPUlines->nSteps * zCompSize * linesPerSeg/1024/1024, errCode);
 		// Free any previously allocated memory
 		cuMemFree(chargeData->chargeArr);cuMemFree(GPUlines->coalLines.z);

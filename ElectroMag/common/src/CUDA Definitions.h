@@ -1,8 +1,9 @@
 #pragma once
-#include "builtin_types.h"
+#include "../../GPGPU_Segment/src/CUDA/vector_types.h"
 #ifdef __CUDACC__
 // No need to take any action
-#else/*
+#else
+/*
 // Void CUDA specific keywords
 #define __align__(x) __declspec(align(x))
 #define __device__

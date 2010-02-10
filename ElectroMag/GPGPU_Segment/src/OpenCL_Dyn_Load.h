@@ -22,7 +22,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #ifdef __APPLE__
 #include <OpenCL/cl_platform.h>
 #else
-#include <CL/cl_platform.h>
+#include "CL/cl_platform.h"
 #endif
 
 #ifdef CL_API_ENTRY
