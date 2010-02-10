@@ -75,12 +75,13 @@ $(LIB_PATH)/$(GPGPU_LIB):
 	@if (test -x $(NVCC) ) ;\
 	then\
 		make $(CUBIN_OBJS) ;\
+		cp -f $(LIB_PATH)/*.ptx $(TARGET_DIR)\
+		cp -f $(LIB_PATH)/*.cubin $(TARGET_DIR)\
 	else\
 		echo "Warning: " $(NVCC) " not found."\
 		echo "CUDA device code will not be generated" ;\
 	fi
-	@cp -f $(LIB_PATH)/*.ptx $(TARGET_DIR)
-	@cp -f $(LIB_PATH)/*.cubin $(TARGET_DIR)
+	
 	@echo =======================================================
 	@echo = Linking Everything                                  =
 	@echo =======================================================
