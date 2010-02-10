@@ -3,6 +3,7 @@
 
 all: Electromag
 clean: Electromag-clean GPGPU_segment-clean
+	rm -r -f $(TARGET_DIR)
 debug: Electromag-debug GPGPU_segment-debug
 run: Electromag-run
 

@@ -27,18 +27,6 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "Electrostatics Housekeeping.h"
 #include "Electrostatics Kernel Launch.h"
 
-#pragma warning(disable:181)
-
-/* x64 release compilation parameters
-"$(CUDA_BIN_PATH)\nvcc.exe" -maxrregcount 18 -keep -ccbin "$(VCInstallDir)bin" -c -D_NDEBUG -DWIN64 -D_CONSOLE -D_MBCS
--Xcompiler /EHsc,/W3,/nologo,/O2,/Zi,/MT -I.\..\ElectroMag\ -I"$(CUDA_INC_PATH)" -I"$(CUDA_SDK_INC_PATH)" -I./
--o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj Electrostatics.cu
-
-x64 debug parameters
-"$(CUDA_BIN_PATH)\nvcc.exe" -maxrregcount 18 -keep -ccbin "$(VCInstallDir)bin" -c -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS
--Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\ElectroMag\ -I"$(CUDA_INC_PATH)" -I"$(CUDA_SDK_INC_PATH)" -I./
--o $(PlatformName)\$(ConfigurationName)\CUDA_Electrostatics.obj Electrostatics.cu
- */
 namespace CalcFieldEs
 {
 template<class T>

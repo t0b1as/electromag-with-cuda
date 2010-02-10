@@ -159,7 +159,7 @@ inline void Pause(unsigned int miliseconds)
 };
 #endif
 
-inline void SetThreadName( unsigned long threadID, char* threadName)
+inline void SetThreadName( unsigned long threadID, const char* threadName)
 {
     // Void function; don't know how to set thread name in linux
 }

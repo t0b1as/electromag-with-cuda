@@ -34,24 +34,24 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #define CalcField_kernelFLOP_Curvature(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 45) )
 
 #ifdef ES_FUNCTOR_INCLUDE
-char* multistepModuleNameCUBIN	= "Electrostatics_Multistep.cubin";
-char* multistepModuleNamePTX	= "Electrostatics_Multistep.ptx";
-char* singlestepModuleNameCUBIN	= "Electrostatics.cubin";
-char* singlestepModuleNamePTX	= "Electrostatics.ptx";
+const char* multistepModuleNameCUBIN	= "Electrostatics_Multistep.cubin";
+const char* multistepModuleNamePTX      = "Electrostatics_Multistep.ptx";
+const char* singlestepModuleNameCUBIN	= "Electrostatics.cubin";
+const char* singlestepModuleNamePTX 	= "Electrostatics.ptx";
 
-char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
-char* singlestepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
-char* multistepKernel_SP_MT				= "CalcField_MTkernel";
-char* singlestepKernel_SP_MT			= "CalcField_MTkernel";
-char* multistepKernel_SP				= "CalcField_SPkernel";
-char* singlestepKernel_SP				= "CalcField_SPkernel";
+const char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
+const char* singlestepKernel_SP_MT_Curvature= "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
+const char* multistepKernel_SP_MT			= "CalcField_MTkernel";
+const char* singlestepKernel_SP_MT			= "CalcField_MTkernel";
+const char* multistepKernel_SP				= "CalcField_SPkernel";
+const char* singlestepKernel_SP				= "CalcField_SPkernel";
 
-char* multistepKernel_DP_MT_Curvature	= "not available";
-char* singlestepKernel_DP_MT_Curvature	= "not available";
-char* multistepKernel_DP_MT				= "CalcField_MTkernel_DP";
-char* singlestepKernel_DP_MT			= "CalcField_MTkernel_DP";
-char* multistepKernel_DP				= "CalcField_DPkernel";
-char* singlestepKernel_DP				= "CalcField_DPkernel";
+const char* multistepKernel_DP_MT_Curvature	= "not available";
+const char* singlestepKernel_DP_MT_Curvature= "not available";
+const char* multistepKernel_DP_MT			= "CalcField_MTkernel_DP";
+const char* singlestepKernel_DP_MT			= "CalcField_MTkernel_DP";
+const char* multistepKernel_DP				= "CalcField_DPkernel";
+const char* singlestepKernel_DP				= "CalcField_DPkernel";
 #endif//ES_FUNCTOR_INCLUDE
 
 #endif//_CONFIG_H

@@ -13,14 +13,14 @@ CUDA_SDK_INC_PATH= $(CUDA_SDK_PATH)/C/common/inc
 # Generic target
 TARGET= Electromag
 TARGET_DIR = ./../bin
-
-GPU_LIB_PATH= ../common/lib
+GPGPU_LIB = libGPGPU_segment.a
+LIB_PATH= ../common/lib
 
 #Include directories
 INCLUDE += -I. -I./../GPGPU\ Segment/src -I./../common/src -I./src -I $(CUDA_INC_PATH)
 CXXINCLUDE= $(INCLUDE)
 #Library options
-LDFLAGS += -lpthread -lGLU $(GPU_LIB_PATH)/libGPGPU_segment.a
+LDFLAGS += -lpthread -lGLU $(LIB_PATH)/$(GPGPU_LIB)
 
 # Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
 # but by all means, use the Intel compiler if at all posible
