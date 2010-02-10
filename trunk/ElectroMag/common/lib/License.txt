@@ -1,0 +1,3 @@
+The files contained in this archve are part of Electromag, and are licensed under the GPLv3.
+
+Copyright (c) Alexandru Gagniuc 2009-2010 

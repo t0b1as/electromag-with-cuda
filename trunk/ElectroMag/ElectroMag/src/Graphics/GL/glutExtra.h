@@ -9,7 +9,7 @@ See Electromag.cpp for license
 // know where else to implement
 //
 
-inline void PrintGlutString(char* string, void* glutFont, int Xpos, int Ypos, int Zpos = 1)
+inline void PrintGlutString(const char* string, void* glutFont, int Xpos, int Ypos, int Zpos = 1)
 {
 	glRasterPos3i(Xpos, Ypos, Zpos);
     glutBitmapString(glutFont, (const unsigned char*)string);

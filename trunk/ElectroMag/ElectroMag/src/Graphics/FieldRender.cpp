@@ -26,8 +26,10 @@ For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.d
 #include "X-Compat/HPC Timing.h"
 #include <stdio.h> // for sprintf()
 
+#if defined(_MSC_VER)
 #pragma warning(disable:1786)
 #pragma warning(disable:4996)
+#endif//MSVC
 
 Camera FieldRender::mainCam;
 ProjectionMode FieldRender::PM;
@@ -159,7 +161,7 @@ void FieldRender::fieldDisplay()
 	glEnableClientState(GL_COLOR_ARRAY);
 	glColorPointer(3, GL_FLOAT, 0, colors);
 	int pts = (GLint)GLdata.lineLen;
-	for(int i = 0; i<GLdata.nlines; i++)
+	for(size_t i = 0; i<GLdata.nlines; i++)
 	{
 		glVertexPointer(3 , GL_FLOAT, (GLint)(GLdata.lines->GetElemSize()*GLdata.lines->GetSize()/GLdata.lineLen), GLdata.lines->GetDataPointer()+i);
 		glDrawArrays(GL_LINE_STRIP, 0, pts);
@@ -246,7 +248,7 @@ void FieldRender::Start()
 		// Since the field lines comes arranged in lines by steps, the memory arrangement will be n0_0 n1_0 n2_0 n3_0 n4_0... n0_1 n1_1 n2_1 n3_1 n4_1
 		// In order to display the data, we need it in n0_0, n0_1, n0_2... form, so we need to copy the data to the temporary buffer.
 		// This is easily done by setting the base to ni_0, and for each element adding an offset of GLdata.nlines.
-		for(int i = 0; i < nrLinesVBO; i++)
+		for(size_t i = 0; i < nrLinesVBO; i++)
 		{
 			// Set the base to ni_0
 			Vector3<float> *temp = GLdata.lines->GetDataPointer() + i*lineSkip;
@@ -494,7 +496,7 @@ void FieldRender::fieldDisplayVBO()
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, colorVBO);
 	glColorPointer(3, GL_FLOAT, 0, 0);
 	glColor3f(1.0, 0.0, 0.0);
-	for(int i = 0; i < RenderData::bufferedLines; i++)
+	for(size_t i = 0; i < RenderData::bufferedLines; i++)
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, linesVBOs[i]);
 		glVertexPointer(3 , GL_FLOAT, 0, 0);

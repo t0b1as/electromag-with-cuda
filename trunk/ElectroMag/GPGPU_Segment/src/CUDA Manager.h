@@ -77,7 +77,7 @@ public:
         void ScanCompatible();
         //------------------------------------------Simple accessors------------------------------//
     /// Returns the number of compatible devices found
-        int GetCompatibleDevNo()const{return nrCompatible;};
+        size_t GetCompatibleDevNo()const{return nrCompatible;};
 
         /// Calls the given functor from a new thread with an active context created for the device
     /// in GPU index as the given device
@@ -117,7 +117,7 @@ private:
     /// Keeps handles to all obects reported by the CUDA driver
     static CUdevice* devices;
         /// Records the number of devices compatible with application requirements
-        static int nrCompatible;
+        static size_t nrCompatible;
         /// Records the properties of all devices reported by the driver
         static CUDeviceProp *deviceProperties;
         /// Contains the indexes of the compatible devices in deviceProperties[]
@@ -136,7 +136,7 @@ private:
         /// Records whether a scan for compatible devices that meet user requirements has already completed
         bool userScanComplete;
         /// Records the number of devices compatible with application requirements
-        int userNrCompatible;
+        size_t userNrCompatible;
         /// Contains the indexes of the compatible devices in deviceProperties
         int *userCompatibleDevIndex;
 

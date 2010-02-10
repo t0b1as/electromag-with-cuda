@@ -2,8 +2,6 @@
 
 include ../Config.mk
 
-TARGET_DIR= $(GPU_LIB_PATH)
-TARGET= libGPGPU_segment.a
 #Include directories
 CPP_INCLUDE = -I $(CUDA_INC_PATH) -I $(CUDA_SDK_INC_PATH)
 CPP_INCLUDE += -I. -I../ElectroMag/src
@@ -13,7 +11,8 @@ CPP_LIBS = -lpthread $(CUDA_LIB_PATH)/libcudart.so
 
 # CUDA compiler flags
 NVCC=$(CUDA_BIN_PATH)/nvcc
-NVCCFLAGS= --ptxas-options=-v -use_fast_math -I ./../common/src -I ./ -I $(CUDA_SDK_INC_PATH)
+NVCCFLAGS= --ptxas-options=-v -use_fast_math -maxrregcount=16\
+	-I ./../common/src -I ./ -I $(CUDA_SDK_INC_PATH)
 
 
 OBJDIR=obj
@@ -29,82 +28,63 @@ CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/CUDA_manager.o\
 
 # CUDA objects and targets
 CUDA_SOURCES= $(SRCDIR)/Electrostatics.cu
-PTX_OBJS= $(TARGET_DIR)/Electrostatics.ptx $(TARGET_DIR)/Electrostatics_Multistep.ptx
-CUBIN_OBJS= $(TARGET_DIR)/Electrostatics.cubin $(TARGET_DIR)/Electrostatics_Multistep.cubin
+PTX_OBJS= $(LIB_PATH)/Electrostatics.ptx $(LIB_PATH)/Electrostatics_Multistep.ptx
+CUBIN_OBJS= $(LIB_PATH)/Electrostatics.cubin $(LIB_PATH)/Electrostatics_Multistep.cubin
 
+.SECONDARY: $(PTX_OBJS)
+.PHONY: all clean $(OBJDIR)
+	
 # All for dummies
-all: $(TARGET_DIR)/$(TARGET)
+all: $(LIB_PATH)/$(GPGPU_LIB)
 
-pre-build:
-	@echo off
-	mkdir -p $(OBJDIR)
-	mkdir -p $(TARGET_DIR)
+# Rule for compiling C and C++ files and creating library
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp 
+	@echo Compiling $<
+	@$(CXX) -c $(CXXFLAGS) -nostdlibs  $< -o $@
 
-CUDA-pre: pre-build
-	@echo =======================================================
-	@echo = Compiling GPU segment                               =
-	@echo =======================================================
-CUDA-post: CUDA-main
-	@echo =======================================================
-	@echo = Done compiling GPU segment                          =
-	@echo =======================================================
-CUDA-all: CUDA-post
+$(OBJDIR)/%.o: $(SRCDIR)/%.c 
+	@echo Compiling $<
+	@$(CC) -c $(CCFLAGS) -nostdlibs  $< -o $@
 
-# Rule for compiling CUDA segment
-# We compile the CUDA sources only if nvcc exists and is executable
-# if nvcc is not available, then we can still use pre-compiled PTX or CUBIN
-# objects, or use the non-CUDA functionality
-# This works because we are not generating any code that needs to be linked in
-# the final application. If PTX or CUBIN files are nt found, the CUDA modules
-# will not load, and CUDA functionality will be unavailable.
-# Note that PTX files will be compiled as dependencies for the CUBIN objects
-CUDA-main:
-	if (test -x $(NVCC) ) ;\
+#Compile to ptx files first; We will need those in case the program runs on a
+# GPU architecture for which cubin files have not been compiled
+$(LIB_PATH)/%.ptx: $(SRCDIR)/%.cu
+	@echo Compiling $<
+	@$(NVCC) -ptx $(NVCCFLAGS) -o $@ $<
+
+# Now compile the cubin files, but use the previously generated PTX files as
+# input; this will save some compilation time as opposed to compiling straight
+# from C/C++ sources :)
+$(LIB_PATH)/%.cubin: $(LIB_PATH)/%.ptx
+	@echo Generating device code from $<
+	@$(NVCC) -cubin $(NVCCFLAGS) -o $@ $<
+
+
+$(LIB_PATH)/$(GPGPU_LIB):
+	@mkdir -p $(LIB_PATH)
+	@mkdir -p $(TARGET_DIR)
+	@mkdir -p $(OBJDIR)
+	@make $(CPU_OBJS)
+	@# We compile the CUDA sources only if nvcc exists and is executable
+	@# if nvcc is not available, then we can still use pre-compiled PTX or CUBIN
+	@# objects, or use the non-CUDA functionality
+	@# This works because we are not generating any code that needs to be linked in
+	@# the final application. If PTX or CUBIN files are nt found, the CUDA modules
+	@# will not load, and CUDA functionality will be unavailable.
+	@# Note that PTX files will be compiled as dependencies for the CUBIN objects
+	@if (test -x $(NVCC) ) ;\
 	then\
 		make $(CUBIN_OBJS) ;\
 	else\
 		echo "Warning: " $(NVCC) " not found."\
 		echo "CUDA device code will not be generated" ;\
 	fi
-
-	
-
-
-HOST-pre: pre-build
-	@echo ======================================================
-	@echo = Compiling Host segment                             =
-	@echo ======================================================
-HOST-post: $(CPU_OBJS)
-	@echo ======================================================
-	@echo = Done compiling Host segment                        =
-	@echo ======================================================
-HOST-all: HOST-post
-
-# Rule for compiling C and C++ files and creating library
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp HOST-pre
-	$(CXX) -c $(CXXFLAGS) -nostdlibs  $< -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.c HOST-pre
-	$(CC) -c $(CCFLAGS) -nostdlibs  $< -o $@
-
-#Compile to ptx files first; We will need those in case the program runs on a
-# GPU architecture for which cubin files have not been compiled
-$(TARGET_DIR)/%.ptx: $(SRCDIR)/%.cu CUDA-pre
-	$(NVCC) -ptx $(NVCCFLAGS) -o $@ $<
-
-# Now compile the cubin files, but use the previously generated PTX files as
-# input; this will save some compilation time as opposed to compiling straight
-# from C/C++ sources :)
-$(TARGET_DIR)/%.cubin: $(TARGET_DIR)/%.ptx CUDA-pre
-	$(NVCC) -cubin $(NVCCFLAGS) -o $@ $<
-
-
-$(TARGET_DIR)/$(TARGET): CUDA-all HOST-all
+	@cp -f $(LIB_PATH)/*.ptx $(TARGET_DIR)
+	@cp -f $(LIB_PATH)/*.cubin $(TARGET_DIR)
 	@echo =======================================================
 	@echo = Linking Everything                                  =
 	@echo =======================================================
-	$(AR) rcs $(TARGET_DIR)/$(TARGET) $(CPU_OBJS)
+	@$(AR) rcs $(LIB_PATH)/$(GPGPU_LIB) $(CPU_OBJS)
 	@echo =======================================================
 	@echo = Done Linking Everything                             =
 	@echo =======================================================
@@ -113,7 +93,7 @@ $(TARGET_DIR)/$(TARGET): CUDA-all HOST-all
 #Merciless seek and delete
 clean:
 	rm -f *.o
-	rm -f $(TARGET_DIR)/$(TARGET)
-	rm -f $(TARGET_DIR)/$(PTX_OBJS)
-	rm -f $(TARGET_DIR)/$(CUBIN_OBJS)
+	rm -f $(LIB_PATH)/$(GPGPU_LIB)
+	rm -f $(PTX_OBJS)
+	rm -f $(CUBIN_OBJS)
 	rm -r -f $(OBJDIR)

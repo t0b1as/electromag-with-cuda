@@ -67,8 +67,6 @@ int CalcField_CPU_T(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& poin
 		run faster if omp_set_num_threads is not specified.
 		The GNU and the Microsoft compiler produce highly suboptimal code
 	*/
-	//omp_set_num_threads(16);
-	#pragma unroll_and_jam
 	#pragma omp parallel for
 	for(__int64 line = 0; line < n; line++)
 	{

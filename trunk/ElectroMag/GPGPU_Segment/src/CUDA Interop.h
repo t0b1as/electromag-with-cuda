@@ -24,7 +24,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "CUDA Manager.h"
 
 // Include the GPGPU library if compiling external project
-#ifndef __CUDACC__
+#if !defined(__CUDACC__) && ( defined(_WIN32) || defined(_WIN64) )
 #pragma comment(lib, "GPGPU.lib")
 #endif
 

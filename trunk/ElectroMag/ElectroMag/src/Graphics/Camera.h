@@ -77,6 +77,9 @@ public:
 			vertical *= (PI/200.0);
 			break;
 		// No action needed if the angle is already given in Radians
+        case Radian:
+        default:
+            ;
 		}
 		
 		// First, Find the front and unit side vectors

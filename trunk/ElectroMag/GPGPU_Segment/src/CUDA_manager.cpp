@@ -29,7 +29,7 @@ using namespace cuda;
 bool        CudaManager::scanComplete = false;
 int         CudaManager::deviceCount = 0;
 cuda::CUdevice   *CudaManager::devices;
-int         CudaManager::nrCompatible = 0;
+size_t     CudaManager::nrCompatible = 0;
 int        *CudaManager::compatibleDevIndex;
 CudaManager::CUDeviceProp *CudaManager::deviceProperties;
 bool		CudaManager::driverLoaded;
@@ -43,7 +43,7 @@ CudaManager::CudaManager()
 	minimumProperties.major = 1;	// Compute capability 1.0 or higher
 	minimumProperties.minor = 0;
 	minimumProperties.multiProcessorCount = 1;	// Just in case
-	minimumProperties.clockRate = 0;	// No minimum clock rate\
+	minimumProperties.clockRate = 0;	// No minimum clock rate
 	// Mark that no scan has completed before perfoming scan
 	userScanComplete = false;
 	// Do a scan of compatible devices. This will select the default properties if the user
@@ -206,7 +206,7 @@ Threads::ThreadHandle CudaManager::CallFunctor(unsigned long (*functor)(void*), 
 	// Make sure a compatible device exists
 	if(!userNrCompatible) return 0;
 	// Check to see that the device index does not exceed the number of compatible devices
-	if(GPUindex >= userNrCompatible) GPUindex = 0;
+	if((size_t)GPUindex >= userNrCompatible) GPUindex = 0;
 	FunctorParams *params = new FunctorParams;	// must be deleted elsewhere
 	params->originalParams = functorParams;
 	params->functor = functor;
@@ -296,7 +296,7 @@ int CudaManager::CreateContext(void * pContext, unsigned int flags, int deviceIn
 {
 	CUresult errCode;
 	// Check that the given device is a valid device as deemed compatible
-	if(deviceIndex >= this->nrCompatible || deviceIndex < 0)
+	if((size_t)deviceIndex >= this->nrCompatible || deviceIndex < 0)
 	{
 		// If the device is not among compatible devices, it is considered invalid, and no context can be crated
 		return (int)CUDA_ERROR_INVALID_DEVICE;

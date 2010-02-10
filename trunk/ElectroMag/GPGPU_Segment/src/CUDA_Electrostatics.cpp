@@ -13,7 +13,7 @@ void * GiveMeMyConstructorsYouDamnGCC()
     CudaElectrosFunctor<float> *SP = new CudaElectrosFunctor<float>();
     CudaElectrosFunctor<double> *DP = new CudaElectrosFunctor<double>();;
     CudaElectrosFunctor<float>::CudaElectrosFunctor();
-    return (void*) SP;
+    return (void*) (1?(void*)SP:(void*)DP);
 }
 template<class T>
 cuda::CudaManager CudaElectrosFunctor<T>::ElectrostaticsManager;
@@ -129,6 +129,7 @@ void CudaElectrosFunctor<T>::PartitionData()
     for (size_t devID = 0; devID < segments; devID++)
 	{
 		CudaElectrosFunctor::FunctorData *dataParams = &functorParamList[devID];
+        blockXSize = dataParams->blockXSize;
         // Initialize parameter arrays
         size_t segDataSize = (remainingLines < segSize) ? remainingLines : segSize;
         dataParams->startIndex = this->nLines - remainingLines;
@@ -196,7 +197,7 @@ template<class T>
 void CudaElectrosFunctor<T>::PostRun()
 {
 	double FLOPS = 0;
-	for (int i = 0; i < this->nDevices; i++)
+	for (size_t i = 0; i < this->nDevices; i++)
 	  {
         FLOPS += this->functorParamList[i].pPerfData->performance * this->functorParamList[i].pPerfData->time;
 		// Recover individual kernel execution time

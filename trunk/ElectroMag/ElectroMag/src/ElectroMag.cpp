@@ -30,7 +30,6 @@
  using namespace std;
  // Use float or double; 16-bit single will generate erors
  #define FPprecision double
-static int finished = 0;
 
 struct SimulationParams
 {
@@ -113,7 +112,7 @@ int main(int argc, char* argv[])
 	CPUID::CpuidFeatures cpuInfo;
 	CPUID::GetCpuidFeatures(&cpuInfo);
 
-	char *support[2] = {"not supported", "supported"};
+	const char *support[2] = {"not supported", "supported"};
 
 	//freopen("log.bs.txt", "w", stderr);
 	clog<<" Processor:\t";
@@ -166,7 +165,7 @@ int main(int argc, char* argv[])
 		simConfig = CpuModeParams;
 	}
 	// Initialze data containers
-	int nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
+	size_t nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
 	Array<pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
@@ -245,7 +244,7 @@ int main(int argc, char* argv[])
 	
 	// Run calculations
 	__int64 freq, start, end;
-	double GPUtime, CPUtime;
+	double GPUtime = 0, CPUtime = 0;
 	QueryHPCFrequency(&freq);
 
 	FPprecision resolution = 1;
@@ -344,7 +343,7 @@ int main(int argc, char* argv[])
 	}
 
 	if(GPUenable)
-	for(int i = 0; i < GPUperf.stepTimes.GetSize()/timingSize; i++)
+	for(size_t i = 0; i < GPUperf.stepTimes.GetSize()/timingSize; i++)
 	{
 		double *base = GPUperf.stepTimes.GetDataPointer() + timingSize*i;
 		const double accountedOverhead = base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
@@ -391,9 +390,9 @@ int main(int argc, char* argv[])
 	if(saveData && (CPUenable || GPUenable))
 	{
 		cout<<" Beginning save procedure"<<endl;
-		for(int line = 0; line < n; line++)
+		for(size_t line = 0; line < n; line++)
 		{
-			for(int step = 0; step < len; step++)
+			for(size_t step = 0; step < len; step++)
 			{
 				int i = step*n + line;
 				if(CPUenable)data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
@@ -410,15 +409,15 @@ int main(int argc, char* argv[])
 	{
 		regress.open("regression.txt");//, ios::app);
 		cout<<" Beginning verfication procedure"<<endl;
-		for(int line = 0; line < n; line++)
+		for(size_t line = 0; line < n; line++)
 		{
             // Looks for points that are close to the GPU value, but suddenly jump
             // off; This ususally exposes GPU kernel syncronization bugs
-			int step = 0;
+			size_t step = 0;
 			do
 			{
-				int i = step*n + line;
-				int iLast = (step-1)*n + line;
+				size_t i = step*n + line;
+				size_t iLast = (step-1)*n + line;
                 // Calculate the distance between the CPU and GPU point
 				float offset3D = vec3Len(vec3(CPUlines[i],GPUlines[i]));
 				if( offset3D > 0.1f)
