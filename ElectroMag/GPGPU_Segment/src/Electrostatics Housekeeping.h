@@ -187,7 +187,7 @@ CUresult GPUmalloc(
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, zAlloc, currentGPU);
-		fprintf(stderr, " Failed %Zu batches %li bytes each. \n", GPUlines->nSteps, zCompSize * linesPerSeg);
+		fprintf(stderr, " Failed %Zu batches %Zu bytes each. \n", GPUlines->nSteps, zCompSize * linesPerSeg);
 		fprintf(stderr, " Driver reported %uMB available", free/1024/1024);
 		cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
 		fprintf(stderr, " Driver now reports %uMB available", free/1024/1024);

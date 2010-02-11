@@ -266,7 +266,7 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 		// Otherwise, the allocation cannot continue with specified multiplicity
 		fprintf(stderr, " Memory allocation error on device: %u\n", currentGPU);
 		fprintf(stderr, " Cannot assign enough memory for requested multplicity: %Zu\n", blockMultiplicity);
-		fprintf(stderr, " Minimum of %luMB available video RAM needed, driver reported %uMB available\n",
+		fprintf(stderr, " Minimum of %ZuMB available video RAM needed, driver reported %uMB available\n",
 			(gridRAM + params->GPUchargeData.paddedSize)/1024/1024, free/1024/1024);
 		params->nKernelSegments = 0;
 		return CUDA_ERROR_OUT_OF_MEMORY;
@@ -306,7 +306,7 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	if(errCode != CUDA_SUCCESS)
 	{
 		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, xyAlloc, currentGPU);
-		fprintf(stderr, " Failed %Zu batches %lu bytes each. Error code: %u\n", params->GPUfieldData.nSteps, xyCompSize * linesPerSeg, errCode);
+		fprintf(stderr, " Failed %Zu batches %Zu bytes each. Error code: %u\n", params->GPUfieldData.nSteps, xyCompSize * linesPerSeg, errCode);
 		fprintf(stderr, " Driver reported %uMB available, requested %Zu MB\n",
 			free/1024/1024, params->GPUfieldData.nSteps * xyCompSize * linesPerSeg/1024/1024);
 		// Free any previously allocated memory
@@ -473,14 +473,14 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		{
 			ReleaseGpuResources(devID);
 			cuCtxDestroy(data->context);
-			fprintf(stderr, " xy host malloc failed with %lu MB request.\n", xyPitch * steps / 1024 / 1024);
+			fprintf(stderr, " xy host malloc failed with %Zu MB request.\n", xyPitch * steps / 1024 / 1024);
 			data->lastOpErrCode =  errCode;
 			continue;
 		}
 		if ((errCode = cuMemAllocHost((void**) &data->hostNonpagedData.z, (unsigned int)(zPitch * steps))) != CUDA_SUCCESS)
 		{
 			ReleaseGpuResources(devID);
-			fprintf(stderr, " z host malloc failed.with %lu MB request.\n", zPitch * steps / 1024 / 1024);
+			fprintf(stderr, " z host malloc failed.with %Zu MB request.\n", zPitch * steps / 1024 / 1024);
 			cuMemFreeHost(data->hostNonpagedData.xyInterleaved);
 			cuCtxDestroy(data->context);
 			data->lastOpErrCode = errCode;

@@ -1,4 +1,5 @@
 # Defines generic paths and locations
+SHELL = /bin/sh
 
 # CUDA tools and headers location
 CUDA_TOOLKIT_PATH= /usr/local/cuda
@@ -20,7 +21,8 @@ LIB_PATH= ../common/lib
 INCLUDE += -I. -I./../GPGPU\ Segment/src -I./../common/src -I./src -I $(CUDA_INC_PATH)
 CXXINCLUDE= $(INCLUDE)
 #Library options
-LDFLAGS += -lpthread -lGLU $(LIB_PATH)/$(GPGPU_LIB)
+LIBS = -lpthread -lGLU
+LDFLAGS +=  $(LIBS) $(LIB_PATH)/$(GPGPU_LIB)
 
 # Change this to Makefile-GNU.mk if the Intel compiler is unavailable,
 # but by all means, use the Intel compiler if at all posible

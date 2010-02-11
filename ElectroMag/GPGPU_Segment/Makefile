@@ -72,14 +72,14 @@ $(LIB_PATH)/$(GPGPU_LIB):
 	@# the final application. If PTX or CUBIN files are nt found, the CUDA modules
 	@# will not load, and CUDA functionality will be unavailable.
 	@# Note that PTX files will be compiled as dependencies for the CUBIN objects
-	@if (test -x $(NVCC) ) ;\
+	@if (test -x $(NVCC) ); \
 	then\
-		make $(CUBIN_OBJS) ;\
-		cp -f $(LIB_PATH)/*.ptx $(TARGET_DIR)\
-		cp -f $(LIB_PATH)/*.cubin $(TARGET_DIR)\
+		make $(CUBIN_OBJS); \
+		cp -f $(LIB_PATH)/*.ptx $(TARGET_DIR); \
+		cp -f $(LIB_PATH)/*.cubin $(TARGET_DIR); \
 	else\
-		echo "Warning: " $(NVCC) " not found."\
-		echo "CUDA device code will not be generated" ;\
+		echo "Warning: " $(NVCC) " not found."; \
+		echo "CUDA device code will not be generated"; \
 	fi
 	
 	@echo =======================================================
@@ -93,8 +93,7 @@ $(LIB_PATH)/$(GPGPU_LIB):
 
 #Merciless seek and delete
 clean:
-	rm -f *.o
-	rm -f $(LIB_PATH)/$(GPGPU_LIB)
-	rm -f $(PTX_OBJS)
-	rm -f $(CUBIN_OBJS)
-	rm -r -f $(OBJDIR)
+	@rm -f $(LIB_PATH)/$(GPGPU_LIB)
+	@rm -f $(PTX_OBJS)
+	@rm -f $(CUBIN_OBJS)
+	@rm -r -f $(OBJDIR)
