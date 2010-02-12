@@ -79,6 +79,7 @@ typedef struct tagTHREADNAME_INFO
 } THREADNAME_INFO;
 #pragma pack(pop)
 
+#if defined(_MSC_VER) || defined (__INTEL_COMPILER)
 inline void SetThreadName( DWORD dwThreadID, char* threadName)
 {
    THREADNAME_INFO info;
@@ -95,6 +96,12 @@ inline void SetThreadName( DWORD dwThreadID, char* threadName)
    {
    }
 }
+#else
+// For compilers that do not know the __try/__except syntax, such as Cygwin and MinGW
+inline void SetThreadName( DWORD dwThreadID, char* threadName)
+{
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Mutex Management
@@ -126,7 +133,7 @@ inline void UnlockMutex(MutexHandle hMutex)
 };
 
 #endif// defined(_WIN32) || defined(_WIN64)
-#ifdef __linux__
+#if defined(__linux__)
 #define PLATFORM_FOUND
 #include <pthread.h>
 #include <unistd.h>
@@ -157,7 +164,6 @@ inline void Pause(unsigned int miliseconds)
 {
 	usleep(miliseconds*1000);
 };
-#endif
 
 inline void SetThreadName( unsigned long threadID, const char* threadName)
 {
@@ -191,7 +197,7 @@ inline void UnlockMutex(MutexHandle &hMutex)
 {
 	pthread_mutex_unlock(&hMutex);
 };
-
+#endif//__linux__
 
 #ifndef PLATFORM_FOUND
 #error Compilation platform not found or not supported. Define _WIN32 or _WIN64 or __linux__ to select a platform.

@@ -5,6 +5,9 @@
 #include "X-Compat/HPC Timing.h"
 #include <iostream>
 
+// We may later change this to functor-specific, or even device-secific error strea,
+#define errlog std::cerr
+
 CudaElectrosFunctor<float> SPFunctor;
 CudaElectrosFunctor<double> DPFunctor;
 
@@ -264,10 +267,10 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	if(gridRAM > freeRAM)
 	{
 		// Otherwise, the allocation cannot continue with specified multiplicity
-		fprintf(stderr, " Memory allocation error on device: %u\n", currentGPU);
-		fprintf(stderr, " Cannot assign enough memory for requested multplicity: %Zu\n", blockMultiplicity);
-		fprintf(stderr, " Minimum of %ZuMB available video RAM needed, driver reported %uMB available\n",
-			(gridRAM + params->GPUchargeData.paddedSize)/1024/1024, free/1024/1024);
+		errlog<<" Memory allocation error on device: "<<currentGPU<<std::endl;
+		errlog<<" Cannot assign enough memory for requested multplicity: "<<blockMultiplicity<<std::endl;
+		errlog<<" Minimum of "<<(gridRAM + params->GPUchargeData.paddedSize)/1024/1024\
+			<<"MB available video RAM needed, driver reported "<<free/1024/1024<<"MB available"<<std::endl;
 		params->nKernelSegments = 0;
 		return CUDA_ERROR_OUT_OF_MEMORY;
 	}
@@ -286,8 +289,8 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	errCode = cuMemAlloc(&params->GPUchargeData.chargeArr, (unsigned int) params->GPUchargeData.paddedSize);
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, chargeAlloc, currentGPU);
-		fprintf(stderr, " Failed batch size %Zu. Error code %u\n", params->GPUchargeData.paddedSize, errCode);
+		errlog<<" Error allocating memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
+		errlog<<" Failed batch size "<<params->GPUchargeData.paddedSize<<". Error code "<<errCode<<std::endl;
 		return errCode;
 	};
 
@@ -305,10 +308,11 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	params->GPUfieldData.xyPitch = pitch;
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, xyAlloc, currentGPU);
-		fprintf(stderr, " Failed %Zu batches %Zu bytes each. Error code: %u\n", params->GPUfieldData.nSteps, xyCompSize * linesPerSeg, errCode);
-		fprintf(stderr, " Driver reported %uMB available, requested %Zu MB\n",
-			free/1024/1024, params->GPUfieldData.nSteps * xyCompSize * linesPerSeg/1024/1024);
+		errlog<<" Error allocating memory at stage "<<xyAlloc<<" on GPU"<<currentGPU<<std::endl;
+		errlog<<" Failed "<<params->GPUfieldData.nSteps<<" batches "<<xyCompSize * linesPerSeg\
+			<<" bytes each. Error code: "<<errCode<<std::endl;
+		errlog<<" Driver reported "<<free/1024/1024<<"MB available, requested "\
+			<<params->GPUfieldData.nSteps * xyCompSize * linesPerSeg/1024/1024<<"MB" <<std::endl;
 		// Free any previously allocated memory
 		cuMemFree((CUdeviceptr)params->GPUchargeData.chargeArr);
 		return errCode;
@@ -319,14 +323,16 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	params->GPUfieldData.zPitch = pitch;
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error allocating memory in function %s at stage %u on GPU%i.\n", __FUNCTION__, zAlloc, currentGPU);
-		fprintf(stderr, " Failed %Zu batches %Zu bytes each. \n", params->GPUfieldData.nSteps, zCompSize * linesPerSeg);
-		fprintf(stderr, " Driver reported %uMB available\n", free/1024/1024);
+		errlog<<" Error allocating memory at stage "<<zAlloc<<" on GPU"<<currentGPU<<std::endl;
+		errlog<<" Failed "<<params->GPUfieldData.nSteps<<" batches "<<zCompSize * linesPerSeg<<" bytes each."<<std::endl;
+		errlog<<" Driver reported "<<free/1024/1024<<"MB available"<<std::endl;
 		cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
-		fprintf(stderr, " Driver now reports %uMB available\n", free/1024/1024);
-		fprintf(stderr, " First request allocated %ZuMB \n Second request for %ZuMB failed with code %u\n",
-			params->GPUfieldData.nSteps * params->GPUfieldData.xyPitch/1024/1024,
-			params->GPUfieldData.nSteps * zCompSize * linesPerSeg/1024/1024, errCode);
+		errlog<<" Driver now reports "<<free/1024/1024<<"MB available."<<std::endl;
+		errlog<<" First request allocated "\
+			<<params->GPUfieldData.nSteps * params->GPUfieldData.xyPitch/1024/1024\
+			<<"MB \n Second request for "\
+			<<params->GPUfieldData.nSteps * zCompSize * linesPerSeg/1024/1024\
+			<<"MB failed with code "<<errCode<<std::endl;
 		// Free any previously allocated memory
 		cuMemFree(params->GPUchargeData.chargeArr);
 		cuMemFree(params->GPUfieldData.coalLines.z);
@@ -353,24 +359,23 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources(size_t deviceID)
 	enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
 	CUresult errCode, lastBadError = CUDA_SUCCESS;
         CUdevice currentGPU;  
-	errCode = cuCtxGetDevice(&currentGPU);
-	if(errCode != CUDA_SUCCESS) fprintf(stderr, " Error: %i getting device ID in function %s\n", errCode, __FUNCTION__);
+	cuCtxGetDevice(&currentGPU);
 	errCode = cuMemFree(this->functorParamList[deviceID].GPUchargeData.chargeArr);
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
 		lastBadError = errCode;
 	};
 	errCode = cuMemFree(this->functorParamList[deviceID].GPUfieldData.coalLines.xyInterleaved);
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
 		lastBadError = errCode;
 	};
 	errCode = cuMemFree(this->functorParamList[deviceID].GPUfieldData.coalLines.z);
 	if(errCode != CUDA_SUCCESS)
 	{
-		fprintf(stderr, " Error: %i freeing memory in function %s at stage %u on GPU%i.\n", errCode, __FUNCTION__, chargeAlloc, currentGPU);
+		errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
 		lastBadError = errCode;
 	};
 
@@ -382,7 +387,7 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources(size_t deviceID)
 #define CUDA_SAFE_CALL(call) errCode = call;\
 	if(errCode != CUDA_SUCCESS)\
 	{\
-		std::cerr<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
+		errlog<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
 		return errCode;\
 	}
 
@@ -400,7 +405,7 @@ void CudaElectrosFunctor<T>::AllocateResources()
 {
 	if(!this->dataBound)
 	{
-		std::cerr<<" DATA NOT BOUND"<<std::endl;
+		errlog<<" DATA NOT BOUND"<<std::endl;
 		this->lastOpErrCode =  CUDA_ERROR_NOT_INITIALIZED;
 		return;
 	}
@@ -433,7 +438,7 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		if (errCode != CUDA_SUCCESS)
 		{
 			cuCtxDestroy(data->context);
-			std::cerr<<" Loading kernel modules failed on device "<<devID<<" with code: "<<errCode<<std::endl;
+			errlog<<" Loading kernel modules failed on device "<<devID<<" with code: "<<errCode<<std::endl;
 			data->lastOpErrCode =  errCode;
 			// Skip to next device
 			continue;
@@ -442,7 +447,7 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		if (errCode != CUDA_SUCCESS)
 		{
 			cuCtxDestroy(data->context);
-			std::cerr<<" Loading kernel from module failed on device "<<devID<<" with code: "<<errCode<<std::endl;
+			errlog<<" Loading kernel from module failed on device "<<devID<<" with code: "<<errCode<<std::endl;
 			data->lastOpErrCode =  errCode;
 			// Skip to next device
 			continue;
@@ -473,14 +478,14 @@ void CudaElectrosFunctor<T>::AllocateResources()
 		{
 			ReleaseGpuResources(devID);
 			cuCtxDestroy(data->context);
-			fprintf(stderr, " xy host malloc failed with %Zu MB request.\n", xyPitch * steps / 1024 / 1024);
+			errlog<<" xy host malloc failed with "<< xyPitch * steps / 1024 / 1024<<" MB request"<<std::endl;
 			data->lastOpErrCode =  errCode;
 			continue;
 		}
 		if ((errCode = cuMemAllocHost((void**) &data->hostNonpagedData.z, (unsigned int)(zPitch * steps))) != CUDA_SUCCESS)
 		{
 			ReleaseGpuResources(devID);
-			fprintf(stderr, " z host malloc failed.with %Zu MB request.\n", zPitch * steps / 1024 / 1024);
+			errlog<<" z host malloc failed with "<<zPitch * steps / 1024 / 1024<<" MB request.\n"<<std::endl;
 			cuMemFreeHost(data->hostNonpagedData.xyInterleaved);
 			cuCtxDestroy(data->context);
 			data->lastOpErrCode = errCode;
@@ -579,7 +584,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
 	if(functorIndex != deviceIndex)
 	{
 #ifdef _DEBUG
-		std::cerr<<" Warning, functorIndex "<<functorIndex<<" may be incompatible with device "<<deviceIndex<<std::endl;
+		errlog<<" Warning, functorIndex "<<functorIndex<<" may be incompatible with device "<<deviceIndex<<std::endl;
 #endif//_DEBUG
 		// We need to remap 'functorIndex' to 'deviceIndex'
 		// For this, we need to place all context-related data from 'deviceIndex' into 'functorIndex'
@@ -709,17 +714,17 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
         QueryHPCTimer(&end);
 		if(errCode == CUDA_ERROR_LAUNCH_TIMEOUT)
 		{
-			fprintf(stderr, "Kernel timed out.\n");
+			errlog<<"Kernel timed out."<<std::endl;
 		}
 		else if(errCode == CUDA_ERROR_UNKNOWN)
 		{
-			fprintf(stderr, "Unknown error in kernel\n");
+			errlog<<"Unknown error in kernel"<<std::endl;
 			// Usually, the context is no longer usable after such an error. 
 			return errCode;
 		}
         else if(errCode != CUDA_SUCCESS)
 		{
-			fprintf(stderr, "Error: %i in kernel. Halting.\n", errCode);
+			errlog<<"Error: "<<errCode<<" in kernel. Halting."<<std::endl;
 			return errCode;
         }
 

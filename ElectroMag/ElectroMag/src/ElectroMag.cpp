@@ -26,10 +26,11 @@
 #include <omp.h>
 #include "./../../GPGPU_Segment/src/CUDA Manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
+#include "Electromag utils.h"
 
- using namespace std;
+ //using namespace std;
  // Use float or double; 16-bit single will generate erors
- #define FPprecision double
+ #define FPprecision float
 
 struct SimulationParams
 {
@@ -52,8 +53,8 @@ SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work ac
 //				>out.txt  2>&1
 int main(int argc, char* argv[])
 {
-	cout<<" Electromagnetism simulation application"<<endl;
-	cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<endl;
+	std::cout<<" Electromagnetism simulation application"<<std::endl;
+	std::cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<std::endl;
 
 	OpenCL::GlobalClManager.ListAllDevices();
 
@@ -72,37 +73,43 @@ int main(int argc, char* argv[])
 	bool randfieldinit = false;
 	bool debugData = false;
 	bool regressData = false;
+	// Precision to use
+	bool useCpuDP = false; bool useGpgpuDP = false;
 	// Get command-line options;
 	for(int i = 1; i < argc; i++)
 	{
-		if( !strcmp(argv[i], "cpu") )
+		if( !strcmp(argv[i], "--cpu") )
 			CPUenable = true;
-		else if( !strcmp(argv[i], "gpudisable") )
-			GPUenable = false;
-		else if( !strcmp(argv[i], "save") )
+		else if( !strcmp(argv[i], "--gpudisable") )
+		{GPUenable = false; CPUenable = true;}
+		else if( !strcmp(argv[i], "--save") )
 			saveData = true;
-		else if( !strcmp(argv[i], "nodisp") )
+		else if( !strcmp(argv[i], "--nodisp") )
 			display = false;
-		else if( !strcmp(argv[i], "enhanced") )
+		else if( !strcmp(argv[i], "--enhanced") )
 			{if(paramLevel < __enhanced) paramLevel = __enhanced;}
-		else if( !strcmp(argv[i], "extreme") )
+		else if( !strcmp(argv[i], "--extreme") )
 			{if(paramLevel < __enhanced) paramLevel = __extreme;}
-		else if( !strcmp(argv[i], "insane") )
+		else if( !strcmp(argv[i], "--insane") )
 			{if(paramLevel < __insane) paramLevel = __insane;}
-		else if( !strcmp(argv[i], "fuckingInsane") )
+		else if( !strcmp(argv[i], "--fuckingInsane") )
 			{if(paramLevel < __fuckingInsane) paramLevel = __fuckingInsane;}
-		else if( !strcmp(argv[i], "GUI") )
+		else if( !strcmp(argv[i], "--GUI") )
 			visualProgressBar = true;
-		else if( !strcmp(argv[i], "randseed") )
+		else if( !strcmp(argv[i], "--randseed") )
 			randseed = true;
-		else if( !strcmp(argv[i], "randfieldinit") )
+		else if( !strcmp(argv[i], "--randfieldinit") )
 			randfieldinit = true;
-		else if( !strcmp(argv[i], "postrundebug") )
+		else if( !strcmp(argv[i], "--postrundebug") )
 			debugData = true;
-		else if( !strcmp(argv[i], "autoregress") )
+		else if( !strcmp(argv[i], "--autoregress") )
 			regressData = true;
+		else if( !strcmp(argv[i], "--cpuprecision=double") )
+			useCpuDP = true;
+		else if( !strcmp(argv[i], "--gpuprecision=double") )
+			useGpgpuDP = true;
 		else
-			cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
+			std::cout<<" Ignoring unknown argument: "<<argv[i]<<std::endl;
 	}
 
 	
@@ -115,14 +122,14 @@ int main(int argc, char* argv[])
 	const char *support[2] = {"not supported", "supported"};
 
 	//freopen("log.bs.txt", "w", stderr);
-	clog<<" Processor:\t";
-	clog.write(cpuString.IDString, sizeof(cpuString.IDString));
-	clog<<endl;
-	clog<<" SSE3:  \t"<<support[cpuInfo.SSE3]<<endl;
-	clog<<" SSSE3: \t"<<support[cpuInfo.SSSE3]<<endl;
-	clog<<" SSE4.1:\t"<<support[cpuInfo.SSE41]<<endl;
-	clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<endl;
-	clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<endl;
+	std::clog<<" Processor:\t";
+	std::clog.write(cpuString.IDString, sizeof(cpuString.IDString));
+	std::clog<<std::endl;
+	std::clog<<" SSE3:  \t"<<support[cpuInfo.SSE3]<<std::endl;
+	std::clog<<" SSSE3: \t"<<support[cpuInfo.SSSE3]<<std::endl;
+	std::clog<<" SSE4.1:\t"<<support[cpuInfo.SSE41]<<std::endl;
+	std::clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<std::endl;
+	std::clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<std::endl;
     
     // Now that checks are performed, start the Frontend
     if(visualProgressBar) MainGUI.StartAsync();
@@ -133,14 +140,19 @@ int main(int argc, char* argv[])
 	int cudaDev = cuda::GlobalCudaManager.GetCompatibleDevNo();
 	if(cudaDev > 0)
 	{
-		cout<<endl<<" Found "<<cudaDev<<" compatible devices."<<endl;
+		std::cout<<std::endl<<" Found "<<cudaDev<<" compatible devices."<<std::endl;
 	}
 	// disable GPU mode if no compatible device deteced
 	if(!cudaDev)
 	{
-		GPUenable = false; CPUenable = true;	// And force CPU mode
-		cout<<" Warning! No compatible GPU found. Using optimized CPU mode with reduced parameter set."<<endl;
-		paramLevel = __cpu;
+		GPUenable = false;
+		std::cout<<" Warning! No compatible GPU found."<<std::endl;
+		if(!CPUenable)
+		{
+			CPUenable = true; // And force CPU mode
+			std::cout<<"Using optimized CPU mode with reduced parameter set."<<std::endl;
+			paramLevel = __cpu;
+		}
 	}
 	// Set correct parameter configuration
 	switch(paramLevel)
@@ -172,7 +184,7 @@ int main(int argc, char* argv[])
 	if(GPUenable) GPUlines.AlignAlloc(n*len);
 	if(CPUenable) CPUlines.AlignAlloc(n*len);
 	perfPacket CPUperf = {0, 0}, GPUperf = {0, 0};
-	ofstream data, regress;
+	std::ofstream data, regress;
 	if (saveData)
 		data.open("data.txt");
     MainGUI.RegisterProgressIndicator((double * volatile)&CPUperf.progress);
@@ -181,66 +193,26 @@ int main(int argc, char* argv[])
 	if(!CPUlines.GetSize()) CPUenable = false;
 	if(!GPUlines.GetSize()) GPUenable = false;
 
-	__int64 pseudoSeed; QueryHPCTimer(&pseudoSeed);
-	if (randseed) srand(pseudoSeed%RAND_MAX);
-        else srand(1);
-	// Initialize values
-	for(size_t i = 0; i < p ; i++)
-	{
-		charges[i].position.x = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].position.y = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].position.z = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].magnitude = (FPprecision)(rand()-RAND_MAX/10)/RAND_MAX; //0.001f;
-	}
+	InitializePointChargeArray(charges, p, randseed);
+
 	// init starting points
 	Array<Vector3<FPprecision> > *arrMain;
 	if(GPUenable) arrMain = &GPUlines;
 	else if(CPUenable) arrMain = &CPUlines;
 	else 
 	{
-		cerr<<" Could not allocate sufficient memory. Halting execution."<<endl;
+		std::cerr<<" Could not allocate sufficient memory. Halting execution."<<std::endl;
 		size_t neededRAM = n*len*sizeof(Vector3<FPprecision>)/1024/1024;
 		std::cerr<<" "<<neededRAM<<" MB needed for initial allocation"<<std::endl;
 		return 666;
 	}
 
-    // Initialize field line grid
-	if(randfieldinit)
-	{
-		// Random Filed line initialization
-		for(size_t i = 0; i < n ; i++)
-		{
-			(*arrMain)[i].x = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-			(*arrMain)[i].y = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-			(*arrMain)[i].z = (FPprecision)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-		}
-	}
-	else
-	{FPprecision zVal = (FPprecision)((FPprecision)-nd/2 + 1E-5);
-	for(size_t k = 0; k < nd; k++, zVal++)// z coord
-	{
-		FPprecision yVal = (FPprecision)((FPprecision)-nh/2 + 1E-5);
-		for(size_t j = 0; j < nh; j++, yVal++)// y coord
-		{
-			FPprecision xVal = (FPprecision)((FPprecision)-nw/2 + 1E-5);
-			for(size_t i = 0; i < nw; i++, xVal++)// x coord
-			{
-				(*arrMain)[k*nw*nh + j*nw + i].x = (FPprecision) 10*xVal;
-				(*arrMain)[k*nw*nh + j*nw + i].y = (FPprecision) 10*yVal;
-				(*arrMain)[k*nw*nh + j*nw + i].z = (FPprecision) 10*zVal;
-			}
-		}
-	}}
-	
+	// Initialize the starting points
+	InitializeFieldLineArray(*arrMain, n, nw, nh, nd, randfieldinit);
 
     // If both CPU and GPU modes are initialized, the GPU array will have been initialized
     // Copy the same starting values to the CPU array
-	if(CPUenable && GPUenable)
-	for(size_t i = 0; i < n; i++)
-	{
-		CPUlines[i] = GPUlines[i];
-	}
-
+	if(CPUenable && GPUenable) CopyFieldLineArray(CPUlines, GPUlines, 0, n);
 	
 	// Run calculations
 	__int64 freq, start, end;
@@ -250,7 +222,7 @@ int main(int argc, char* argv[])
 	FPprecision resolution = 1;
 	if(GPUenable)
 	{
-		cout<<" GPU"<<endl;
+		std::cout<<" GPU"<<std::endl;
 		int failedFunctors;
 		// If dynamic and nested OMP is not initialized, CalcField may only get
         // one OMP thread, severely hampering performance on multi-core/CPU systems
@@ -274,19 +246,19 @@ int main(int argc, char* argv[])
 			if(!visualProgressBar)
             {
                 const double step = (double)1/60;
-                cout<<"[__________________________________________________________]"<<endl;
+				std::cout<<"[__________________________________________________________]"<<std::endl;
                 for(double next=step; next < (1.0 - 1E-3); next += step)
                 {
                     while(GPUperf.progress < next)
 					{
                         Threads::Pause(500);
 					}
-                    cout<<".";
+                    std::cout<<".";
                     // Flush to make sure progress indicator is displayed immediately
-                    cout.flush();
+                    std::cout.flush();
                 }
 				std::cout<<" Done"<<std::endl;
-				cout.flush();
+				std::cout.flush();
             }
 		}
 		if(failedFunctors >= cudaDev) display = false;
@@ -298,7 +270,7 @@ int main(int argc, char* argv[])
 	}
 	if(CPUenable)
 	{
-		cout<<" CPU"<<endl;
+		std::cout<<" CPU"<<std::endl;
         // If dynamic and nested OMP is not initialized, CalcField may only get
         // one OMP thread, severely hampering performance on multi-core/CPU systems
         omp_set_dynamic(true);
@@ -317,28 +289,28 @@ int main(int argc, char* argv[])
             if(!visualProgressBar)
             {
                 const double step = (double)1/60;
-                cout<<"[__________________________________________________________]"<<endl;
+                std::cout<<"[__________________________________________________________]"<<std::endl;
                 for(double next=step; next < (1.0 - 1E-3); next += step)
                 {
                     while(CPUperf.progress < next)
                         Threads::Pause(500);
-                    cout<<".";
+                    std::cout<<".";
                     // Flush to make sure progress indicator is displayed immediately
-                    cout.flush();
+                    std::cout.flush();
                 }
 				std::cout<<" Done"<<std::endl;
-				cout.flush();
+				std::cout.flush();
             }
         
         }
-		cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<endl;
-		cout<<" Effective performance:\t\t"<<CPUperf.performance<<" GFLOP/s"<<endl;
+		std::cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<std::endl;
+		std::cout<<" Effective performance:\t\t"<<CPUperf.performance<<" GFLOP/s"<<std::endl;
 		CPUtime = double(end-start)/freq;
-		cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<endl;
+		std::cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<std::endl;
 		if(GPUenable)
 		{
-			cout<<" Effective speedup:\t\t"<<GPUperf.performance/CPUperf.performance<<" x"<<endl;
-			cout<<" Realistic speedup:\t\t"<<CPUtime/GPUtime<<" x"<<endl;
+			std::cout<<" Effective speedup:\t\t"<<GPUperf.performance/CPUperf.performance<<" x"<<std::endl;
+			std::cout<<" Realistic speedup:\t\t"<<CPUtime/GPUtime<<" x"<<std::endl;
 		}
 	}
 
@@ -349,19 +321,19 @@ int main(int argc, char* argv[])
 		const double accountedOverhead = base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
 			base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree];
 
-		cout<<endl<<" Execution unit "<<i<<endl;
+		std::cout<<std::endl<<" Execution unit "<<i<<std::endl;
 																	
-		cout<<" ==== Operation ======= Batch size ==== Time ========== Speed======="<<endl;
-		cout<<" xy Device to host\t"<<base[xySize]/1024/1024<<"\t\t"<<base[xyDtoH] <<"\t"<<base[xySize]/1024/1024/base[xyDtoH]<<endl;
-		cout<<" z  Device to host\t"<<base[zSize] /1024/1024<<"\t\t"<<base[zDtoH]  <<"\t"<<base[zSize] /1024/1024/base[zDtoH] <<endl;
-		cout<<" xy Host to host  \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<endl;
-		cout<<" z  Host to host  \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<endl;
-		cout<<" ==================================================================="<<endl;
-		cout<<" kernel execution    "<<base[kernelExec]<<"s"<<endl;
-		cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<endl;
-		cout<<" resAlloc   overhead "<<base[resAlloc]<<"s"<<endl;
-		cout<<" Associated overhead "<<accountedOverhead<<"s"<<endl;
-		cout<<" Unacounted overhead "<<GPUtime - accountedOverhead - base[kernelExec]<<"s"<<endl;
+		std::cout<<" ==== Operation ======= Batch size ==== Time ========== Speed======="<<std::endl;
+		std::cout<<" xy Device to host\t"<<base[xySize]/1024/1024<<"\t\t"<<base[xyDtoH] <<"\t"<<base[xySize]/1024/1024/base[xyDtoH]<<std::endl;
+		std::cout<<" z  Device to host\t"<<base[zSize] /1024/1024<<"\t\t"<<base[zDtoH]  <<"\t"<<base[zSize] /1024/1024/base[zDtoH] <<std::endl;
+		std::cout<<" xy Host to host  \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<std::endl;
+		std::cout<<" z  Host to host  \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<std::endl;
+		std::cout<<" ==================================================================="<<std::endl;
+		std::cout<<" kernel execution    "<<base[kernelExec]<<"s"<<std::endl;
+		std::cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<std::endl;
+		std::cout<<" resAlloc   overhead "<<base[resAlloc]<<"s"<<std::endl;
+		std::cout<<" Associated overhead "<<accountedOverhead<<"s"<<std::endl;
+		std::cout<<" Unacounted overhead "<<GPUtime - accountedOverhead - base[kernelExec]<<"s"<<std::endl;
 			
 	}
 
@@ -389,29 +361,29 @@ int main(int argc, char* argv[])
 	// do stuff here; This will generate files non-worthy of FAT32 or non-RAID systems
 	if(saveData && (CPUenable || GPUenable))
 	{
-		cout<<" Beginning save procedure"<<endl;
+		std::cout<<" Beginning save procedure"<<std::endl;
 		for(size_t line = 0; line < n; line++)
 		{
 			for(size_t step = 0; step < len; step++)
 			{
 				int i = step*n + line;
-				if(CPUenable)data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
-				if(GPUenable)data<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
+				if(CPUenable)data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl;
+				if(GPUenable)data<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl;
 			}
 			float percent = (float)line/n*100;
-			cout<<percent<<" %complete"<<endl;
+			std::cout<<percent<<" %complete"<<std::endl;
 		}
-		cout<<" Save procedure complete"<<endl;
+		std::cout<<" Save procedure complete"<<std::endl;
 	}
 	
     // Save points that are significanlty off for regression analysis
 	if(regressData && CPUenable && GPUenable)
 	{
 		regress.open("regression.txt");//, ios::app);
-		cout<<" Beginning verfication procedure"<<endl;
+		std::cout<<" Beginning verfication procedure"<<std::endl;
 		for(size_t line = 0; line < n; line++)
 		{
-            // Looks for points that are close to the GPU value, but suddenly jump
+            // Looks for points that are close to the CPU value, but suddenly jump
             // off; This ususally exposes GPU kernel syncronization bugs
 			size_t step = 0;
 			do
@@ -422,38 +394,38 @@ int main(int argc, char* argv[])
 				float offset3D = vec3Len(vec3(CPUlines[i],GPUlines[i]));
 				if( offset3D > 0.1f)
 				{
-					regress<<" CPUL ["<<line<<"]["<<step-1<<"] x: "<<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "<<CPUlines[iLast].z<<endl\
-						<<" GPUL ["<<line<<"]["<<step-1<<"] x: "<<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y<<" z: "<<GPUlines[iLast].z<<endl\
-						<<" 3D offset: "<<vec3Len(vec3(CPUlines[iLast],GPUlines[iLast]))<<endl;
-					regress<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl\
-						<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl\
-						<<" 3D offset: "<<offset3D<<endl<<endl;
+					regress<<" CPUL ["<<line<<"]["<<step-1<<"] x: "<<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "<<CPUlines[iLast].z<<std::endl\
+						<<" GPUL ["<<line<<"]["<<step-1<<"] x: "<<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y<<" z: "<<GPUlines[iLast].z<<std::endl\
+						<<" 3D offset: "<<vec3Len(vec3(CPUlines[iLast],GPUlines[iLast]))<<std::endl;
+					regress<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl\
+						<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl\
+						<<" 3D offset: "<<offset3D<<std::endl<<std::endl;
                     // If a leap is found; skip the current line
 					break;
 				}
 			}while(++step < len);
             // Small anti-boredom indicator
-			if(!(line%256)) cout<<" "<<(double)line/n*100<<" % complete"<<endl;
+			if(!(line%256)) std::cout<<" "<<(double)line/n*100<<" % complete"<<std::endl;
 		}
         // When done, close file to prevent system crashes from resulting in incomplete regressions
 		regress.close();
-		cout<<" Verification complete"<<endl;
+		std::cout<<" Verification complete"<<std::endl;
 	}
 
 	while(debugData)
 	{
 		size_t line, step;
-		cin>> line>>step;
-		cin.clear();
-		cin.ignore(100, '\n');
+		std::cin>> line>>step;
+		std::cin.clear();
+		std::cin.ignore(100, '\n');
 		size_t i = step*n + line;
 		
-		if(CPUenable) cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
-		if(GPUenable) cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
+		if(CPUenable) std::cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl;
+		if(GPUenable) std::cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl;
 		if(CPUenable && GPUenable)
 		{
 			float offset3D = vec3Len(vec3(CPUlines[i],GPUlines[i]));
-			cout<<" 3D offset: "<<offset3D<<endl;
+			std::cout<<" 3D offset: "<<offset3D<<std::endl;
 		}
 	}
 
