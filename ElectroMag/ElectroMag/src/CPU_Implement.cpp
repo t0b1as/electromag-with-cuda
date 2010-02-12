@@ -180,7 +180,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 // compilation, so just switch to ICC, or GCC if you dare >:X
 // Really, if enough people use GCC, and they request that I support GCC inline
 // assembly, and they are willing to help port the code, I will support it.
-#if 1 || defined(_M_X64) && defined(__INTEL_COMPILER)
+#if defined(_M_X64) && defined(__INTEL_COMPILER)
 #include <xmmintrin.h>
 
 #define 	xAccum	xmm0
