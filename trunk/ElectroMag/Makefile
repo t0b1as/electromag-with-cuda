@@ -1,5 +1,5 @@
 # This should build the entire project
-MAKE = gmake
+MAKE = make
 
 all: Electromag
 clean: Electromag-clean GPGPU_segment-clean

@@ -147,7 +147,7 @@
 				FloatingPointModel="2"
 				OpenMP="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				WarningLevel="4"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
@@ -685,6 +685,10 @@
 			</File>
 			<File
 				RelativePath=".\src\CUDA Interop.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Electromag utils.h"
 				>
 			</File>
 			<File
