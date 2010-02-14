@@ -184,16 +184,16 @@ __glutInitContextProfile				*glutInitContextProfile;
     #include <Windows.h>
 
     #ifdef UNICODE
-    static LPCWSTR __CudaLibName = L"freeglut.dll";
+    static LPCWSTR __FgLibName = L"freeglut.dll";
     #else
-    static LPCSTR __CudaLibName = "freeglut.dll";
+    static LPCSTR __FgLibName = "freeglut.dll";
     #endif
 
     typedef HMODULE FG_LIB;
 
     enum FG_LibLoadCode LOAD_FG_LIBRARY(FG_LIB *pInstance)
     {
-        *pInstance = LoadLibrary(__CudaLibName);
+        *pInstance = LoadLibrary(__FgLibName);
         if (*pInstance == NULL)
         {
             return FG_ERROR_FILE_NOT_FOUND;
@@ -210,24 +210,30 @@ __glutInitContextProfile				*glutInitContextProfile;
     #include <dlfcn.h>
 
     #if defined(__APPLE__) || defined(__MACOSX)
-    static char __CudaLibNameLocal[] = "libfreeglut.dylib";
-    static char __CudaLibName[] = "/usr/local/cuda/lib/libfreeglut.dylib";
+    static char __FgLibNameLocal[] = "libfreeglut.dylib";
+    static char __FgLibNameLegacy[] = "libglut.dylib";
+    static char __FgLibName[] = "/usr/lib/libfreeglut.dylib";
     #else
-    static char __CudaLibNameLocal[] = "libfreeglut.so";
-    static char __CudaLibName[] = "/usr/local/cuda/lib/libfreeglut.so";
+    static char __FgLibNameLocal[] = "libfreeglut.so";
+    static char __FgLibNameLegacy[] = "libglut.so";
+    static char __FgLibName[] = "/usr/lib/libfreeglut.so";
     #endif
 
     typedef void * FG_LIB;
 
     FG_LibLoadCode LOAD_FG_LIBRARY(FG_LIB *pInstance)
     {
-        *pInstance = dlopen(__CudaLibNameLocal, RTLD_NOW);
+        *pInstance = dlopen(__FgLibNameLocal, RTLD_NOW);
         if (*pInstance == NULL)
         {
-            *pInstance = dlopen(__CudaLibName, RTLD_NOW);
+            *pInstance = dlopen(__FgLibName, RTLD_NOW);
             if (*pInstance == NULL)
             {
-                return FG_ERROR_FILE_NOT_FOUND;
+                *pInstance = dlopen(__FgLibNameLegacy, RTLD_NOW);
+                if (*pInstance == NULL)
+                {
+                    return FG_ERROR_FILE_NOT_FOUND;
+                }
             }
         }
         return FG_SUCCESS;
@@ -391,6 +397,9 @@ FG_LibLoadCode glutLoadLibrary()
 	GET_PROC(glutInitContextVersion);
 	GET_PROC(glutInitContextFlags);
 	GET_PROC(glutInitContextProfile);
+
+    //glutBitmapHelvetica12 = dlsym(CudaDrvLib, "glutBitmapHelvetica12");
+    //printf("%s", dlerror());
 	
     return FG_SUCCESS;
 }

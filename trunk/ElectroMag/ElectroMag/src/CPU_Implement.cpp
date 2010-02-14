@@ -117,7 +117,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 		return 3;
 	
 	// Work with data pointers to avoid excessive function calls
-	Vector3<T> *lines = fieldLines.GetDataPointer();
+	Vector3<T> *pLines = fieldLines.GetDataPointer();
 	pointCharge<T> *charges = pointCharges.GetDataPointer();
 	
 	//Used to mesure execution time
@@ -143,7 +143,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 
 			// Set temporary cummulative field vector to zero
 			Vector3<T> temp = {0,0,0}, prevVec,	prevPoint;
-			prevVec = prevPoint = lines[n*(step - 1) + line];// Load prevVec like this to ensure similarity with GPU kernel
+			prevVec = prevPoint = pLines[n*(step - 1) + line];// Load prevVec like this to ensure similarity with GPU kernel
 			//#pragma unroll(4)
 			//#pragma omp parallel for
 			for(__int64 point = 0; point < p; point++)
@@ -156,7 +156,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 			k = vec3Len( vec3Cross(temp - prevVec, prevVec) )/(k*sqrt(k));// 25FLOPs (3 vec sub + 9 vec cross + 10 setLen + 1 div + 1 mul + 1 sqrt)
 			// Finally, add the unit vector of the field divided by the resolution to the previous point to get the next point
 			// We increment the curvature by one to prevent a zero curvature from generating #NaN or #Inf, though any positive constant should work
-			lines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
+			pLines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
 			prevVec = temp;
 		}
         // update progress
@@ -837,7 +837,372 @@ int CalcField_CPU_T_Curvature(Array<Vector3<double> >& fieldLines, Array<pointCh
 	perfData.performance = (n * ( (totalSteps-1)*(p*(electroPartFieldFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
 	return 0;
 }
+#elif 0//(defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER)
+// I think optimizations should also be available for GNU. We include MSVC as
+// well because it basically suports the same intrinsics
+#include <xmmintrin.h>
 
+struct __mVector3_ps
+{
+    __m128 x, y, z;
+};
+// Quick SSE C++ style operators
+/*
+inline __m128 operator + (const __m128 A, const __m128 B)
+{
+    return _mm_add_ps(A,B);
+}
+inline __m128 operator - (const __m128 A, const __m128 B)
+{
+    return _mm_sub_ps(A,B);
+}
+inline __m128 operator * (const __m128 A, const __m128 B)
+{
+    return _mm_mul_ps(A,B);
+}
+inline __m128 operator / (const __m128 A, const __m128 B)
+{
+    return _mm_div_ps(A,B);
+}//*/
+// Quick SSE Vector library
+inline __mVector3_ps _mm_vec3_ps(__mVector3_ps head, __mVector3_ps tail)
+{
+    __mVector3_ps result;
+    result.x = _mm_sub_ps(head.x, tail.x);
+    result.y = _mm_sub_ps(head.y, tail.y);
+    result.z = _mm_sub_ps(head.z, tail.z);
+    return result;
+}
+inline void operator+=(__mVector3_ps &rhs, const __mVector3_ps B)
+{
+    rhs.x = _mm_add_ps(rhs.x, B.x);
+    rhs.y = _mm_add_ps(rhs.y, B.y);
+    rhs.z = _mm_add_ps(rhs.z, B.z);
+}
+inline __mVector3_ps operator + (__mVector3_ps A, __mVector3_ps B)
+{
+    __mVector3_ps result;
+    result.x = _mm_add_ps(A.x, B.x);
+    result.y = _mm_add_ps(A.y, B.y);
+    result.z = _mm_add_ps(A.z, B.z);
+    return result;
+}
+inline __mVector3_ps operator - (__mVector3_ps A, __mVector3_ps B)
+{
+    __mVector3_ps result;
+    result.x = _mm_sub_ps(A.x, B.x);
+    result.y = _mm_sub_ps(A.y, B.y);
+    result.z = _mm_sub_ps(A.z, B.z);
+    return result;
+}
+inline __mVector3_ps operator * (__mVector3_ps vec, __m128 val)
+{
+    __mVector3_ps result;
+    result.x = _mm_mul_ps(vec.x, val);
+    result.y = _mm_mul_ps(vec.y, val);
+    result.z = _mm_mul_ps(vec.z, val);
+    return result;
+}
+inline __mVector3_ps operator / (__mVector3_ps vec, __m128 val)
+{
+    __mVector3_ps result;
+    result.x = _mm_div_ps(vec.x, val);
+    result.y = _mm_div_ps(vec.y, val);
+    result.z = _mm_div_ps(vec.z, val);
+    return result;
+}
+inline __m128 _mm_vec3LenSq_ps(const __m128 x, const __m128 y, const __m128 z)
+{
+    return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x,x),_mm_mul_ps(y,y)),_mm_mul_ps(z,z));
+}
+
+inline __m128 _mm_vec3LenSq_ps(const __mVector3_ps vec)
+{
+    return _mm_vec3LenSq_ps(vec.x, vec.y, vec.z);
+}
+
+inline __m128 _mm_vec3Len_ps(const __m128 x, const __m128 y, const __m128 z)
+{
+    return _mm_sqrt_ps(_mm_vec3LenSq_ps(x, y, z));
+}
+
+inline __m128 _mm_vec3Len_ps(const __mVector3_ps vec)
+{
+    return _mm_vec3Len_ps(vec.x, vec.y, vec.z);
+}
+
+
+inline __mVector3_ps _mm_vec3Cross_ps(__m128 xIndex, __m128 yIndex, __m128 zIndex,
+                                    __m128 xMiddle, __m128 yMiddle, __m128 zMiddle
+                                    )
+{
+    __mVector3_ps result;
+	//result.x = index.y * middle.z - index.z * middle.y;		// 3 FLOPs
+    result.x = _mm_sub_ps(_mm_mul_ps(yIndex,zMiddle),_mm_mul_ps(zIndex,yMiddle));
+	//result.y = index.z * middle.x - index.x * middle.z;		// 3 FLOPs
+    result.y = _mm_sub_ps(_mm_mul_ps(zIndex,xMiddle),_mm_mul_ps(xIndex,zMiddle));
+	//result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
+    result.z = _mm_sub_ps(_mm_mul_ps(xIndex,yMiddle),_mm_mul_ps(yIndex,xMiddle));
+    return result;
+}
+
+inline __mVector3_ps _mm_vec3Cross_ps(const __mVector3_ps index, const __mVector3_ps middle)
+{
+    __mVector3_ps result;
+	//result.x = index.y * middle.z - index.z * middle.y;		// 3 FLOPs
+    result.x = _mm_sub_ps(_mm_mul_ps(index.y,middle.z),_mm_mul_ps(index.z,middle.y));
+	//result.y = index.z * middle.x - index.x * middle.z;		// 3 FLOPs
+    result.y = _mm_sub_ps(_mm_mul_ps(index.z,middle.x),_mm_mul_ps(index.x,middle.z));
+	//result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
+    result.z = _mm_sub_ps(_mm_mul_ps(index.x,middle.y),_mm_mul_ps(index.y,middle.x));
+    return result;
+}
+
+inline __mVector3_ps vec3SetInvLen(__mVector3_ps vec, __m128 scalarInvLen)
+{
+	__m128 len = _mm_vec3Len_ps(vec);
+	scalarInvLen =_mm_mul_ps(scalarInvLen, len);
+	return vec / scalarInvLen;
+}
+
+template<>
+int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
+			  const __int64 n, float resolution, perfPacket& perfData)
+{
+	if(!n)
+		return 1;
+	if(resolution == 0)
+		return 2;
+	//get the size of the computation
+	__int64 p = pointCharges.GetSize();
+	__int64 totalSteps = (fieldLines.GetSize())/n;
+	// since we are multithreading the computation, having
+	// perfData.progress = line / n;
+	// will not work as intended because different threads will process different ranges of line and the progress
+	// indicator will jump herratically.
+	// To solve this problem, we compute the percentage that one line represents, and add it to the total progress.
+    #define LINES_PARRALELISM 4
+    #define SIMD_WIDTH 4
+    #define LINES_WIDTH LINES_PARRALELISM*SIMD_WIDTH
+    #define BYTE_MASK_64 (64-1)
+
+    if(n & BYTE_MASK_64)
+        return 5;
+
+	double perStep = (double)LINES_PARRALELISM/n;
+	perfData.progress = 0;
+
+    if(totalSteps < 2)
+		return 3;
+
+    // Work with data pointers to avoid excessive function calls
+	const Vector3<float> *pLines = fieldLines.GetDataPointer();
+	const pointCharge<float> *pCharges = pointCharges.GetDataPointer();
+
+	//Used to mesure execution time
+	__int64 freq, start, end;
+	QueryHPCFrequency(&freq);
+
+	// Start measuring performance
+	QueryHPCTimer(&start);
+	/*	Each Field line is independent of the others, so that every field line can be parallelized
+		When compiling with the Intel C++ compiler, the OpenMP runtime will automatically choose  the
+		ideal number of threads based oh the runtime system's cache resources. The code will therefore
+		run faster if omp_set_num_threads is not specified.
+		The GNU and the Microsoft compiler produce highly suboptimal code
+	*/
+
+	//#pragma unroll_and_jam
+	#pragma omp parallel for
+	for(__int64 line = 0; line < n; line+=LINES_PARRALELISM)
+	{
+        // We can keep these outside of the 16 registers
+        __m128 Cx, Cy, Cz, Cm;
+        __mVector3_ps prevPoint[4];
+        __mVector3_ps Accum[4], prevAccum[4];
+
+		// We can now load the starting points; we will only need to load them once
+		//prevVec = prevPoint = lines[n + line];// Load prevVec like this to ensure similarity with GPU kernel
+        for(size_t i = 0; i<4; i++)
+        {
+            prevAccum[i].x = prevPoint[i].x =_mm_set_ps(
+                    pLines[line + (i<<2) + 3].x, pLines[line + (i<<2) + 2].x,
+                    pLines[line + (i<<2) + 1].x, pLines[line + (i<<2)].x);
+            prevAccum[i].y = prevPoint[i].y =_mm_set_ps(
+                    pLines[line + (i<<2) + 3].y, pLines[line + (i<<2) + 2].y,
+                    pLines[line + (i<<2) + 1].y, pLines[line + (i<<2)].y);
+            prevAccum[i].z = prevPoint[i].z =_mm_set_ps(
+                    pLines[line + (i<<2) + 3].z, pLines[line + (i<<2) + 2].z,
+                    pLines[line + (i<<2) + 1].z, pLines[line + (i<<2)].z);
+        }
+
+
+        const __m128 zero = _mm_set1_ps((float)0);
+		const __m128 elec_k = _mm_set1_ps((float)electro_k);
+		const __m128 curvAdjust =_mm_set1_ps((float)1); // curvature adjusting constant
+		const __m128 res = _mm_set1_ps(resolution);
+        // TODO:Remnants from old code, should we remove them?
+		const pointCharge<float> *chargeBase = pCharges;
+		const float *linesBase = (float*)pLines;
+		const __int64 nLines = n;
+
+		// Intentionally starts from 1, since step 0 is reserved for the starting points
+		for(__int64 step = 1; step < totalSteps; step++)
+		{
+            Accum[0].x = Accum[0].y = Accum[0].z = zero;
+            Accum[1].x = Accum[1].y = Accum[1].z = zero;
+            Accum[2].x = Accum[2].y = Accum[2].z = zero;
+            Accum[3].x = Accum[3].y = Accum[3].z = zero;
+
+			for(__int64 point = 0; point < p; point++)
+			{
+				// Add partial vectors to the field vector
+				// temp += CoreFunctor(charges[point], prevPoint);	// (electroPartFieldFLOP + 3) FLOPs
+				//	mov	rax, chargeBase;
+				//	mov	rdx, point;
+				//	shl	rdx, 4;
+				//	movaps	Cx, [rax+rdx];
+                Cm = _mm_load_ps((float*)&chargeBase[point]);
+				//	movaps	Cy, Cx;
+				//	movaps	Cz, Cx;
+				//	movaps	Cm, Cx;
+				//	shufps	Cx, Cx, _MM_SHUFFLE(0,0,0,0);
+				//	shufps	Cy, Cy, _MM_SHUFFLE(1,1,1,1);
+				//	shufps	Cz, Cz, _MM_SHUFFLE(2,2,2,2);
+				//	shufps	Cm, Cm, _MM_SHUFFLE(3,3,3,3);
+                __mVector3_ps Cpos;
+                Cpos.x = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(1,1,1,1));
+                Cpos.y = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(2,2,2,2));
+                Cpos.z = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(3,3,3,3));
+                Cm = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(0,0,0,0));
+
+                /* temp += electroPartFieldVec(charges[point], prevPoint);
+                 *
+                 * Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vector3<double> point)
+                 * {                 * Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
+                 *  	T lenSq = vec3LenSq(r);								// 5 FLOP
+                 *      return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
+                 *          (lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
+                 * }
+                 */
+                // T lenSq = vec3LenSq(r);
+                __mVector3_ps r = _mm_vec3_ps(prevPoint[0], Cpos);
+                //T lenSq = vec3LenSq(r);
+                __m128 lenSq = _mm_vec3LenSq_ps(r);
+                //return vec3Mul(r, (T)electro_k * charge.magnitude /
+                //      (lenSq * (T)sqrt(lenSq)) );
+                Accum[0] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+
+                r = _mm_vec3_ps(prevPoint[1], Cpos);
+                lenSq = _mm_vec3LenSq_ps(r);
+                Accum[1] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+
+                r = _mm_vec3_ps(prevPoint[2], Cpos);
+                lenSq = _mm_vec3LenSq_ps(r);
+                Accum[2] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+
+                r = _mm_vec3_ps(prevPoint[3], Cpos);
+                lenSq = _mm_vec3LenSq_ps(r);
+                Accum[3] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+			}
+
+            /*
+             * T k = vec3LenSq(temp);//5 FLOPs
+             * k = vec3Len( vec3Cross(temp - prevVec, prevVec) )/(k*sqrt(k));// 25FLOPs (3 vec sub + 9 vec cross + 10 setLen + 1 div + 1 mul + 1 sqrt)
+             * pLines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
+             * prevVec = temp;
+             */
+
+            for(size_t i = 0; i<4; i++)
+            {
+            // T k = vec3LenSq(temp);
+            __m128 k = _mm_vec3LenSq_ps(Accum[i]);
+            // k = vec3Len( vec3Cross(temp - prevVec, prevVec) )/(k*sqrt(k));
+            k = _mm_div_ps(
+                    _mm_vec3Len_ps( _mm_vec3Cross_ps(Accum[i] - prevAccum[i], prevAccum[i]) ),
+                    _mm_mul_ps(k, _mm_sqrt_ps(k)));
+            // (prevPoint += vec3SetInvLen(temp, (k+1)*resolution))
+            prevPoint[i] += vec3SetInvLen(Accum[i],
+                            _mm_mul_ps(res, _mm_add_ps(k, curvAdjust)));
+
+			// We only need xmm3->xmm5 to be preserved, so we can play around with all other registers
+			// We want to get the data from
+			//from:
+			// | x0, x1, x2, x3 |
+			// | y0, y1, y2, y3 |
+			// | z0, z1, z2, z3 |
+			//to:
+			// | x0, y0, z0, x1 |
+			// | y1, z1, x2, y2 |
+			// | z2, x3, y3, z3 |
+			//
+			// The latter can easily be copied into memory with three instructions
+			// lines[step*n + line] = ...
+
+			// Code of NewRite
+			// vector 0: x0, y0, z0, x1
+			//	movaps		Cx, Vx;
+			//	unpcklps	Cx, Vy;
+			//	movaps		extra, Vz;
+			//	unpcklps	extra, Vx;
+			//	shufps		Cx, extra,	_MM_SHUFFLE(3, 0, 1, 0);
+            Cx = _mm_shuffle_ps(_mm_unpacklo_ps(prevPoint[i].x,prevPoint[i].y),
+                            _mm_unpacklo_ps(prevPoint[i].z,prevPoint[i].x),
+                            _MM_SHUFFLE(3,0,1,0));
+
+			// vector 1: y1, z1, x2, y2
+			//	movaps		Cy, Vz;
+			//	unpcklps	Cy, Vy;
+			//	movaps		extra, Vy;
+			//	unpckhps	extra, Vx;
+			//	shufps		Cy, extra, _MM_SHUFFLE(0, 1, 2, 3);
+            Cy = _mm_shuffle_ps(_mm_unpacklo_ps(prevPoint[i].z,prevPoint[i].y),
+                            _mm_unpackhi_ps(prevPoint[i].y,prevPoint[i].x),
+                            _MM_SHUFFLE(0,1,2,3));
+
+			// vector 2: z2, x3, y3, z3;
+			//	movaps		Cz, Vx;
+			//	unpckhps	Cz, Vz;
+			//	movaps		extra, Vz;
+			//	unpckhps	extra, Vy;
+			//	shufps		Cz, extra, _MM_SHUFFLE(2, 3, 2, 1);
+            Cz = _mm_shuffle_ps(_mm_unpackhi_ps(prevPoint[i].x,prevPoint[i].z),
+                            _mm_unpackhi_ps(prevPoint[i].z,prevPoint[i].y),
+                            _MM_SHUFFLE(2,3,2,1));
+
+
+			//*/
+			// We have gotten the vectors back to horizontal form (bleah!!)
+			// Now we need to use movups to get the horizontals into RAM
+			// using a Vector pointer base is lines[nLines * step + line]
+			// using a float pointer, base is linesBase[(nLines * step + line)*3]
+            // using a void pointer, base is linesBase[(nLines * step + line)*12]
+			//	mov		rbx, linesBase;
+			//	mov		rax, nLines;
+			//	mov		rcx, line;
+			//	mov		rdx, step;
+			//	imul	rax, rdx;
+			//	add		rax, rcx;
+			//	imul	rax, 12;
+			//	movaps	xmmword ptr [rbx + rax],      Cx;
+			//	movaps	xmmword ptr [rbx + rax + 16], Cy;
+			//	movaps	xmmword ptr [rbx + rax + 32], Cz;
+            _mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3],Cx);
+			_mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3 + 4],Cy);
+            _mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3 + 8],Cz);
+            }
+		}
+        // update progress
+		#pragma omp atomic
+            perfData.progress += perStep;
+	}
+	// take ending measurement
+	QueryHPCTimer(&end);
+	// Compute performance and time
+	perfData.time = (double)(end - start) / freq;
+	perfData.performance = (n * ( (totalSteps-1)*(p*(CoreFunctorFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
+	return 0;
+}
 
 #endif//USE_AUTO_VECTOR
 
