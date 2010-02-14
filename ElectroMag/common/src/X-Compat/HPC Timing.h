@@ -1,7 +1,6 @@
 #pragma once
 
-#ifdef _WIN32
-#define PLATFORM_FOUND
+#if defined(_WIN32) || defined(_WIN64)
 #include<windows.h>
 
 inline void QueryHPCTimer(__int64 *time)
@@ -17,9 +16,8 @@ inline void QueryHPCFrequency(__int64 *freq)
 	QueryPerformanceFrequency(&winFreq);
 	*freq = winFreq.QuadPart;
 };
-#endif
-#ifdef __linux__
-#define PLATFORM_FOUND
+
+#elif defined(__unix__)
 #include <sys/time.h>
 
 const __int64 TIMER_FREQUENCY = (__int64)1E6;
@@ -35,11 +33,9 @@ inline void QueryHPCFrequency(__int64 *freq)
 	*freq = TIMER_FREQUENCY;
 };
 #undef TIMER_FREQUENCY
-#endif
 
-
-#ifndef PLATFORM_FOUND
-#error Compilation platform not found or not supported. Define _WIN32 or _LIN to select a platform.
+#else
+#error Compilation platform not found or not supported. Define _WIN32 or __unix__ to select a platform.
 #endif
 
 #undef PLATFORM_FOUND

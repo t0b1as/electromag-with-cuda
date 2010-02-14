@@ -29,7 +29,12 @@ while /arch:SSE2 /fp:fast allow the use of SSE registers
 */////////////////////////////////////////////////////////////////////////////////
 #include "CPU Implement.h"
 #include "X-Compat/HPC Timing.h"
+#if !defined(__CYGWIN__) // Don't expect performance if using Cygwin
 #include <omp.h>
+#else
+#pragma message --- Cygwin detected. OpenMP not supported by Cygwin!!! ---
+#pragma message --- Expect CPU side performance to suck!!! ---
+#endif
 #include <iostream>
 #define CoreFunctor electroPartField
 #define CoreFunctorFLOP electroPartFieldFLOP
@@ -180,7 +185,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 // compilation, so just switch to ICC, or GCC if you dare >:X
 // Really, if enough people use GCC, and they request that I support GCC inline
 // assembly, and they are willing to help port the code, I will support it.
-#if defined(_M_X64) && defined(__INTEL_COMPILER)
+#if defined(_M_X64) && defined(__INTEL_COMPILER) && defined(USE_THAT_USELESS_STUFF_I_SPENT_TWO_WEEKS_ON)
 #include <xmmintrin.h>
 
 #define 	xAccum	xmm0
@@ -837,12 +842,12 @@ int CalcField_CPU_T_Curvature(Array<Vector3<double> >& fieldLines, Array<pointCh
 	perfData.performance = (n * ( (totalSteps-1)*(p*(electroPartFieldFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
 	return 0;
 }
-#elif 0//(defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER)
+#elif (defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER)
 // I think optimizations should also be available for GNU. We include MSVC as
 // well because it basically suports the same intrinsics
 #include <xmmintrin.h>
 
-struct __mVector3_ps
+struct /*__declspec(align(__alignof(__m128)))*/__mVector3_ps
 {
     __m128 x, y, z;
 };
@@ -878,6 +883,12 @@ inline void operator+=(__mVector3_ps &rhs, const __mVector3_ps B)
     rhs.x = _mm_add_ps(rhs.x, B.x);
     rhs.y = _mm_add_ps(rhs.y, B.y);
     rhs.z = _mm_add_ps(rhs.z, B.z);
+}
+inline void operator -= (__mVector3_ps &rhs, const __mVector3_ps B)
+{
+    rhs.x = _mm_sub_ps(rhs.x, B.x);
+    rhs.y = _mm_sub_ps(rhs.y, B.y);
+    rhs.z = _mm_sub_ps(rhs.z, B.z);
 }
 inline __mVector3_ps operator + (__mVector3_ps A, __mVector3_ps B)
 {
@@ -958,7 +969,7 @@ inline __mVector3_ps _mm_vec3Cross_ps(const __mVector3_ps index, const __mVector
     return result;
 }
 
-inline __mVector3_ps vec3SetInvLen(__mVector3_ps vec, __m128 scalarInvLen)
+inline __mVector3_ps _mm_vec3SetInvLen_ps(__mVector3_ps vec, __m128 scalarInvLen)
 {
 	__m128 len = _mm_vec3Len_ps(vec);
 	scalarInvLen =_mm_mul_ps(scalarInvLen, len);
@@ -976,30 +987,27 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 	//get the size of the computation
 	__int64 p = pointCharges.GetSize();
 	__int64 totalSteps = (fieldLines.GetSize())/n;
+	
+    #define LINES_PARRALELISM 4
+    #define SIMD_WIDTH 4	// Represents how many floats can be packed into an SSE Register; Must ALWAYS be 4
+    #define LINES_WIDTH (LINES_PARRALELISM * SIMD_WIDTH)
+    #define ALIGNMENT_MASK (LINES_WIDTH * sizeof(float) - 1)
+
+    if(n & ALIGNMENT_MASK)
+        return 5;
+
 	// since we are multithreading the computation, having
 	// perfData.progress = line / n;
 	// will not work as intended because different threads will process different ranges of line and the progress
 	// indicator will jump herratically.
-	// To solve this problem, we compute the percentage that one line represents, and add it to the total progress.
-    #define LINES_PARRALELISM 4
-    #define SIMD_WIDTH 4
-    #define LINES_WIDTH LINES_PARRALELISM*SIMD_WIDTH
-    #define BYTE_MASK_64 (64-1)
-
-    if(n & BYTE_MASK_64)
-        return 5;
-
-	double perStep = (double)LINES_PARRALELISM/n;
+	// To solve this problem, we compute the percentage that one line represents, and add it to the total progress
+	double perStep = (double)LINES_WIDTH/n;
 	perfData.progress = 0;
 
     if(totalSteps < 2)
 		return 3;
 
-    // Work with data pointers to avoid excessive function calls
-	const Vector3<float> *pLines = fieldLines.GetDataPointer();
-	const pointCharge<float> *pCharges = pointCharges.GetDataPointer();
-
-	//Used to mesure execution time
+    //Used to mesure execution time
 	__int64 freq, start, end;
 	QueryHPCFrequency(&freq);
 
@@ -1014,26 +1022,30 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 
 	//#pragma unroll_and_jam
 	#pragma omp parallel for
-	for(__int64 line = 0; line < n; line+=LINES_PARRALELISM)
+	for(__int64 line = 0; line < n; line+=LINES_WIDTH)
 	{
+		// Work with data pointers to avoid excessive calls to Array<T>::operator[]
+		const Vector3<float> *pLines = fieldLines.GetDataPointer();
+		const pointCharge<float> *pCharges = pointCharges.GetDataPointer();
+
         // We can keep these outside of the 16 registers
         __m128 Cx, Cy, Cz, Cm;
-        __mVector3_ps prevPoint[4];
-        __mVector3_ps Accum[4], prevAccum[4];
+        __mVector3_ps prevPoint[LINES_PARRALELISM];
+        __mVector3_ps Accum[LINES_PARRALELISM], prevAccum[LINES_PARRALELISM];
 
 		// We can now load the starting points; we will only need to load them once
 		//prevVec = prevPoint = lines[n + line];// Load prevVec like this to ensure similarity with GPU kernel
-        for(size_t i = 0; i<4; i++)
+        for(size_t i = 0; i < LINES_PARRALELISM; i++)
         {
             prevAccum[i].x = prevPoint[i].x =_mm_set_ps(
-                    pLines[line + (i<<2) + 3].x, pLines[line + (i<<2) + 2].x,
-                    pLines[line + (i<<2) + 1].x, pLines[line + (i<<2)].x);
+                    pLines[line + (i*SIMD_WIDTH) + 3].x, pLines[line + (i*SIMD_WIDTH) + 2].x,
+                    pLines[line + (i*SIMD_WIDTH) + 1].x, pLines[line + (i*SIMD_WIDTH)].x);
             prevAccum[i].y = prevPoint[i].y =_mm_set_ps(
-                    pLines[line + (i<<2) + 3].y, pLines[line + (i<<2) + 2].y,
-                    pLines[line + (i<<2) + 1].y, pLines[line + (i<<2)].y);
+                    pLines[line + (i*SIMD_WIDTH) + 3].y, pLines[line + (i*SIMD_WIDTH) + 2].y,
+                    pLines[line + (i*SIMD_WIDTH) + 1].y, pLines[line + (i*SIMD_WIDTH)].y);
             prevAccum[i].z = prevPoint[i].z =_mm_set_ps(
-                    pLines[line + (i<<2) + 3].z, pLines[line + (i<<2) + 2].z,
-                    pLines[line + (i<<2) + 1].z, pLines[line + (i<<2)].z);
+                    pLines[line + (i*SIMD_WIDTH) + 3].z, pLines[line + (i*SIMD_WIDTH) + 2].z,
+                    pLines[line + (i*SIMD_WIDTH) + 1].z, pLines[line + (i*SIMD_WIDTH)].z);
         }
 
 
@@ -1042,68 +1054,62 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 		const __m128 curvAdjust =_mm_set1_ps((float)1); // curvature adjusting constant
 		const __m128 res = _mm_set1_ps(resolution);
         // TODO:Remnants from old code, should we remove them?
-		const pointCharge<float> *chargeBase = pCharges;
 		const float *linesBase = (float*)pLines;
 		const __int64 nLines = n;
 
 		// Intentionally starts from 1, since step 0 is reserved for the starting points
 		for(__int64 step = 1; step < totalSteps; step++)
 		{
-            Accum[0].x = Accum[0].y = Accum[0].z = zero;
-            Accum[1].x = Accum[1].y = Accum[1].z = zero;
-            Accum[2].x = Accum[2].y = Accum[2].z = zero;
-            Accum[3].x = Accum[3].y = Accum[3].z = zero;
+#			pragma unroll
+			for(size_t i = 0; i < LINES_PARRALELISM; i++)
+				Accum[i].x = Accum[i].y = Accum[i].z = zero;
 
 			for(__int64 point = 0; point < p; point++)
 			{
 				// Add partial vectors to the field vector
 				// temp += CoreFunctor(charges[point], prevPoint);	// (electroPartFieldFLOP + 3) FLOPs
-				//	mov	rax, chargeBase;
-				//	mov	rdx, point;
-				//	shl	rdx, 4;
-				//	movaps	Cx, [rax+rdx];
-                Cm = _mm_load_ps((float*)&chargeBase[point]);
-				//	movaps	Cy, Cx;
-				//	movaps	Cz, Cx;
-				//	movaps	Cm, Cx;
-				//	shufps	Cx, Cx, _MM_SHUFFLE(0,0,0,0);
-				//	shufps	Cy, Cy, _MM_SHUFFLE(1,1,1,1);
-				//	shufps	Cz, Cz, _MM_SHUFFLE(2,2,2,2);
-				//	shufps	Cm, Cm, _MM_SHUFFLE(3,3,3,3);
+				Cm = _mm_load_ps((float*)&pCharges[point]);
                 __mVector3_ps Cpos;
-                Cpos.x = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(1,1,1,1));
-                Cpos.y = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(2,2,2,2));
-                Cpos.z = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(3,3,3,3));
-                Cm = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(0,0,0,0));
+                Cpos.x = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(0,0,0,0));
+                Cpos.y = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(1,1,1,1));
+                Cpos.z = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(2,2,2,2));
+                Cm = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(3,3,3,3));
 
                 /* temp += electroPartFieldVec(charges[point], prevPoint);
                  *
                  * Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vector3<double> point)
-                 * {                 * Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
+                 * {
+				 *		Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
                  *  	T lenSq = vec3LenSq(r);								// 5 FLOP
                  *      return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
                  *          (lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
                  * }
                  */
-                // T lenSq = vec3LenSq(r);
+                // Vector3<T> r = vec3(point, charge.position);
                 __mVector3_ps r = _mm_vec3_ps(prevPoint[0], Cpos);
-                //T lenSq = vec3LenSq(r);
+                // T lenSq = vec3LenSq(r);
                 __m128 lenSq = _mm_vec3LenSq_ps(r);
                 //return vec3Mul(r, (T)electro_k * charge.magnitude /
                 //      (lenSq * (T)sqrt(lenSq)) );
                 Accum[0] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
 
+#				if (LINES_PARRALELISM > 1)
                 r = _mm_vec3_ps(prevPoint[1], Cpos);
                 lenSq = _mm_vec3LenSq_ps(r);
                 Accum[1] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
-
-                r = _mm_vec3_ps(prevPoint[2], Cpos);
-                lenSq = _mm_vec3LenSq_ps(r);
-                Accum[2] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
-
+#				endif
+#				if (LINES_PARRALELISM == 3)
+#				error LINES_PARRALELISM Should not be set to 3, as the alignment mask may fail to function properly
+#				endif
+#				if (LINES_PARRALELISM > 3)
                 r = _mm_vec3_ps(prevPoint[3], Cpos);
                 lenSq = _mm_vec3LenSq_ps(r);
                 Accum[3] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+#				endif
+#				if (LINES_PARRALELISM > 4)
+#				error Too many lines per iteration
+#				endif
+				
 			}
 
             /*
@@ -1112,17 +1118,17 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
              * pLines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
              * prevVec = temp;
              */
-
-            for(size_t i = 0; i<4; i++)
+#			pragma unroll
+            for(size_t i = 0; i < LINES_PARRALELISM; i++)
             {
             // T k = vec3LenSq(temp);
             __m128 k = _mm_vec3LenSq_ps(Accum[i]);
-            // k = vec3Len( vec3Cross(temp - prevVec, prevVec) )/(k*sqrt(k));
+            // k = vec3Len( vec3Cross(temp - prevVec, prevVec) ) / (k*sqrt(k));
             k = _mm_div_ps(
-                    _mm_vec3Len_ps( _mm_vec3Cross_ps(Accum[i] - prevAccum[i], prevAccum[i]) ),
-                    _mm_mul_ps(k, _mm_sqrt_ps(k)));
+                    (_mm_vec3Len_ps( _mm_vec3Cross_ps(Accum[i] - prevAccum[i], prevAccum[i]) ) ),
+                    (_mm_mul_ps(k, _mm_sqrt_ps(k)) ) );
             // (prevPoint += vec3SetInvLen(temp, (k+1)*resolution))
-            prevPoint[i] += vec3SetInvLen(Accum[i],
+            prevPoint[i] += _mm_vec3SetInvLen_ps(Accum[i],
                             _mm_mul_ps(res, _mm_add_ps(k, curvAdjust)));
 
 			// We only need xmm3->xmm5 to be preserved, so we can play around with all other registers
@@ -1136,7 +1142,7 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 			// | y1, z1, x2, y2 |
 			// | z2, x3, y3, z3 |
 			//
-			// The latter can easily be copied into memory with three instructions
+			// The latter can easily be copied into memory with three movaps instructions
 			// lines[step*n + line] = ...
 
 			// Code of NewRite
@@ -1177,19 +1183,9 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 			// using a Vector pointer base is lines[nLines * step + line]
 			// using a float pointer, base is linesBase[(nLines * step + line)*3]
             // using a void pointer, base is linesBase[(nLines * step + line)*12]
-			//	mov		rbx, linesBase;
-			//	mov		rax, nLines;
-			//	mov		rcx, line;
-			//	mov		rdx, step;
-			//	imul	rax, rdx;
-			//	add		rax, rcx;
-			//	imul	rax, 12;
-			//	movaps	xmmword ptr [rbx + rax],      Cx;
-			//	movaps	xmmword ptr [rbx + rax + 16], Cy;
-			//	movaps	xmmword ptr [rbx + rax + 32], Cz;
-            _mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3],Cx);
-			_mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3 + 4],Cy);
-            _mm_store_ps((float*)&linesBase[(nLines * step + (i<<2) + line)*3 + 8],Cz);
+            _mm_store_ps((float*)&linesBase[(nLines * step + (i*SIMD_WIDTH) + line)*3],Cx);
+			_mm_store_ps((float*)&linesBase[(nLines * step + (i*SIMD_WIDTH) + line)*3 + 4],Cy);
+            _mm_store_ps((float*)&linesBase[(nLines * step + (i*SIMD_WIDTH) + line)*3 + 8],Cz);
             }
 		}
         // update progress
@@ -1221,4 +1217,3 @@ int CalcField_CPU<double>(Array<Vector3<double> >& fieldLines, Array<pointCharge
 	if(useCurvature) return CalcField_CPU_T_Curvature<double>(fieldLines, pointCharges, n, resolution, perfData);
     else return CalcField_CPU_T<double>(fieldLines, pointCharges, n, resolution, perfData);
 }
-

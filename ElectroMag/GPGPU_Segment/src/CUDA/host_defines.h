@@ -54,7 +54,9 @@
         __thread
 #define __import__
 #define __export__
+#ifndef __cdecl
 #define __cdecl
+#endif
 #define __annotate__(a) \
         __attribute__((a))
 #define __location__(a) \

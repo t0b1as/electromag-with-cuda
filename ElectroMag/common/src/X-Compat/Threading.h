@@ -27,7 +27,6 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 //////////////////////////////////////////////////////////////////////////////////
 
 #if defined(_WIN32) || defined(_WIN64)
-#define PLATFORM_FOUND
 #include<windows.h>
 
 namespace Threads
@@ -67,6 +66,7 @@ inline void Pause(unsigned int miliseconds)
 /// See How to: Set a Thread Name in Native Code in MSDN
 /// Don't ask how this works. It should show the thread name in the Visual Studio debugger
 ////////////////////////////////////////////////////////////////////////////////////////////////
+#if defined(_MSC_VER) || defined (__INTEL_COMPILER)
 #define MS_VC_EXCEPTION 0x406D1388
 
 #pragma pack(push,8)
@@ -79,7 +79,6 @@ typedef struct tagTHREADNAME_INFO
 } THREADNAME_INFO;
 #pragma pack(pop)
 
-#if defined(_MSC_VER) || defined (__INTEL_COMPILER)
 inline void SetThreadName( DWORD dwThreadID, char* threadName)
 {
    THREADNAME_INFO info;
@@ -132,9 +131,7 @@ inline void UnlockMutex(MutexHandle hMutex)
 	ReleaseMutex(hMutex);
 };
 
-#endif// defined(_WIN32) || defined(_WIN64)
-#if defined(__linux__)
-#define PLATFORM_FOUND
+#elif defined(__unix__)
 #include <pthread.h>
 #include <unistd.h>
 
@@ -197,13 +194,10 @@ inline void UnlockMutex(MutexHandle &hMutex)
 {
 	pthread_mutex_unlock(&hMutex);
 };
-#endif//__linux__
-
-#ifndef PLATFORM_FOUND
-#error Compilation platform not found or not supported. Define _WIN32 or _WIN64 or __linux__ to select a platform.
+#else
+#error Compilation platform not found or not supported. Define _WIN32 or _WIN64 or __unix__ to select a platform.
 #endif
 
-#undef PLATFORM_FOUND
 }//namespace threads
 
 //////////////////////////////////////////////////////////////////////////////////

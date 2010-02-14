@@ -25,6 +25,9 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #define _ELECTROMAG_UTILS_H
 #include <stdlib.h>
 #include "X-Compat/Threading.h"
+
+typedef void* ArrayHandle;
+
 template<class T>
 void InitializeFieldLineArray(Array<Vector3<T> > &arrMain,								///< Pointer to the array to initialize
 						 const size_t n,												///< Number of field lines in the array
@@ -75,7 +78,7 @@ void CopyFieldLineArray(Array<Vector3<T1> >& destination,	///< Destination array
 	for(size_t i = start; i < elements; i++)
 	{
 		Vector3<T2> srcVec = source[i];
-		Vector3<T2> destVec;
+		Vector3<T1> destVec;
 		destVec.x = (T1)srcVec.x;
 		destVec.y = (T1)srcVec.y;
 		destVec.z = (T1)srcVec.z;
@@ -98,6 +101,25 @@ void InitializePointChargeArray(Array<pointCharge<T> > &charges,
 		charges[i].position.y = (T)(rand()-(T)RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
 		charges[i].position.z = (T)(rand()-(T)RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
 		charges[i].magnitude  = (T)(rand()-(T)RAND_MAX/10)/RAND_MAX; //0.001f;
+	}
+}
+
+template<class T1, class T2>
+void CopyPointChargeArray(Array<pointCharge<T1> >& destination,	///< Destination array
+			   Array<pointCharge<T2> >& source,			///< Source array
+			   size_t start,						///< Index of first element to copy
+			   size_t elements						///< Number of elements to copy
+			   )
+{
+	for(size_t i = start; i < elements; i++)
+	{
+		pointCharge<T2> src = source[i];
+		pointCharge<T1> dest;
+		dest.position.x = (T1)src.position.x;
+		dest.position.y = (T1)src.position.y;
+		dest.position.z = (T1)src.position.z;
+		dest.magnitude  = (T1)src.magnitude;
+		destination[i] = dest;
 	}
 }
 #endif//_ELECTROMAG_UTILS_H
