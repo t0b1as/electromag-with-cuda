@@ -22,7 +22,7 @@ SRCDIR=src
 #CPPsources= $(SRCDIR)/Electrostatics.cpp $(SRCDIR)/CUDA_manager.cpp $(SRCDIR)/cuda_drvapi_dynlink.c
 CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/CUDA_manager.o\
 	$(OBJDIR)/CL_Manager.o\
-	$(OBJDIR)/cuda_\drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o\
+	$(OBJDIR)/cuda_drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o\
 	$(OBJDIR)/Abstract_Functor.o $(OBJDIR)/CUDA_Electrostatics.o
 
 

@@ -72,6 +72,15 @@
 						GenerateAlternateCodePaths="5"/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\src\ElectroMag.cpp">
+				<FileConfiguration
+					Name="Debug|x64">
+					<Tool
+						Name="CppCmplrTool"
+						Optimization="1000"/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 	</Files>
 </VisualStudioProject>

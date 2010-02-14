@@ -20,8 +20,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #ifndef _MEMMAN_H
 #define _MEMMAN_H
 
-#ifdef _WIN32
-#define PLATFORM_FOUND
+#if defined(_WIN32) || defined(_WIN64)
 #include<malloc.h>
 
 inline void* AlignedMalloc(size_t size, size_t alignment)
@@ -29,22 +28,16 @@ inline void* AlignedMalloc(size_t size, size_t alignment)
 	return _aligned_malloc(size, alignment);
 }
 
-#endif
-#ifdef __linux__
-#define PLATFORM_FOUND
+#elif defined(__unix__)
 #include <malloc.h>
 
 inline void* AlignedMalloc(size_t size, size_t alignment)
 {
 	return memalign(alignment, size);
 }
+
+#else
+#error Compilation platform not found or not supported. Define _WIN32 or __unix__ to select a platform.
 #endif
-
-
-#ifndef PLATFORM_FOUND
-#error Compilation platform not found or not supported. Define _WIN32 or __linux__ to select a platform.
-#endif
-
-#undef PLATFORM_FOUND
 
 #endif//_MEMMAN_H

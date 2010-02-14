@@ -649,6 +649,18 @@
 				RelativePath=".\src\OpenCL_Dyn_Load.h"
 				>
 			</File>
+			<Filter
+				Name="CUDA"
+				>
+				<File
+					RelativePath=".\src\CUDA\host_defines.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\CUDA\vector_types.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Device code"

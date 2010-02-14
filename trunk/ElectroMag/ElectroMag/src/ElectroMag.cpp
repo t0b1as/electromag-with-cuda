@@ -23,7 +23,9 @@
 #include "stdafx.h"
 #include "Graphics/FieldRender.h"
 #include "Graphics/FrontendGUI.h"
+#if !defined(__CYGWIN__) // Stupid, I know, but it's a fact of life
 #include <omp.h>
+#endif
 #include "./../../GPGPU_Segment/src/CUDA Manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 #include "Electromag utils.h"
@@ -231,8 +233,10 @@ int main(int argc, char* argv[])
 		int failedFunctors;
 		// If dynamic and nested OMP is not initialized, CalcField may only get
         // one OMP thread, severely hampering performance on multi-core/CPU systems
+#		if !defined(__CYGWIN__)
         omp_set_dynamic(true);
         omp_set_nested(true);
+#		endif
         #pragma omp parallel sections
         {
 			// First section runs the calculations
@@ -278,8 +282,10 @@ int main(int argc, char* argv[])
 		std::cout<<" CPU"<<std::endl;
         // If dynamic and nested OMP is not initialized, CalcField may only get
         // one OMP thread, severely hampering performance on multi-core/CPU systems
+#		if !defined(__CYGWIN__)
         omp_set_dynamic(true);
         omp_set_nested(true);
+#		endif
         #pragma omp parallel sections
         {
             // First section runs the calculations

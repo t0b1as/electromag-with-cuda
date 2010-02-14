@@ -570,6 +570,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
+						FavorSizeOrSpeed="1"
 						UsePrecompiledHeader="0"
 						DebugInformationFormat="3"
 					/>
@@ -612,6 +613,14 @@
 			<File
 				RelativePath=".\src\ElectroMag.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|x64"
 					>
@@ -947,6 +956,10 @@
 				Name="GL"
 				>
 				<File
+					RelativePath=".\src\Graphics\GL\freeglut_ext.h"
+					>
+				</File>
+				<File
 					RelativePath=".\src\Graphics\GL\glew.c"
 					>
 					<FileConfiguration
@@ -960,6 +973,22 @@
 				</File>
 				<File
 					RelativePath=".\src\Graphics\GL\glew_static.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\Graphics\GL\glut.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\Graphics\GL\glutExtra.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\Graphics\GL\glxew.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\Graphics\GL\wglew.h"
 					>
 				</File>
 			</Filter>

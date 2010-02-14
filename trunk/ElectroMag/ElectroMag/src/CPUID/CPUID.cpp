@@ -17,14 +17,14 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 ***********************************************************************************************/
 #include "CpuID.h"
 
-#ifdef WIN32
+#if defined(_WIN32) || defined (_WIN64)
 #include<intrin.h>
 #endif
 
 namespace CPUID
 {
 
-#ifdef __linux__
+#if defined (__GNUC__)
 #define __cpuid(out, infoType)\
 	asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType));
 #define __cpuidex(out, infoType, ecx)\

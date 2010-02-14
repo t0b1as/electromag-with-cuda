@@ -111,7 +111,7 @@ void CudaElectrosFunctor<T>::PartitionData()
 	unsigned int blockXSize = 0;
     for (size_t devID = 0; devID < segments; devID++)
 	{
-		CudaElectrosFunctor::FunctorData *dataParams = &functorParamList[devID];
+		FunctorData *dataParams = &functorParamList[devID];
         blockXSize = dataParams->blockXSize;
         // Initialize parameter arrays
         size_t segDataSize = (remainingLines < segSize) ? remainingLines : segSize;
@@ -208,7 +208,7 @@ void CudaElectrosFunctor<T>::PostRun()
 template<class T>
 CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 {
-	CudaElectrosFunctor::FunctorData *params = &this->functorParamList[deviceID];
+	FunctorData *params = &this->functorParamList[deviceID];
 	if(useCurvature)
 	{
 		params->useMT = true;
@@ -576,9 +576,9 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
 		return CUDA_ERROR_INVALID_CONTEXT;
 	}
 
-	CudaElectrosFunctor::FunctorData *params = &this->functorParamList[functorIndex];
+	FunctorData *params = &this->functorParamList[functorIndex];
 	params->lastOpErrCode = CUDA_ERROR_NOT_READY;// Flag that functor is not ready
-	CudaElectrosFunctor::FunctorData remapData;
+	FunctorData remapData;
 
 	/// FIXME: Should we remap functors here or externally?
 	if(functorIndex != deviceIndex)
@@ -593,7 +593,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
 		// To achieve this, we declare a FunctorData structure local to MainFunctor, copy the necessarry information 
 		// to that structure, and change the 'params' pointer to point to that structure
 		
-		CudaElectrosFunctor::FunctorData *pActive = &this->functorParamList[deviceIndex];
+		FunctorData *pActive = &this->functorParamList[deviceIndex];
 
 		remapData.context			= pActive->context;
 		remapData.hostNonpagedData	= pActive->hostNonpagedData;
