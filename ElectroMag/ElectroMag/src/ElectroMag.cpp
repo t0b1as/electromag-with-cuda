@@ -47,7 +47,7 @@ SimulationParams ExtremeParams = {256, 256, 1, 2048, 0, 5000};			// Expect to fa
 SimulationParams InsaneParams = {512, 512, 1, 2048, 0, 5000};			// Requires minimum 16GB system RAM + host buffers
 SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000};	// Requires minimum 24GB system RAM + host buffers
 SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work acceptably on most multi-core CPUs
-//SimulationParams CpuModeParams = {16, 16, 1, 1000, 0, 1000};
+SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
 
 // to redirect stdout and stderr to out.txt use:
 //				>out.txt  2>&1
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 	//freopen( "file.txt", "w", stderr );
 #endif//DEBUG
 
-	enum ParamLevel{__cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
+	enum ParamLevel{__micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
 	ParamLevel paramLevel = __normal;
 
 	SimulationParams simConfig = DefaultParams;
@@ -86,6 +86,8 @@ int main(int argc, char* argv[])
 			saveData = true;
 		else if( !strcmp(argv[i], "--nodisp") )
 			display = false;
+        else if( !strcmp(argv[i], "--micro") )
+			{if(paramLevel < __micro) paramLevel = __micro;}
 		else if( !strcmp(argv[i], "--enhanced") )
 			{if(paramLevel < __enhanced) paramLevel = __enhanced;}
 		else if( !strcmp(argv[i], "--extreme") )
@@ -157,6 +159,9 @@ int main(int argc, char* argv[])
 	// Set correct parameter configuration
 	switch(paramLevel)
 	{
+    case __micro:
+        simConfig = MicroParams;
+        break;
 	case __normal:
 		simConfig = DefaultParams;
 		break;

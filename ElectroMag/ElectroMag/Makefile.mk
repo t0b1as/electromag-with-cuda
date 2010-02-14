@@ -18,9 +18,7 @@ OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJD
 all: $(TARGET_DIR)/$(TARGET)
 
 # Rule for linking all objects
-$(TARGET_DIR)/$(TARGET):
-	@mkdir -p $(OBJDIR)
-	@make $(OBJS)
+$(TARGET_DIR)/$(TARGET): $(OBJS)
 	@echo =======================================================
 	@echo = Linking Everything                                  =
 	@echo =======================================================
@@ -32,15 +30,18 @@ $(TARGET_DIR)/$(TARGET):
 
 #1 The heavy processing part
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 # Rule for files that are located in src/somedir/
 $(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp
+	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Rule for files that are located in src/somedir/more_nested_dir/
 $(OBJDIR)/%.o: $(SRCDIR)/*/*/%.c
+	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CC) $(CXXFLAGS) -c $< -o $@
 

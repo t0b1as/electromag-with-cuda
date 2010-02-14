@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="62">
   <logicalFolder name="root" displayName="root" projectFiles="true">
-    <df name="ElectroMag" root="/home/mrnuke/electromag-with-cuda/ElectroMag">
-      <df name="bin">
-      </df>
+    <df name="ElectroMag" root=".">
       <df name="bin">
       </df>
       <df name="common">
@@ -24,52 +22,6 @@
         </df>
       </df>
       <df name="ElectroMag">
-        <df name="bin">
-        </df>
-        <df name="common">
-          <df name="lib">
-          </df>
-          <df name="src">
-            <df name="X-Compat">
-              <in>HPC Timing.h</in>
-              <in>Memman.h</in>
-              <in>Threading.h</in>
-            </df>
-            <in>CUDA Definitions.h</in>
-            <in>Data Structures.h</in>
-            <in>Electrodynamics.h</in>
-            <in>Electrostatics.h</in>
-            <in>Newton FEMA.h</in>
-            <in>Vector.h</in>
-          </df>
-        </df>
-        <df name="GPGPU_Segment">
-          <df name="src">
-            <in>Abstract Functor.h</in>
-            <in>Abstract_Functor.cpp</in>
-            <in>CL Manager.h</in>
-            <in>CL_Manager.cpp</in>
-            <in>CPGP Interop.h</in>
-            <in>CUDA Interop.h</in>
-            <in>CUDA Manager.h</in>
-            <in>CUDA_Electrostatics.cpp</in>
-            <in>CUDA_Electrostatics.h</in>
-            <in>CUDA_manager.cpp</in>
-            <in>Config.h</in>
-            <in>Electrostatics Housekeeping.h</in>
-            <in>Electrostatics Kernel Launch.h</in>
-            <in>Electrostatics MT kernel.cuh</in>
-            <in>Electrostatics kernel.cuh</in>
-            <in>Electrostatics.cpp</in>
-            <in>Electrostatics.cu</in>
-            <in>Electrostatics_Multistep.cu</in>
-            <in>Electrostatics_sm13.cu</in>
-            <in>OpenCL_Dyn_Load.c</in>
-            <in>OpenCL_Dyn_Load.h</in>
-            <in>cuda_drvapi_dynlink.c</in>
-            <in>cuda_drvapi_dynlink.h</in>
-          </df>
-        </df>
         <df name="obj">
         </df>
         <df name="src">
@@ -105,13 +57,12 @@
           <in>CPU_Implement.cpp</in>
           <in>ElectroMag.cpp</in>
           <in>Electrodynamics.h</in>
+          <in>Electromag utils.h</in>
           <in>stdafx.cpp</in>
           <in>stdafx.h</in>
         </df>
       </df>
       <df name="GPGPU_Segment">
-        <df name="obj">
-        </df>
         <df name="obj">
         </df>
         <df name="src">
@@ -158,7 +109,7 @@
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>/home/mrnuke/electromag-with-cuda/ElectroMag</Elem>
+    <Elem>.</Elem>
   </sourceRootList>
   <projectmakefile>Makefile-ElectroMag.mk</projectmakefile>
   <confs>
@@ -194,6 +145,16 @@
           <buildCommand>${MAKE} debug</buildCommand>
           <cleanCommand>${MAKE} clean</cleanCommand>
           <executablePath>bin/Electromag</executablePath>
+          <ccTool>
+            <incDir>
+              <pElem>/usr/lib/gcc/i686-redhat-linux/4.4.3/include</pElem>
+              <pElem>common/src</pElem>
+            </incDir>
+            <preprocessorList>
+              <Elem>__GNUC__</Elem>
+              <Elem>__SSE__</Elem>
+            </preprocessorList>
+          </ccTool>
         </makeTool>
       </makefileType>
     </conf>

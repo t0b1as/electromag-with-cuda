@@ -38,11 +38,13 @@ CUBIN_OBJS= $(LIB_PATH)/Electrostatics.cubin $(LIB_PATH)/Electrostatics_Multiste
 all: $(LIB_PATH)/$(GPGPU_LIB)
 
 # Rule for compiling C and C++ files and creating library
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp 
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c 
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CC) -c $(CCFLAGS) $< -o $@
 
@@ -60,11 +62,9 @@ $(LIB_PATH)/%.cubin: $(LIB_PATH)/%.ptx
 	@$(NVCC) -cubin $(NVCCFLAGS) -o $@ $<
 
 
-$(LIB_PATH)/$(GPGPU_LIB):
+$(LIB_PATH)/$(GPGPU_LIB): $(CPU_OBJS)
 	@mkdir -p $(LIB_PATH)
 	@mkdir -p $(TARGET_DIR)
-	@mkdir -p $(OBJDIR)
-	@make $(CPU_OBJS)
 	@# We compile the CUDA sources only if nvcc exists and is executable
 	@# if nvcc is not available, then we can still use pre-compiled PTX or CUBIN
 	@# objects, or use the non-CUDA functionality
