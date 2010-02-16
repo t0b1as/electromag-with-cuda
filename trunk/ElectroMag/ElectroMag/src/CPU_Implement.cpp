@@ -139,7 +139,7 @@ int CalcField_CPU_T_Curvature(Array<Vector3<T> >& fieldLines, Array<pointCharge<
 	*/
     
 	//#pragma unroll_and_jam
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for(__int64 line = 0; line < n; line++)
 	{
 		// Intentionally starts from 1, since step 0 is reserved for the starting points
@@ -847,134 +847,54 @@ int CalcField_CPU_T_Curvature(Array<Vector3<double> >& fieldLines, Array<pointCh
 // well because it basically suports the same intrinsics
 #include <xmmintrin.h>
 
-struct /*__declspec(align(__alignof(__m128)))*/__mVector3_ps
-{
-    __m128 x, y, z;
-};
+
 // Quick SSE C++ style operators
-/*
+// Once we define these, we can use our template libraries with SSE types for
+// uber simplified programming
 inline __m128 operator + (const __m128 A, const __m128 B)
 {
-    return _mm_add_ps(A,B);
+	return _mm_add_ps(A, B);
 }
 inline __m128 operator - (const __m128 A, const __m128 B)
 {
-    return _mm_sub_ps(A,B);
+	return _mm_sub_ps(A, B);
 }
 inline __m128 operator * (const __m128 A, const __m128 B)
 {
-    return _mm_mul_ps(A,B);
+	return _mm_mul_ps(A, B);
 }
 inline __m128 operator / (const __m128 A, const __m128 B)
 {
-    return _mm_div_ps(A,B);
-}//*/
-// Quick SSE Vector library
-inline __mVector3_ps _mm_vec3_ps(__mVector3_ps head, __mVector3_ps tail)
-{
-    __mVector3_ps result;
-    result.x = _mm_sub_ps(head.x, tail.x);
-    result.y = _mm_sub_ps(head.y, tail.y);
-    result.z = _mm_sub_ps(head.z, tail.z);
-    return result;
+	return _mm_div_ps(A, B);
 }
-inline void operator+=(__mVector3_ps &rhs, const __mVector3_ps B)
+inline void operator += (__m128 &rhs, const __m128 B)
 {
-    rhs.x = _mm_add_ps(rhs.x, B.x);
-    rhs.y = _mm_add_ps(rhs.y, B.y);
-    rhs.z = _mm_add_ps(rhs.z, B.z);
+	rhs = _mm_add_ps(rhs, B);
 }
-inline void operator -= (__mVector3_ps &rhs, const __mVector3_ps B)
+inline void operator -= (__m128 &rhs, const __m128 B)
 {
-    rhs.x = _mm_sub_ps(rhs.x, B.x);
-    rhs.y = _mm_sub_ps(rhs.y, B.y);
-    rhs.z = _mm_sub_ps(rhs.z, B.z);
+	rhs = _mm_sub_ps(rhs, B);
 }
-inline __mVector3_ps operator + (__mVector3_ps A, __mVector3_ps B)
+inline void operator *= (__m128 &rhs, const __m128 B)
 {
-    __mVector3_ps result;
-    result.x = _mm_add_ps(A.x, B.x);
-    result.y = _mm_add_ps(A.y, B.y);
-    result.z = _mm_add_ps(A.z, B.z);
-    return result;
+	rhs = _mm_mul_ps(rhs, B);
 }
-inline __mVector3_ps operator - (__mVector3_ps A, __mVector3_ps B)
+inline void operator /= (__m128 &rhs, const __m128 B)
 {
-    __mVector3_ps result;
-    result.x = _mm_sub_ps(A.x, B.x);
-    result.y = _mm_sub_ps(A.y, B.y);
-    result.z = _mm_sub_ps(A.z, B.z);
-    return result;
+	rhs = _mm_div_ps(rhs, B);
 }
-inline __mVector3_ps operator * (__mVector3_ps vec, __m128 val)
+inline __m128 sqrt(const __m128 A)
 {
-    __mVector3_ps result;
-    result.x = _mm_mul_ps(vec.x, val);
-    result.y = _mm_mul_ps(vec.y, val);
-    result.z = _mm_mul_ps(vec.z, val);
-    return result;
+	return _mm_sqrt_ps(A);
 }
-inline __mVector3_ps operator / (__mVector3_ps vec, __m128 val)
+inline __m128 rsqrt(const __m128 A)
 {
-    __mVector3_ps result;
-    result.x = _mm_div_ps(vec.x, val);
-    result.y = _mm_div_ps(vec.y, val);
-    result.z = _mm_div_ps(vec.z, val);
-    return result;
+	return _mm_rsqrt_ps(A);
 }
-inline __m128 _mm_vec3LenSq_ps(const __m128 x, const __m128 y, const __m128 z)
+/*inline __m128 operator __m128()(const float value)
 {
-    return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x,x),_mm_mul_ps(y,y)),_mm_mul_ps(z,z));
-}
-
-inline __m128 _mm_vec3LenSq_ps(const __mVector3_ps vec)
-{
-    return _mm_vec3LenSq_ps(vec.x, vec.y, vec.z);
-}
-
-inline __m128 _mm_vec3Len_ps(const __m128 x, const __m128 y, const __m128 z)
-{
-    return _mm_sqrt_ps(_mm_vec3LenSq_ps(x, y, z));
-}
-
-inline __m128 _mm_vec3Len_ps(const __mVector3_ps vec)
-{
-    return _mm_vec3Len_ps(vec.x, vec.y, vec.z);
-}
-
-
-inline __mVector3_ps _mm_vec3Cross_ps(__m128 xIndex, __m128 yIndex, __m128 zIndex,
-                                    __m128 xMiddle, __m128 yMiddle, __m128 zMiddle
-                                    )
-{
-    __mVector3_ps result;
-	//result.x = index.y * middle.z - index.z * middle.y;		// 3 FLOPs
-    result.x = _mm_sub_ps(_mm_mul_ps(yIndex,zMiddle),_mm_mul_ps(zIndex,yMiddle));
-	//result.y = index.z * middle.x - index.x * middle.z;		// 3 FLOPs
-    result.y = _mm_sub_ps(_mm_mul_ps(zIndex,xMiddle),_mm_mul_ps(xIndex,zMiddle));
-	//result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
-    result.z = _mm_sub_ps(_mm_mul_ps(xIndex,yMiddle),_mm_mul_ps(yIndex,xMiddle));
-    return result;
-}
-
-inline __mVector3_ps _mm_vec3Cross_ps(const __mVector3_ps index, const __mVector3_ps middle)
-{
-    __mVector3_ps result;
-	//result.x = index.y * middle.z - index.z * middle.y;		// 3 FLOPs
-    result.x = _mm_sub_ps(_mm_mul_ps(index.y,middle.z),_mm_mul_ps(index.z,middle.y));
-	//result.y = index.z * middle.x - index.x * middle.z;		// 3 FLOPs
-    result.y = _mm_sub_ps(_mm_mul_ps(index.z,middle.x),_mm_mul_ps(index.x,middle.z));
-	//result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
-    result.z = _mm_sub_ps(_mm_mul_ps(index.x,middle.y),_mm_mul_ps(index.y,middle.x));
-    return result;
-}
-
-inline __mVector3_ps _mm_vec3SetInvLen_ps(__mVector3_ps vec, __m128 scalarInvLen)
-{
-	__m128 len = _mm_vec3Len_ps(vec);
-	scalarInvLen =_mm_mul_ps(scalarInvLen, len);
-	return vec / scalarInvLen;
-}
+	return _mm_set1_ps(0);//value);
+}*/
 
 template<>
 int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
@@ -1028,10 +948,9 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 		const Vector3<float> *pLines = fieldLines.GetDataPointer();
 		const pointCharge<float> *pCharges = pointCharges.GetDataPointer();
 
-        // We can keep these outside of the 16 registers
-        __m128 Cx, Cy, Cz, Cm;
-        __mVector3_ps prevPoint[LINES_PARRALELISM];
-        __mVector3_ps Accum[LINES_PARRALELISM], prevAccum[LINES_PARRALELISM];
+        
+        Vector3<__m128> prevPoint[LINES_PARRALELISM];
+        Vector3<__m128> Accum[LINES_PARRALELISM], prevAccum[LINES_PARRALELISM];
 
 		// We can now load the starting points; we will only need to load them once
 		//prevVec = prevPoint = lines[n + line];// Load prevVec like this to ensure similarity with GPU kernel
@@ -1068,43 +987,28 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 			{
 				// Add partial vectors to the field vector
 				// temp += CoreFunctor(charges[point], prevPoint);	// (electroPartFieldFLOP + 3) FLOPs
-				Cm = _mm_load_ps((float*)&pCharges[point]);
-                __mVector3_ps Cpos;
-                Cpos.x = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(0,0,0,0));
-                Cpos.y = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(1,1,1,1));
-                Cpos.z = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(2,2,2,2));
-                Cm = _mm_shuffle_ps(Cm, Cm, _MM_SHUFFLE(3,3,3,3));
+				pointCharge<__m128> charge;
+				charge.magnitude = _mm_load_ps((float*)&pCharges[point]);
+				
+				charge.position.x = _mm_shuffle_ps(charge.magnitude, charge.magnitude, _MM_SHUFFLE(0,0,0,0));
+                charge.position.y = _mm_shuffle_ps(charge.magnitude, charge.magnitude, _MM_SHUFFLE(1,1,1,1));
+                charge.position.z = _mm_shuffle_ps(charge.magnitude, charge.magnitude, _MM_SHUFFLE(2,2,2,2));
+				charge.magnitude = _mm_shuffle_ps(charge.magnitude, charge.magnitude, _MM_SHUFFLE(3,3,3,3));
 
-                /* temp += electroPartFieldVec(charges[point], prevPoint);
+                /* temp += electroPartField(charges[point], prevPoint);
                  *
-                 * Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vector3<double> point)
-                 * {
-				 *		Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
-                 *  	T lenSq = vec3LenSq(r);								// 5 FLOP
-                 *      return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
-                 *          (lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
-                 * }
                  */
-                // Vector3<T> r = vec3(point, charge.position);
-                __mVector3_ps r = _mm_vec3_ps(prevPoint[0], Cpos);
-                // T lenSq = vec3LenSq(r);
-                __m128 lenSq = _mm_vec3LenSq_ps(r);
-                //return vec3Mul(r, (T)electro_k * charge.magnitude /
-                //      (lenSq * (T)sqrt(lenSq)) );
-                Accum[0] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+                Accum[0] += electroPartField(charge, prevPoint[0], elec_k);
 
 #				if (LINES_PARRALELISM > 1)
-                r = _mm_vec3_ps(prevPoint[1], Cpos);
-                lenSq = _mm_vec3LenSq_ps(r);
-                Accum[1] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+                Accum[1] += electroPartField(charge, prevPoint[1], elec_k);
 #				endif
 #				if (LINES_PARRALELISM == 3)
 #				error LINES_PARRALELISM Should not be set to 3, as the alignment mask may fail to function properly
 #				endif
 #				if (LINES_PARRALELISM > 3)
-                r = _mm_vec3_ps(prevPoint[3], Cpos);
-                lenSq = _mm_vec3LenSq_ps(r);
-                Accum[3] += r * _mm_div_ps( _mm_mul_ps(elec_k, Cm),_mm_mul_ps( lenSq, _mm_sqrt_ps(lenSq) ) );
+				Accum[2] += electroPartField(charge, prevPoint[2], elec_k);
+				Accum[3] += electroPartField(charge, prevPoint[3], elec_k);
 #				endif
 #				if (LINES_PARRALELISM > 4)
 #				error Too many lines per iteration
@@ -1122,15 +1026,13 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
             for(size_t i = 0; i < LINES_PARRALELISM; i++)
             {
             // T k = vec3LenSq(temp);
-            __m128 k = _mm_vec3LenSq_ps(Accum[i]);
+            __m128 k = vec3LenSq(Accum[i]);
             // k = vec3Len( vec3Cross(temp - prevVec, prevVec) ) / (k*sqrt(k));
-            k = _mm_div_ps(
-                    (_mm_vec3Len_ps( _mm_vec3Cross_ps(Accum[i] - prevAccum[i], prevAccum[i]) ) ),
-                    (_mm_mul_ps(k, _mm_sqrt_ps(k)) ) );
+            k = vec3Len( vec3Cross(Accum[i] - prevAccum[i], prevAccum[i]) ) / (k*sqrt(k));
             // (prevPoint += vec3SetInvLen(temp, (k+1)*resolution))
-            prevPoint[i] += _mm_vec3SetInvLen_ps(Accum[i],
-                            _mm_mul_ps(res, _mm_add_ps(k, curvAdjust)));
+            prevPoint[i] += vec3SetInvLen(Accum[i], (k+curvAdjust)*res);
 
+			__m128 Cx, Cy, Cz;
 			// We only need xmm3->xmm5 to be preserved, so we can play around with all other registers
 			// We want to get the data from
 			//from:
@@ -1199,6 +1101,51 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 	perfData.performance = (n * ( (totalSteps-1)*(p*(CoreFunctorFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
 	return 0;
 }
+
+#include <emmintrin.h>
+// Same thing, but now for double precision
+inline __m128d operator + (const __m128d A, const __m128d B)
+{
+	return _mm_add_pd(A, B);
+}
+inline __m128d operator - (const __m128d A, const __m128d B)
+{
+	return _mm_sub_pd(A, B);
+}
+inline __m128d operator * (const __m128d A, const __m128d B)
+{
+	return _mm_mul_pd(A, B);
+}
+inline __m128d operator / (const __m128d A, const __m128d B)
+{
+	return _mm_div_pd(A, B);
+}
+inline void operator += (__m128d &rhs, const __m128d B)
+{
+	rhs = _mm_add_pd(rhs, B);
+}
+inline void operator -= (__m128d &rhs, const __m128d B)
+{
+	rhs = _mm_sub_pd(rhs, B);
+}
+inline void operator *= (__m128d &rhs, const __m128d B)
+{
+	rhs = _mm_mul_pd(rhs, B);
+}
+inline void operator /= (__m128d &rhs, const __m128d B)
+{
+	rhs = _mm_div_pd(rhs, B);
+}
+inline __m128d sqrt(const __m128d A)
+{
+	return _mm_sqrt_pd(A);
+}
+/* // Is this instruction even present in SSE2?
+inline __m128d rsqrt(const __m128d A)
+{
+	return _mm_rsqrt_pd(A);
+}//*/
+
 
 #endif//USE_AUTO_VECTOR
 

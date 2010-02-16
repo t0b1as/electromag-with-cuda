@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
                 {
                     while(GPUperf.progress < next)
 					{
-                        Threads::Pause(500);
+                        Threads::Pause(250);
 					}
                     std::cout<<".";
                     // Flush to make sure progress indicator is displayed immediately
