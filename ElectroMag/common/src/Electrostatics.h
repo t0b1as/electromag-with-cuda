@@ -57,18 +57,28 @@ struct __align__(16) pointCharge<double>
 };
 #endif
 
+// We need this for wierd types
 template <class T>
-inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> point)
+inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> point, T electroK)
 {
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
+	return vec3Mul(r, (T)electroK * charge.magnitude /	// 3 FLOP (vecMul)
 		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
 	// NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
 	// Since we have one division and one multiplication, this should be more efficient due to the
 	// Fact that most architectures perform multiplication way faster than division. Also on some
 	// GPU architectures this yields a more precise result.
 };						// Total: 15 FLOP
+
+template <class T>
+inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> point)
+{
+	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
+	T lenSq = vec3LenSq(r);								// 5 FLOP
+	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
+		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)// GPU architectures this yields a more precise result.
+};	
 
 #if defined(__CUDACC__)
 // Yet another CUDA optimization:

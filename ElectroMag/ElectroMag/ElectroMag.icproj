@@ -60,12 +60,6 @@
 			<File
 				RelativePath=".\src\CPU_Implement.cpp">
 				<FileConfiguration
-					Name="Debug|x64">
-					<Tool
-						Name="CppCmplrTool"
-						Optimization="1000"/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Release|x64">
 					<Tool
 						Name="CppCmplrTool"
