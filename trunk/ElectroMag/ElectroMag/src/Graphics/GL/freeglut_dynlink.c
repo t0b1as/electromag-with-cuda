@@ -398,8 +398,23 @@ FG_LibLoadCode glutLoadLibrary()
 	GET_PROC(glutInitContextFlags);
 	GET_PROC(glutInitContextProfile);
 
-    //glutBitmapHelvetica12 = dlsym(CudaDrvLib, "glutBitmapHelvetica12");
-    //printf("%s", dlerror());
-	
+    /*
+    glutBitmapHelvetica12 = dlsym(CudaDrvLib, "glutBitmapHelvetica12");
+    if(glutBitmapHelvetica12 == NULL)
+        printf("Error in symbol. Err: %s\n", dlerror());
+    else 
+        printf("No Error\n");
+
+    glutStrokeRoman = dlsym(CudaDrvLib, "glutStrokeRoman");
+    glutStrokeMonoRoman = dlsym(CudaDrvLib, "glutStrokeMonoRoman");
+    glutBitmap9By15 = dlsym(CudaDrvLib, "glutBitmap9By15");
+    glutBitmap8By13 = dlsym(CudaDrvLib, "glutBitmap8By13");
+    glutBitmapTimesRoman10 = dlsym(CudaDrvLib, "glutBitmapTimesRoman10");
+    glutBitmapTimesRoman24 = dlsym(CudaDrvLib, "glutBitmapTimesRoman24");
+    glutBitmapHelvetica10 = dlsym(CudaDrvLib, "glutBitmapHelvetica10");
+    glutBitmapHelvetica12 = dlsym(CudaDrvLib, "glutBitmapHelvetica12");
+    glutBitmapHelvetica18 = dlsym(CudaDrvLib, "glutBitmapHelvetica18");
+     * */
+
     return FG_SUCCESS;
 }

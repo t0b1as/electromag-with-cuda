@@ -58,6 +58,7 @@
           <in>ElectroMag.cpp</in>
           <in>Electrodynamics.h</in>
           <in>Electromag utils.h</in>
+          <in>SSE math.h</in>
           <in>stdafx.cpp</in>
           <in>stdafx.h</in>
         </df>
@@ -79,7 +80,6 @@
           <in>Abstract_Functor.cpp</in>
           <in>CL Manager.h</in>
           <in>CL_Manager.cpp</in>
-          <in>CPGP Interop.h</in>
           <in>CUDA Interop.h</in>
           <in>CUDA Manager.h</in>
           <in>CUDA_Electrostatics.cpp</in>
