@@ -27,6 +27,9 @@ for x64, omit /arch:SSE2, as it is the default, and compiler does not recognize 
 /O2 /Ob2 /Oi /Ot options turn on all speed optimizations,
 while /arch:SSE2 /fp:fast allow the use of SSE registers
 */////////////////////////////////////////////////////////////////////////////////
+
+// This needs to be visible before any vector templates
+#include "SSE math.h"
 #include "CPU Implement.h"
 #include "X-Compat/HPC Timing.h"
 #if !defined(__CYGWIN__) // Don't expect performance if using Cygwin
@@ -35,7 +38,6 @@ while /arch:SSE2 /fp:fast allow the use of SSE registers
 #pragma message --- Cygwin detected. OpenMP not supported by Cygwin!!! ---
 #pragma message --- Expect CPU side performance to suck!!! ---
 #endif
-#include <iostream>
 #define CoreFunctor electroPartField
 #define CoreFunctorFLOP electroPartFieldFLOP
 #define CalcField_CPU_FLOP(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 13) )
@@ -842,59 +844,9 @@ int CalcField_CPU_T_Curvature(Array<Vector3<double> >& fieldLines, Array<pointCh
 	perfData.performance = (n * ( (totalSteps-1)*(p*(electroPartFieldFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
 	return 0;
 }
-#elif (defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER)
+#elif (defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER) || defined(__INTEL_COMPILER)
 // I think optimizations should also be available for GNU. We include MSVC as
 // well because it basically suports the same intrinsics
-#include <xmmintrin.h>
-
-
-// Quick SSE C++ style operators
-// Once we define these, we can use our template libraries with SSE types for
-// uber simplified programming
-inline __m128 operator + (const __m128 A, const __m128 B)
-{
-	return _mm_add_ps(A, B);
-}
-inline __m128 operator - (const __m128 A, const __m128 B)
-{
-	return _mm_sub_ps(A, B);
-}
-inline __m128 operator * (const __m128 A, const __m128 B)
-{
-	return _mm_mul_ps(A, B);
-}
-inline __m128 operator / (const __m128 A, const __m128 B)
-{
-	return _mm_div_ps(A, B);
-}
-inline void operator += (__m128 &rhs, const __m128 B)
-{
-	rhs = _mm_add_ps(rhs, B);
-}
-inline void operator -= (__m128 &rhs, const __m128 B)
-{
-	rhs = _mm_sub_ps(rhs, B);
-}
-inline void operator *= (__m128 &rhs, const __m128 B)
-{
-	rhs = _mm_mul_ps(rhs, B);
-}
-inline void operator /= (__m128 &rhs, const __m128 B)
-{
-	rhs = _mm_div_ps(rhs, B);
-}
-inline __m128 sqrt(const __m128 A)
-{
-	return _mm_sqrt_ps(A);
-}
-inline __m128 rsqrt(const __m128 A)
-{
-	return _mm_rsqrt_ps(A);
-}
-/*inline __m128 operator __m128()(const float value)
-{
-	return _mm_set1_ps(0);//value);
-}*/
 
 template<>
 int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
@@ -1033,7 +985,6 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
             prevPoint[i] += vec3SetInvLen(Accum[i], (k+curvAdjust)*res);
 
 			__m128 Cx, Cy, Cz;
-			// We only need xmm3->xmm5 to be preserved, so we can play around with all other registers
 			// We want to get the data from
 			//from:
 			// | x0, x1, x2, x3 |
@@ -1101,51 +1052,6 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 	perfData.performance = (n * ( (totalSteps-1)*(p*(CoreFunctorFLOP + 3) + 13) ) / perfData.time)/ 1E9; // Convert from FLOPS to GFLOPS
 	return 0;
 }
-
-#include <emmintrin.h>
-// Same thing, but now for double precision
-inline __m128d operator + (const __m128d A, const __m128d B)
-{
-	return _mm_add_pd(A, B);
-}
-inline __m128d operator - (const __m128d A, const __m128d B)
-{
-	return _mm_sub_pd(A, B);
-}
-inline __m128d operator * (const __m128d A, const __m128d B)
-{
-	return _mm_mul_pd(A, B);
-}
-inline __m128d operator / (const __m128d A, const __m128d B)
-{
-	return _mm_div_pd(A, B);
-}
-inline void operator += (__m128d &rhs, const __m128d B)
-{
-	rhs = _mm_add_pd(rhs, B);
-}
-inline void operator -= (__m128d &rhs, const __m128d B)
-{
-	rhs = _mm_sub_pd(rhs, B);
-}
-inline void operator *= (__m128d &rhs, const __m128d B)
-{
-	rhs = _mm_mul_pd(rhs, B);
-}
-inline void operator /= (__m128d &rhs, const __m128d B)
-{
-	rhs = _mm_div_pd(rhs, B);
-}
-inline __m128d sqrt(const __m128d A)
-{
-	return _mm_sqrt_pd(A);
-}
-/* // Is this instruction even present in SSE2?
-inline __m128d rsqrt(const __m128d A)
-{
-	return _mm_rsqrt_pd(A);
-}//*/
-
 
 #endif//USE_AUTO_VECTOR
 

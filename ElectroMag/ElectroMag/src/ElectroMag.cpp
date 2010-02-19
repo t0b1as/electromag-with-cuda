@@ -50,6 +50,7 @@ SimulationParams InsaneParams = {512, 512, 1, 2048, 0, 5000};			// Requires mini
 SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000};	// Requires minimum 24GB system RAM + host buffers
 SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};			// Should work acceptably on most multi-core CPUs
 SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
+SimulationParams BogoParams = {16, 16, 1, 50, 0, 500};
 
 // to redirect stdout and stderr to out.txt use:
 //				>out.txt  2>&1
@@ -64,8 +65,8 @@ int main(int argc, char* argv[])
 	//freopen( "file.txt", "w", stderr );
 #endif//DEBUG
 
-	enum ParamLevel{__micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
-	ParamLevel paramLevel = __normal;
+	enum ParamLevel{__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
+	ParamLevel paramLevel = __bogo;
 
 	SimulationParams simConfig = DefaultParams;
 	bool saveData = false, CPUenable = false, GPUenable = true, display = true;
@@ -83,11 +84,13 @@ int main(int argc, char* argv[])
 		if( !strcmp(argv[i], "--cpu") )
 			CPUenable = true;
 		else if( !strcmp(argv[i], "--gpudisable") )
-		{GPUenable = false; CPUenable = true;}
+            {GPUenable = false; CPUenable = true;}
 		else if( !strcmp(argv[i], "--save") )
 			saveData = true;
 		else if( !strcmp(argv[i], "--nodisp") )
 			display = false;
+        else if( !strcmp(argv[i], "--bogo") )
+			{if(paramLevel < __bogo) paramLevel = __bogo;}
         else if( !strcmp(argv[i], "--micro") )
 			{if(paramLevel < __micro) paramLevel = __micro;}
 		else if( !strcmp(argv[i], "--enhanced") )
@@ -161,6 +164,9 @@ int main(int argc, char* argv[])
 	// Set correct parameter configuration
 	switch(paramLevel)
 	{
+    case __bogo:
+        simConfig = BogoParams;
+        break;
     case __micro:
         simConfig = MicroParams;
         break;
@@ -185,6 +191,7 @@ int main(int argc, char* argv[])
 	}
 	// Initialze data containers
 	size_t nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
+    std::cout<<" nw"<<nw<<" nh "<<nh<<" nd "<<nd<<" ln "<<len<<" p "<<p<<std::endl;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
 	Array<pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
