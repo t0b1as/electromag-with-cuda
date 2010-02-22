@@ -16,13 +16,11 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
 #include "FrontendGUI.h"
-#include "GL/freeglut_dynlink.h"
+#include "GL/freeglut.h"
 #include "GL/glutExtra.h"
 #include "X-Compat/Threading.h"
 #include <stdio.h>
 #include <iostream>
-
-FrontendGUI MainGUI;
 
 class ProgressBar
 {

@@ -19,10 +19,10 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 GL/glew.h and GL/glut.h are found in the nVidia CUDA SDK
 For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.dll and glew64.dll in the application path
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-#include "GL/glew_static.h"
-#include "GL/freeglut_dynlink.h"
+#include <GL/glew.h>
+#include "GL/freeglut.h"
 #include "GL/glutExtra.h"
-#include "FieldRender.h"
+#include "FieldRender class.h"
 #include "X-Compat/HPC Timing.h"
 #include <stdio.h> // for sprintf()
 
@@ -33,8 +33,8 @@ For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.d
 
 Camera FieldRender::mainCam;
 ProjectionMode FieldRender::PM;
-volatile bool shouldIQuit = false;
-GLpacket FieldRender::GLdata;
+volatile bool FieldRender::quitFlag = false;
+FieldRenderer::GLpacket FieldRender::GLdata;
 GLuint FieldRender::chargesVBO;
 GLuint FieldRender::colorVBO;
 GLuint *FieldRender::linesVBOs;
@@ -43,8 +43,6 @@ GLfloat *FieldRender::colors;
 size_t FieldRender::lineSkip;
 size_t FieldRender::RenderData::bufferedLines;
 double FieldRender::perfGFLOP;
-
-FieldRender FieldDisp;
 
 static __int64 HPCfreq;
 // DEBUG
@@ -58,6 +56,7 @@ FieldRender::FieldRender()
 	lineSkip = 1;
 	nrLinesVBO = 0;
 	perfGFLOP = 0;
+	this->dataBound = false;
 };
 
 FieldRender::~FieldRender()
@@ -240,9 +239,6 @@ void FieldRender::Start()
 		tempBuf = new Vector3<float>[elemLen];
 		// Create the buffers
 		__glewGenBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
-		GLenum johnErr;
-		if((johnErr = glGetError()) != GL_NO_ERROR)
-			return;
 		// can replace __glew* with gl*
 		// Copy all the field lines to the GPU in separate arrays
 		// Since the field lines comes arranged in lines by steps, the memory arrangement will be n0_0 n1_0 n2_0 n3_0 n4_0... n0_1 n1_1 n2_1 n3_1 n4_1
@@ -395,7 +391,7 @@ void FieldRender::keyboard(unsigned char key, int x, int y)
 		break;
 	// Quick exit method
 	case'\033':
-		shouldIQuit = true;
+		quitFlag = true;
 		// Wait for main program to kill renderer
 		while(1);
 		break;
@@ -515,6 +511,7 @@ void FieldRender::fieldDisplayVBO()
 
 void FieldRender::AsyncStartFunc()
 {
+	if(!this->dataBound) return;
 	try
 	{
 		Init();
@@ -522,7 +519,7 @@ void FieldRender::AsyncStartFunc()
 	catch(char *errString)
 	{
 		fprintf(stderr, " Initialing field rendering failed.\n %s\n", errString);
-		shouldIQuit = true;
+		this->quitFlag = true;
 		return;
 	}
 	SetLineSkip(20);

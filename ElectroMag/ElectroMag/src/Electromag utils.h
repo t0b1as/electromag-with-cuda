@@ -122,4 +122,29 @@ void CopyPointChargeArray(Array<pointCharge<T1> >& destination,	///< Destination
 		destination[i] = dest;
 	}
 }
+
+void MonitorProgressConsole(volatile double * progress)
+{
+    const double step = (double)1/60;
+    std::cout<<"[__________________________________________________________]"<<std::endl;
+    for(double next=step; next < (1.0 - 1E-3); next += step)
+    {
+        while(*progress < next)
+        {
+            Threads::Pause(250);
+        }
+        std::cout<<".";
+        // Flush to make sure progress indicator is displayed immediately
+        std::cout.flush();
+    }
+    std::cout<<" Done"<<std::endl;
+    std::cout.flush();
+
+}
+
+void StartConsoleMonitoring(volatile double * progress)
+{
+    Threads::ThreadHandle hThread;
+    Threads::CreateNewThread((unsigned long (*)(void*))MonitorProgressConsole, (void *)progress, &hThread);
+}
 #endif//_ELECTROMAG_UTILS_H

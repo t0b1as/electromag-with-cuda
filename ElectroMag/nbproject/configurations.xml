@@ -29,30 +29,6 @@
             <in>CPUID.cpp</in>
             <in>CpuID.h</in>
           </df>
-          <df name="Graphics">
-            <df name="GL">
-              <in>freeglut.h</in>
-              <in>freeglut_dynlink.c</in>
-              <in>freeglut_dynlink.h</in>
-              <in>freeglut_ext.h</in>
-              <in>freeglut_std.h</in>
-              <in>glew.c</in>
-              <in>glew_static.h</in>
-              <in>glut.h</in>
-              <in>glutExtra.h</in>
-              <in>glxew.h</in>
-              <in>wglew.h</in>
-            </df>
-            <in>Camera.h</in>
-            <in>FieldRender.cpp</in>
-            <in>FieldRender.h</in>
-            <in>FrontendGUI.cpp</in>
-            <in>FrontendGUI.h</in>
-            <in>MainGUI.cpp</in>
-            <in>MainGUI.h</in>
-            <in>Renderer.cpp</in>
-            <in>Renderer.h</in>
-          </df>
           <in>CPU Implement.h</in>
           <in>CPU_Implement.cpp</in>
           <in>ElectroMag.cpp</in>
@@ -100,6 +76,33 @@
           <in>cuda_drvapi_dynlink.h</in>
         </df>
       </df>
+      <df name="Graphics">
+        <df name="obj">
+        </df>
+        <df name="src">
+          <df name="GL">
+            <in>freeglut.h</in>
+            <in>freeglut_ext.h</in>
+            <in>freeglut_std.h</in>
+            <in>glut.h</in>
+            <in>glutExtra.h</in>
+          </df>
+          <in>Camera.h</in>
+          <in>FieldRender class.h</in>
+          <in>FieldRender.cpp</in>
+          <in>FieldRender.h</in>
+          <in>FieldRender_Interface.cpp</in>
+          <in>FrontendGUI.cpp</in>
+          <in>FrontendGUI.h</in>
+          <in>MainGUI.cpp</in>
+          <in>MainGUI.h</in>
+          <in>Renderer Interface.h</in>
+          <in>Renderer.h</in>
+          <in>Renderer_Interface.cpp</in>
+        </df>
+      </df>
+      <in>Graphics_dynlink.c</in>
+      <in>Graphics_dynlink.h</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -147,7 +150,6 @@
           <executablePath>bin/Electromag</executablePath>
           <ccTool>
             <incDir>
-              <pElem>/usr/lib/gcc/i686-redhat-linux/4.4.3/include</pElem>
               <pElem>common/src</pElem>
             </incDir>
             <preprocessorList>

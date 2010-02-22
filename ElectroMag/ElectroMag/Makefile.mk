@@ -8,9 +8,8 @@ CXXsources= $(SRCDIR)/ElectroMag.cpp $(SRCDIR)/CPU_Implement.cpp $(SRCDIR)/stdaf
 	$(SRCDIR)/CPUID/CPUID.cpp $(SRCDIR)/Graphics/Renderer.cpp $(SRCDIR)/Graphics/FieldRender.cpp
 
 OBJDIR= obj
-OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o $(OBJDIR)/CPUID.o \
-	$(OBJDIR)/Renderer.o $(OBJDIR)/FieldRender.o $(OBJDIR)/FrontendGUI.o\
-	$(OBJDIR)/freeglut_dynlink.o  $(OBJDIR)/glew.o
+OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o\
+	$(OBJDIR)/CPUID.o $(OBJDIR)/Graphics_dynlink.o
 
 .PHONY: clean all
 
@@ -33,14 +32,15 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
-# Rule for files that are located in src/somedir/
+
+#Rules for files in src/somedir
 $(OBJDIR)/%.o: $(SRCDIR)/*/%.cpp
 	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Rule for files that are located in src/somedir/more_nested_dir/
-$(OBJDIR)/%.o: $(SRCDIR)/*/*/%.c
+# Rule for C files
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(OBJDIR)
 	@echo Compiling $<
 	@$(CC) $(CXXFLAGS) -c $< -o $@

@@ -16,22 +16,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
 /**********************************************************************************************
-	Uses freeglut 2.6.0 RC1; freeglut source available from: <http://freeglut.sourceforge.net/>
+	Uses freeglut 2.6.0; freeglut source available from: <http://freeglut.sourceforge.net/>
 	freeglut may be licensed under different terms. Check freeglut.h for details
 ***********************************************************************************************/
 
 #include "stdafx.h"
-#include "Graphics/FieldRender.h"
-#include "Graphics/FrontendGUI.h"
 #if !defined(__CYGWIN__) // Stupid, I know, but it's a fact of life
 #include <omp.h>
 #endif
 #include "./../../GPGPU_Segment/src/CUDA Manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 #include "Electromag utils.h"
+#include "Graphics_dynlink.h"
 
  //using namespace std;
- // Use float or double; 16-bit single will generate erors
+ // Use float or double; 16-bit single will generate errors
  #define FPprecision float
 
 struct SimulationParams
@@ -90,13 +89,13 @@ int main(int argc, char* argv[])
 		else if( !strcmp(argv[i], "--nodisp") )
 			display = false;
         else if( !strcmp(argv[i], "--bogo") )
-			{if(paramLevel < __bogo) paramLevel = __bogo;}
+			{if(paramLevel == __normal) paramLevel = __bogo;}
         else if( !strcmp(argv[i], "--micro") )
-			{if(paramLevel < __micro) paramLevel = __micro;}
+			{if(paramLevel == __normal) paramLevel = __micro;}
 		else if( !strcmp(argv[i], "--enhanced") )
 			{if(paramLevel < __enhanced) paramLevel = __enhanced;}
 		else if( !strcmp(argv[i], "--extreme") )
-			{if(paramLevel < __enhanced) paramLevel = __extreme;}
+			{if(paramLevel < __extreme) paramLevel = __extreme;}
 		else if( !strcmp(argv[i], "--insane") )
 			{if(paramLevel < __insane) paramLevel = __insane;}
 		else if( !strcmp(argv[i], "--fuckingInsane") )
@@ -119,6 +118,22 @@ int main(int argc, char* argv[])
 			std::cout<<" Ignoring unknown argument: "<<argv[i]<<std::endl;
 	}
 
+	Render::Renderer* FieldDisplay = 0;
+	// Do we need to load the graphicsModule?
+	if(display)
+	{
+		Graphics::ModuleLoadCode errCode;
+		errCode = Graphics::LoadModule();
+		if(errCode != Graphics::SUCCESS)
+		{
+			std::cerr<<" Could not load graphhics module. Rendering disabled"<<std::endl;
+			display = false;
+		}
+		else
+		{
+			FieldDisplay = Graphics::CreateFieldRenderer();
+		}
+	}
 	
 	CPUID::CpuidString cpuString;
 	CPUID::GetCpuidString(&cpuString);
@@ -139,7 +154,7 @@ int main(int argc, char* argv[])
 	std::clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<std::endl;
     
     // Now that checks are performed, start the Frontend
-    if(visualProgressBar) MainGUI.StartAsync();
+    //if(visualProgressBar) MainGUI.StartAsync();
 
 	// Statistics show that users are happier when the program outputs fun information abot their toys
 	cuda::GlobalCudaManager.ListAllDevices();
@@ -149,7 +164,7 @@ int main(int argc, char* argv[])
 	{
 		std::cout<<std::endl<<" Found "<<cudaDev<<" compatible devices."<<std::endl;
 	}
-	// disable GPU mode if no compatible device deteced
+	// disable GPU mode if no compatible device detected
 	if(!cudaDev)
 	{
 		GPUenable = false;
@@ -191,7 +206,6 @@ int main(int argc, char* argv[])
 	}
 	// Initialze data containers
 	size_t nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
-    std::cout<<" nw"<<nw<<" nh "<<nh<<" nd "<<nd<<" ln "<<len<<" p "<<p<<std::endl;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
 	Array<pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
@@ -201,7 +215,7 @@ int main(int argc, char* argv[])
 	std::ofstream data, regress;
 	if (saveData)
 		data.open("data.txt");
-    MainGUI.RegisterProgressIndicator((double * volatile)&CPUperf.progress);
+    //MainGUI.RegisterProgressIndicator((double * volatile)&CPUperf.progress);
 
 	// Do not activate if memory allocation fails
 	if(!CPUlines.GetSize()) CPUenable = false;
@@ -238,45 +252,16 @@ int main(int argc, char* argv[])
 	{
 		std::cout<<" GPU"<<std::endl;
 		int failedFunctors;
-		// If dynamic and nested OMP is not initialized, CalcField may only get
-        // one OMP thread, severely hampering performance on multi-core/CPU systems
-#		if !defined(__CYGWIN__)
-        omp_set_dynamic(true);
-        omp_set_nested(true);
-#		endif
-        #pragma omp parallel sections
-        {
-			// First section runs the calculations
-            #pragma omp section
-			{
-				
-				QueryHPCTimer(&start);
-				failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
-				QueryHPCTimer(&end);
-				// Make sure the next section terminates even if progress is not updated,
-				// or is not updated entirely
-				GPUperf.progress = 1;
-			}
-			 // Second section monitors progress
-            #pragma omp section
-			if(!visualProgressBar)
-            {
-                const double step = (double)1/60;
-				std::cout<<"[__________________________________________________________]"<<std::endl;
-                for(double next=step; next < (1.0 - 1E-3); next += step)
-                {
-                    while(GPUperf.progress < next)
-					{
-                        Threads::Pause(250);
-					}
-                    std::cout<<".";
-                    // Flush to make sure progress indicator is displayed immediately
-                    std::cout.flush();
-                }
-				std::cout<<" Done"<<std::endl;
-				std::cout.flush();
-            }
-		}
+
+		StartConsoleMonitoring(&GPUperf.progress);
+		// Then run the calculations
+		QueryHPCTimer(&start);
+		failedFunctors = CalcField(GPUlines, charges, n, resolution, GPUperf, useCurvature);
+		QueryHPCTimer(&end);
+		// Make sure the next section terminates even if progress is not updated,
+		// or is not updated entirely
+		GPUperf.progress = 1;
+
 		if(failedFunctors >= cudaDev) display = false;
 		if(failedFunctors) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
 		std::cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<std::endl;
@@ -286,41 +271,11 @@ int main(int argc, char* argv[])
 	}
 	if(CPUenable)
 	{
-		std::cout<<" CPU"<<std::endl;
-        // If dynamic and nested OMP is not initialized, CalcField may only get
-        // one OMP thread, severely hampering performance on multi-core/CPU systems
-#		if !defined(__CYGWIN__)
-        omp_set_dynamic(true);
-        omp_set_nested(true);
-#		endif
-        #pragma omp parallel sections
-        {
-            // First section runs the calculations
-            #pragma omp section
-            {
-                QueryHPCTimer(&start);
-                CalcField_CPU(CPUlines, charges, n, resolution, CPUperf, useCurvature);
-                QueryHPCTimer(&end);
-            }
-            // Second section monitors progress
-            #pragma omp section
-            if(!visualProgressBar)
-            {
-                const double step = (double)1/60;
-                std::cout<<"[__________________________________________________________]"<<std::endl;
-                for(double next=step; next < (1.0 - 1E-3); next += step)
-                {
-                    while(CPUperf.progress < next)
-                        Threads::Pause(500);
-                    std::cout<<".";
-                    // Flush to make sure progress indicator is displayed immediately
-                    std::cout.flush();
-                }
-				std::cout<<" Done"<<std::endl;
-				std::cout.flush();
-            }
-        
-        }
+		StartConsoleMonitoring(&CPUperf.progress);
+		QueryHPCTimer(&start);
+		CalcField_CPU(CPUlines, charges, n, resolution, CPUperf, useCurvature);
+		QueryHPCTimer(&end);
+		CPUperf.progress = 1;
 		std::cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<std::endl;
 		std::cout<<" Effective performance:\t\t"<<CPUperf.performance<<" GFLOP/s"<<std::endl;
 		CPUtime = double(end-start)/freq;
@@ -355,19 +310,36 @@ int main(int argc, char* argv[])
 			
 	}
 
-	GLpacket GLdata;
-	GLdata.charges = (Array<pointCharge<float> >*)&charges;
-	GLdata.lines = (Array<Vector3<float> >*)arrMain;
-	GLdata.nlines = n;
-	GLdata.lineLen = len;
-	GLdata.elementSize = sizeof(FPprecision);
-	FieldDisp.RenderPacket(GLdata);
-	FieldDisp.SetPerfGFLOP(GPUperf.performance);
-    if(display)
+	FieldRenderer::GLpacket GLdata;
+	volatile bool * shouldIQuit = 0;
+	if(display)
 	{
+		GLdata.charges = (Array<pointCharge<float> >*)&charges;
+		GLdata.lines = (Array<Vector3<float> >*)arrMain;
+		GLdata.nlines = n;
+		GLdata.lineLen = len;
+		GLdata.elementSize = sizeof(FPprecision);
+		// Before: FieldDisp.RenderPacket(GLdata);
+		FieldRenderer::FieldRenderCommData GLmessage;
+		GLmessage.messageType = FieldRenderer::SendingGLData;
+		GLmessage.commData = (void*)&GLdata;
+		FieldDisplay->SendMessage(&GLmessage);
+		
+		// Before: FieldDisp.SetPerfGFLOP(GPUperf.performance);
+		FieldRenderer::FieldRenderCommData PerfMessage;
+		PerfMessage.messageType = FieldRenderer::SendingPerfPointer;
+		PerfMessage.commData = (void*)&GPUperf.performance;
+		FieldDisplay->SendMessage(&PerfMessage);
+
+		// Get ready to quit flag
+		FieldRenderer::FieldRenderCommData quitMessage;
+		quitMessage.messageType = FieldRenderer::RequestQuitFlag;
+		FieldDisplay->SendMessage(&quitMessage);
+		shouldIQuit = (bool*)quitMessage.commData;
+
 		try
 		{
-			FieldDisp.StartAsync();
+			FieldDisplay->StartAsync();
 		}
 		catch(char * errString)
 		{
@@ -451,11 +423,11 @@ int main(int argc, char* argv[])
 	// Wait for renderer to close program if active; otherwise quit directly
 	if(display)
 	{
-		while(!shouldIQuit)
+		while(!*shouldIQuit)
 		{
 			Threads::Pause(1000);
 		};
-		FieldDisp.KillAsync();
+		FieldDisplay->KillAsync();
 	}
 	// do a DEBUG wait before cleaning resources, so resource usage can be evaluated
 #ifdef _DEBUG
