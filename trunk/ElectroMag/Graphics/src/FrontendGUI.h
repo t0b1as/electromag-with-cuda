@@ -19,7 +19,7 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #ifndef _FRONTENDGUI_H
 #define _FRONTENDGUI_H
 
-#include "Renderer.h"
+#include "Renderer Interface.h"
 
 
 class FrontendGUI: public GLRenderer
@@ -53,8 +53,6 @@ private:
     //
     static double * volatile calcProgress;
 };
-
-extern FrontendGUI MainGUI;
 
 #endif//_FRONTENDGUI_H
 

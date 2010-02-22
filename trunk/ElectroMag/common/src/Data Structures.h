@@ -21,9 +21,26 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #define _DATA_STRUCTURES_H
 #include "X-Compat/Memman.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Defines a n abstract class from which Array templates may derive
+///
+/// In order to allow arrays of different types to be passed in a manner agnostic
+/// of the type of data contained by the array, we need to derive all array templates
+/// from an abstract class. This way, we can rely on the virtual function pointer
+/// to call the appropriate function, regardless of the type of data.
+////////////////////////////////////////////////////////////////////////////////////////////////
+class AbstractArray
+{
+    /// Returns the size in bytes of one element
+	virtual size_t GetElemSize() = 0;
+	/// Returns the number of elements
+	virtual size_t GetSize() = 0;
+	/// Returns the size in bytes of the stored data
+	virtual size_t GetSizeBytes() = 0;
+};
 /// Simple 1D Array template
 template<class T>
-class Array
+class Array: public AbstractArray
 {
 public:
 	/// Basic Constructor

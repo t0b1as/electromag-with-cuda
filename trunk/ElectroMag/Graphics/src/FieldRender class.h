@@ -16,33 +16,25 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
 
-#ifndef _FIELDRENDER_H
-#define _FIELDRENDER_H
+#ifndef _FIELDRENDER_CLASS_H
+#define _FIELDRENDER_CLASS_H
 
-#include "Renderer.h"
+#include "Renderer Interface.h"
+#include "FieldRender.h"
 #include "Camera.h"
 #include "Data Structures.h"
 #include "Electrostatics.h"
 #include <stdio.h>
 
-// DEBUG
-struct GLpacket
-{
-	Array<pointCharge<float> > *charges;
-	Array<Vector3<float> > *lines;
-	size_t nlines, lineLen;
-	size_t elementSize;//8 for double 4 for float
-};
 
 enum ProjectionMode {Orthogonal, Perspective};
-extern volatile bool shouldIQuit;
- 
+
 
 
 class FieldRender: public GLRenderer
 {
 private:
-	static GLpacket GLdata;
+	static FieldRenderer::GLpacket GLdata;
 	static ProjectionMode PM;
 	static Camera mainCam;
 	static size_t lineSkip;
@@ -60,8 +52,17 @@ private:
 	static unsigned int *linesVBOs;
 	static size_t nrLinesVBO;
 	static float* colors;
+
+    //Data about data
+    bool dataBound;
+
+    // signals that the renderes has finished
+    static volatile bool quitFlag;
     
     void AsyncStartFunc();
+
+    void SendMessage(Render::RendererCommData *message);
+    void SendMessage(FieldRenderer::FieldRenderCommData* message);
 
 public:
 	FieldRender();
@@ -72,8 +73,9 @@ public:
 	{
 	};
 
-	void RenderPacket(GLpacket data)
+	void RenderPacket(FieldRenderer::GLpacket data)
 	{
+        this->dataBound = true;
 		GLdata = data;
 	}
 
@@ -109,7 +111,18 @@ private:
 
 };
 
-extern FieldRender FieldDisp;
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
-#endif//_FIELDRENDER_H
+    /// Factory functions for FieldRender
+    Render::Renderer* CreateFieldRenderer();
+    void DeleteFieldRenderer(Render::Renderer* objectToDelete);
+
+
+#ifdef	__cplusplus
+}
+#endif
+
+#endif//_FIELDRENDER_CLASS_H
 

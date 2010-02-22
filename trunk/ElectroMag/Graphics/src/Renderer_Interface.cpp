@@ -15,53 +15,37 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-#include "GL/freeglut_dynlink.h"
-#include "Renderer.h"
+#include "GL/freeglut.h"
+#include "Renderer Interface.h"
 
 unsigned int GLRenderer::GlRenderers  = 0;
 const unsigned int GLRenderer::maxGlRenderers = 2;
 bool GLRenderer::glutIsInit = false;
 
-void Renderer::StartAsync()
+void RendererInterface::StartAsync()
 {
 	unsigned long threadID;
     if(!rendererThread)
 	{
-        Threads::CreateNewThread((unsigned long (*)(void*))&Renderer::StartAsyncThreadFunc, this, &rendererThread, &threadID);
+        Threads::CreateNewThread((unsigned long (*)(void*))&RendererInterface::StartAsyncThreadFunc, this, &rendererThread, &threadID);
 		Threads::SetThreadName(threadID, "Renderer");
 	}
 }
 
-void Renderer::KillAsync()
+void RendererInterface::KillAsync()
 {
     if(rendererThread)
         Threads::KillThread(rendererThread);
 }
 
 #include <iostream>
-bool GLRenderer::glutLibIsLoaded = false;
 
 GLRenderer::GLRenderer()
 {
-	FG_LibLoadCode errCode;
-	// Have we loaded the glut library?
-	if(!this->glutLibIsLoaded)
-	{
-		errCode = glutLoadLibrary();
-		if(errCode != FG_SUCCESS)
-		{
-			// We couldn't load freeglut
-			std::cerr<<" Could not load freeglut library. Rendering disabled."<<std::endl;
-		}
-		else
-		{
-			this->glutLibIsLoaded = true;
-		}
-	}
 	isActive = false;
 }
 
-void Renderer::StartAsyncThreadFunc(Renderer* objectToInit)
+void RendererInterface::StartAsyncThreadFunc(RendererInterface* objectToInit)
 {
     objectToInit->AsyncStartFunc();
 }
@@ -77,11 +61,6 @@ GLRenderer::~GLRenderer()
                                                                                                                       
 void GLRenderer::Init()
 {
-	if(!this->glutLibIsLoaded)
-	{
-		throw(" 'freeglut' module is not loaded");
-		return;
-	}
 	if(isActive) return; // Do nothing
 
 	if(GlRenderers >= maxGlRenderers)
@@ -109,3 +88,4 @@ void GLRenderer::Init()
 	glutDisplayFunc(Motion);
 	*/
 }
+
