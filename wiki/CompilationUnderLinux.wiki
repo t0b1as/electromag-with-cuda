@@ -8,7 +8,8 @@ In order to compile ElectroMag you will need either GCC with C++ support (G++), 
 
 = Details =
 
-ElectroMag does not explicitly depend on any proprietary blob. Therefore, you may still compile ElectroMag even if you do not have the proprietary NVIDIA drivers and/or the CUDA toolkit installed.
+ElectroMag does not explicitly depend on any proprietary blob. Any proprietary binary that ElectroMag uses is dynamically linked, so that ElectroMag may continue to work in entirely free systems. Therefore, you may still compile ElectroMag even if you do not have the proprietary NVIDIA drivers and/or the CUDA toolkit installed.
+It may also be possible to use OpenCL on NVIDIA cards with the upcoming support from nouveau.
 
 ==Prerequisites==
   # GCC or Intel C++ compiler
