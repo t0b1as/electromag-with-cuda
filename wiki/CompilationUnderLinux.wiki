@@ -21,9 +21,9 @@ In the event you do not have the CUDA toolkit installed, the compilation will co
 ElectroMag supports displaying the results graphically. However, this requires freeglut, GLEW, GLU libraries to be available. As of revision 32, all graphics code has been moved into a separate module, which is dynamically loaded. ElectroMag may run without the graphics module, and it will still use OpenCL or CUDA acceleration if available.
 
 To compile the graphics module, you will need the following developmental libraries:
-  # freeglut 2.6.0 or later (earlier versions will NOT work)
   # GLEW (preferably 1.5.2 or later, but earlier versions may work)
   # GLU
+  # freeglut 2.6.0 headers are included in the source distribution
 
 After compiling the Graphics module, you will need to create a symbolic link to "libEMagGraphics.so" (found in ./common/lib after compilation) in /usr/lib for the Graphics module to be loaded by ElectroMag. This is a limitation of how Linux handles dynamic linking, not a limitation of Electromag
 
