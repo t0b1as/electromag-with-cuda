@@ -29,6 +29,8 @@ After compiling the Graphics module, you will need to create a symbolic link to 
 
 = Using the Intel C++ compiler =
 
+The Intel C++ compiler is no longer needed to attain optimal performance. You will most likely get the same performance with GCC.
+
 You will first need to edit Config.mk:
   * uncomment the following line: "include ../Makefile-Intel.mk"
   * comment out the following line "include ../Makefile-GNU.mk"
