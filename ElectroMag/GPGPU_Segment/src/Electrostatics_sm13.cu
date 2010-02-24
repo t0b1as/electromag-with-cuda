@@ -15,6 +15,11 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
+
+/* DEPRECATED:
+	This file is very old. This should be used to compile kernels for double precosoon.
+	I will update this once I get a GT200 card to test on.
+*/
 /*////////////////////////////////////////////////////////////////////////////////
 compile with:
 
@@ -39,7 +44,7 @@ $(NVIDIA_SDK_INC_PATH)
 // I'm not sure this is needed; causes problems under linux
 //#include "CPGP Interop.h"
 
-
+/*
 // Calls the kernel, given pointers to device memory
 // For this function to execute correctly, device memory must already be allocated and relevant data copied to device
 // The non-wrapped function is useful when recalculating lines with memory already allocated
@@ -158,4 +163,4 @@ template<>
 	return cudaSuccess;
  }
 
-
+*/

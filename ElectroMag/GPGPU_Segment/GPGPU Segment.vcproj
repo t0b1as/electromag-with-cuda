@@ -18,7 +18,7 @@
 	</Platforms>
 	<ToolFiles>
 		<ToolFile
-			RelativePath="D:\ProgramData\NVIDIA Corporation\NVIDIA GPU Computing SDK\C\common\Cuda.Rules"
+			RelativePath=".\Cuda.Rules"
 		/>
 	</ToolFiles>
 	<Configurations>
@@ -37,12 +37,11 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				FastMath="true"
+				NvccCompilation="4"
+				compileout="2"
+				OverrideCompileOutName="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\$(InputName).ptx"
 				MaxRegCount="16"
-				PtxAsOptionV="true"
+				ExtraNvccOptions="-I ../common/src"
 				Optimization="3"
 			/>
 			<Tool
@@ -57,7 +56,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -113,13 +112,11 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				Arch="10"
-				FastMath="true"
+				NvccCompilation="4"
+				compileout="2"
+				OverrideCompileOutName="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\$(InputName).ptx"
 				MaxRegCount="16"
-				PtxAsOptionV="true"
+				ExtraNvccOptions="-I ../common/src"
 				Optimization="3"
 			/>
 			<Tool
@@ -135,7 +132,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -173,6 +170,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Need to copy kernels bo bindir"
 			/>
 		</Configuration>
 		<Configuration
@@ -191,12 +189,11 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				FastMath="true"
+				NvccCompilation="4"
+				compileout="2"
+				OverrideCompileOutName="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\$(InputName).ptx"
 				MaxRegCount="16"
-				PtxAsOptionV="true"
+				ExtraNvccOptions="-I ../common/src"
 				Optimization="3"
 			/>
 			<Tool
@@ -210,7 +207,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="0"
@@ -265,12 +262,11 @@
 			/>
 			<Tool
 				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				FastMath="true"
+				NvccCompilation="4"
+				compileout="2"
+				OverrideCompileOutName="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\$(InputName).ptx"
 				MaxRegCount="16"
-				PtxAsOptionV="true"
+				ExtraNvccOptions="-I ../common/src"
 				Optimization="3"
 			/>
 			<Tool
@@ -289,7 +285,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
+				AdditionalIncludeDirectories=".\..\common\src\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="0"
@@ -327,159 +323,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="EmuDebug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				FastMath="true"
-				MaxRegCount="16"
-				PtxAsOptionV="true"
-				Optimization="3"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				EnableEnhancedInstructionSet="0"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\GPGPU.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="EmuDebug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="CUDA Build Rule"
-				Include="../common/src"
-				NvccCompilation="3"
-				compileout="1"
-				FastMath="true"
-				MaxRegCount="16"
-				PtxAsOptionV="true"
-				Optimization="3"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories=".\..\common\src\;$(CUDA_INC_PATH);;$(CUDA_SDK_INC_PATH)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				EnableEnhancedInstructionSet="0"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\GPGPU.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
+				Description="Need to copy kernels bo bindir"
 			/>
 		</Configuration>
 	</Configurations>
@@ -526,44 +370,14 @@
 					Name="Debug|Win32"
 					>
 					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
+						Name="CUDA Build Rule"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
 						Name="CUDA Build Rule"
-						AdditionalOptions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(CUDA_BIN_PATH)\nvcc.exe&quot; -maxrregcount 16 --ptxas-options=-v -ccbin &quot;$(VCInstallDir)bin&quot; -ptx -D_DEBUG -DWIN64 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Od,/Zi,/RTC1,/MTd -I.\..\common\src\ -I&quot;$(CUDA_INC_PATH)&quot; -I&quot;$(CUDA_SDK_INC_PATH)&quot; -I./ -o $(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx src\Electrostatics.cu&#x0D;&#x0A;"
-						Outputs="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)\Electrostatics_Multistep.ptx"
 					/>
 				</FileConfiguration>
 			</File>
@@ -634,10 +448,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\Electrostatics Kernel Launch.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\Electrostatics kernel.cuh"
 				>
 			</File>
@@ -666,20 +476,84 @@
 			Name="Device code"
 			>
 			<File
-				RelativePath=".\data\Electrostatics.cubin"
-				>
-			</File>
-			<File
 				RelativePath=".\data\Electrostatics.ptx"
 				>
-			</File>
-			<File
-				RelativePath=".\data\Electrostatics_Multistep.cubin"
-				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\data\Electrostatics_Multistep.ptx"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="CUDA Build Rule"
+						NvccCompilation="3"
+						compileout="1"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<File

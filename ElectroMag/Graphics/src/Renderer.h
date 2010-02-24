@@ -15,6 +15,21 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
+// Generic macros for __declspec(dllexport). This modifier is needed if the symbols are to be
+// visible ine the dll file under Windows.
+#if (defined(_WIN64) || defined (_WIN32)) && defined (EMAG_BUILD)
+#define EMAG_APIENTRY __declspec(dllexport)
+// There is a SendMessage #define in <windows.h>. Very stupid on Microsoft's side
+// If Microsoft were to follow good programming practice, it would be prefixed with something
+// Anyway, we need to fix the problen, so we undefine this idiotic macro
+#ifdef SendMessage
+#undef SendMessage
+#endif
+#elif (defined(_WIN64) || defined (_WIN32))
+#define EMAG_APIENTRY __declspec(dllimport)
+#else
+#define EMAG_APIENTRY
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\defgroup GRAPHICS Graphics module used for data visualization
 ///@{
@@ -30,7 +45,7 @@ struct RendererCommData
 {
     void *commData;
 };
-class Renderer	//abstract
+class EMAG_APIENTRY Renderer	//abstract
 {
 public:
 	//Renderer(){};
@@ -47,8 +62,6 @@ public:
 protected:  
     /// Pure function that can initialize the renderer asynchronously
     virtual void AsyncStartFunc() = 0;
-    /// Static function that can be used to create a new thread
-    //static void StartAsyncThreadFunc(Renderer* objectToInit) = 0;
 };
 }
 #endif //_RENDERER_H

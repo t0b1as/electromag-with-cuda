@@ -97,7 +97,7 @@ void FrontendGUI::frontendDisplay()
     CPUprogress.progressR=CPUprogress.progressG=CPUprogress.progressB=1.0f;
     CPUprogress.progress=*calcProgress;
     glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT);
-    glColor3f(0.8, 0.0, 0.0);
+    glColor3f(0.8f, 0.0f, 0.0f);
     static char progress[16];
     PrintGlutString("Experimental Frontend for Electromag",GLUT_BITMAP_HELVETICA_12, 40, 40, 0);
 	PrintGlutString("This window informs you that Electromag is running,\n but does nothing else.",GLUT_BITMAP_HELVETICA_12, 40, 60, 0);

@@ -198,13 +198,25 @@ void CudaElectrosFunctor<T>::PostRun()
 	pPerfData->performance = FLOPS / pPerfData->time;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 ///\brief Allocates GPU memory for given functor
+//
+/// Allocates memory based on available resources
+/// Returns false if any memory allocation fails
+/// NOTES: This function is not thread safe and must be called from the same context
+/// that performs memory copies and calls the kernel
+///
+/// Based on available GPU memory, it might be necessary to split the data in several smaller segments,
+/// where each segment will be processed by a different series of kernel calls.
+/// The memory needs to be recopied for every kernel.
+/// To ensure that GPU memory allocation is unlikely to fail, the amount of availame GRAM is queued,
+/// then the paddedSize for the point charges is subtracted.
+// While naive, this check should work for most cases.
 ///
 ///@param deviceID Device/functor combination on which to operate
 ///@return First error code that is encountered
 ///@return CUDA_SUCCESS if no error is encountered
-////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 template<class T>
 CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 {
@@ -730,7 +742,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
 
         // Add proper time
         params->pPerfData->time += (double) (end - start) / freq;
-		
+
 
         //----------------------------------Recover xy components----------------------------------//
         // We don't know if xy is declared as a vector type or not, so it is extremely wise to explicitly use vector
@@ -745,6 +757,29 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
         timing[xyDtoH] += time;
         timing[xySize] += size;
 
+        
+
+        //-------------------------------------Recover z components--------------------------------//
+        // Now we make pLineElem point to the first z component
+        // There's no need to worry about vector vs linear components here
+        T *zDM = params->hostNonpagedData.z + elementsPerSegment;
+        // Set size to copy all but the first step
+		size = zPitch*(steps - 1);
+        // Get data back from device
+		// Like in the xy transfer, add the pitch to skip the starting points
+        TIME_CALL(CUDA_SAFE_CALL(cuMemcpyDtoH((void*)((char*)params->hostNonpagedData.z + zPitch),
+			params->GPUfieldData.coalLines.z + (CUdeviceptr)zPitch, (unsigned int)size)), time);
+        timing[zDtoH] += time;
+        timing[zSize] += size;
+
+
+#if !defined (ES_USE_SINGLE_WRITEBACK_STREAM)
+		// This seems to be the faster method
+		//----------------------------------Write back xy components----------------------------------//
+        // We don't know if xy is declared as a vector type or not, so it is extremely wise to explicitly use vector
+        // indexing rather than assune vector indexing will occur; this will prevent future gray-hair bugs in this section
+        xyDM = (Vector2<T>*) params->hostNonpagedData.xyInterleaved + elementsPerSegment;
+        
         // Put data into original array
         // We don't know if xy is explicitly specialized as a vector type or not, so it is extremely wise to explicitly use vector
         // indexing rather than assume vector indexing will occur; this will prevent future gray-hair bugs in this section
@@ -762,19 +797,11 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
         timing[xyHtoHb] += time;
 
 
-        //-------------------------------------Recover z components--------------------------------//
+        //-------------------------------------Write back z components--------------------------------//
         // Now we make pLineElem point to the first z component
         // There's no need to worry about vector vs linear components here
-        T *zDM = params->hostNonpagedData.z + elementsPerSegment;
-        // Set size to copy all but the first step
-		size = zPitch*(steps - 1);
-        // Get data back from device
-		// Like in the xy transfer, add the pitch to skip the starting points
-        TIME_CALL(CUDA_SAFE_CALL(cuMemcpyDtoH((void*)((char*)params->hostNonpagedData.z + zPitch),
-			params->GPUfieldData.coalLines.z + (CUdeviceptr)zPitch, (unsigned int)size)), time);
-        timing[zDtoH] += time;
-        timing[zSize] += size;
-
+        zDM = params->hostNonpagedData.z + elementsPerSegment;
+        
         // Put data back into original array
         // Z can be read sequentially
         // Make pLineElem point to the first z element
@@ -788,7 +815,38 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
             zDM = (T*) ((char*) zDM + zPitch);
 			pLineElem += this->nLines*linesPitch;
         }, time);
-        timing[zHtoHb] += time;
+		timing[zHtoHb] += time;
+
+
+		//----------------------------------------Put back data ----------------------------------//
+#else// !defined (ES_USE_SINGLE_WRITEBACK_STREAM)
+		// This seems to be four times slower than the previous variant
+		// Put data into original array
+        // We don't know if xy is explicitly specialized as a vector type or not, so it is extremely wise to explicitly use vector
+        // indexing rather than assume vector indexing will occur; this will prevent future gray-hair bugs in this section
+		Vector2<T> *pxyStream = (Vector2<T>*) params->hostNonpagedData.xyInterleaved + elementsPerSegment;
+		T *pzStream = params->hostNonpagedData.z + elementsPerSegment;
+		Vector3<T> * pStepStart =  (Vector3<T>*)linesBase + this->nLines;
+		TIME_CALL(
+		for (size_t j = 1; j < steps; j++)
+		{
+            for (size_t i = 0; i < segmentElements; i++)
+			{
+				Vector2<T> xyStream = pxyStream[i];
+				Vector3<T> writebackStream;
+				writebackStream.x = xyStream.x;
+				writebackStream.y = xyStream.y;
+				writebackStream.z = pzStream[i];
+				pStepStart[i] = writebackStream;
+            }
+            pxyStream = (Vector2<T>*)((char*) pxyStream + xyPitch);
+			pzStream = (T*) ((char*) pzStream + zPitch);
+			pStepStart += this->nLines;
+        }, time);
+		timing[xyHtoHb] += time * 2/3;	// 2/3 attributable to xy transfer
+		timing[zHtoHb] += time * 1/3;	// 1/3 attributable to z transfer
+#endif
+
     }
     //----------------------------------End BIG Loop----------------------------------//
 

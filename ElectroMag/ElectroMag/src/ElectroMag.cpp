@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 #endif//DEBUG
 
 	enum ParamLevel{__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
-	ParamLevel paramLevel = __bogo;
+	ParamLevel paramLevel = __normal;
 
 	SimulationParams simConfig = DefaultParams;
 	bool saveData = false, CPUenable = false, GPUenable = true, display = true;
@@ -172,8 +172,8 @@ int main(int argc, char* argv[])
 		if(!CPUenable)
 		{
 			CPUenable = true; // And force CPU mode
-			std::cout<<"Using optimized CPU mode with reduced parameter set."<<std::endl;
-			paramLevel = __cpu;
+			std::cout<<" Using optimized CPU mode with reduced parameter set."<<std::endl;
+			if(paramLevel > __cpu)paramLevel = __cpu;
 		}
 	}
 	// Set correct parameter configuration

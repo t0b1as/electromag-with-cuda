@@ -27,28 +27,29 @@ __DeleteFieldRenderer DeleteFieldRenderer;
 #if defined(_WIN32) || defined(_WIN64)
 
     #include <Windows.h>
+using namespace  Graphics;
 
     #ifdef UNICODE
-    static LPCWSTR __EmGraphLibName = L"EMagGraphics.dll";
+    static LPCWSTR __EmGraphLibName = L"Graphics.dll";
     #else
-    static LPCSTR __EmGraphLibName = "EMagGraphics.dll";
+    static LPCSTR __EmGraphLibName = "Graphics.dll";
     #endif
 
     typedef HMODULE EM_GRAPH_LIB;
 
-    EMagGraphicsModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
+    Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
     {
         *pInstance = LoadLibrary(__EmGraphLibName);
         if (*pInstance == NULL)
         {
-            return EMGRAPH_FILE_NOT_FOUND;
+            return Graphics::FILE_NOT_FOUND;
         }
-        return EMGRAPH_SUCCESS;
+        return Graphics::SUCCESS;
     }
 
     #define GET_PROC(name)                                          \
         name = (__##name)GetProcAddress(emGraphLib, #name);        \
-        if (name == NULL) return EMGRAPH_SYMBOL_NOT_FOUND
+		if (name == NULL) return Graphics::SYMBOL_NOT_FOUND
 
 #elif defined(__unix__) || defined(__APPLE__) || defined(__MACOSX)
 
@@ -71,6 +72,7 @@ __DeleteFieldRenderer DeleteFieldRenderer;
             *pInstance = dlopen(__EmGraphLibName, RTLD_NOW);
             if (*pInstance == 0)
             {
+				std::cerr<<dlerror()<<std::endl;
                 return Graphics::FILE_NOT_FOUND;
             }
         }
@@ -93,7 +95,6 @@ ModuleLoadCode LoadModule()
 	errCode = LoadEmGraphLib(&emGraphLib);
 	if(errCode != SUCCESS)
 	{
-		std::cerr<<dlerror()<<std::endl;
 		return errCode;
 	}
 	GET_PROC(CreateFieldRenderer);

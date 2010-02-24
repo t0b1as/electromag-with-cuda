@@ -37,6 +37,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 /// Thus, those mechanisms are implemented in the Renderer interface class.
 /// All renderer classes must derive from this class, not from the Renderer class
 ////////////////////////////////////////////////////////////////////////////////////////////////
+#include "Renderer.h"
 class RendererInterface: public Render::Renderer
 {
 public:
@@ -44,6 +45,10 @@ public:
     virtual ~RendererInterface(){};
     virtual void StartAsync();
     virtual void KillAsync();
+	// This needs to be redefined here to ensure that dynamic linking on Windows
+	// will not generate a pure virtual funvtion call error
+	// How or why this happens is a mystery, but this fix seems to work.
+	virtual void SendMessage(Render::RendererCommData * messageData) = 0;
 protected:
     /// A handle to the thread handling the rendering
     Threads::ThreadHandle rendererThread;
@@ -68,7 +73,6 @@ protected:
 	virtual static void Reshape(int width, int height){};
 	virtual static void Motion(int x, int y){};
 	*/
-
 private:
 	static unsigned int  GlRenderers;
 	static const unsigned int maxGlRenderers;

@@ -26,8 +26,8 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include "Electrostatics.h"
 #include <stdio.h>
 
-
 enum ProjectionMode {Orthogonal, Perspective};
+using namespace FieldRenderer;
 
 
 
@@ -48,7 +48,8 @@ private:
 
 	// GL specific data
 	bool VBOsupported;
-	static unsigned int chargesVBO, colorVBO;
+	static unsigned int chargesVBO;
+	static unsigned int colorVBO;
 	static unsigned int *linesVBOs;
 	static size_t nrLinesVBO;
 	static float* colors;
@@ -61,7 +62,14 @@ private:
     
     void AsyncStartFunc();
 
+	///\brief Message reciever functor
+	///
+	/// Overrides SendMessage from renderer, and passes the message to the message parser
     void SendMessage(Render::RendererCommData *message);
+	
+	///\brief Message parser functor
+	///
+	/// Parses external messages recieved by SendMessage(Render::RendererCommData *message)
     void SendMessage(FieldRenderer::FieldRenderCommData* message);
 
 public:
@@ -116,8 +124,8 @@ extern "C" {
 #endif
 
     /// Factory functions for FieldRender
-    Render::Renderer* CreateFieldRenderer();
-    void DeleteFieldRenderer(Render::Renderer* objectToDelete);
+    EMAG_APIENTRY Render::Renderer* CreateFieldRenderer();
+    EMAG_APIENTRY void DeleteFieldRenderer(Render::Renderer* objectToDelete);
 
 
 #ifdef	__cplusplus

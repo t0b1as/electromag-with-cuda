@@ -113,11 +113,11 @@ inline __m128d sqrt(const __m128d A)
 {
 	return _mm_sqrt_pd(A);
 }
-/* // Is this instruction even present in SSE2?
+/* Is this instruction even present in SSE2?
 inline __m128d rsqrt(const __m128d A)
 {
 	return _mm_rsqrt_pd(A);
-}//*/
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @}

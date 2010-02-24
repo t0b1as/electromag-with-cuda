@@ -80,7 +80,7 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(CUDA_LIB_PATH_32);$(CUDA_SDK_LIB_PATH);$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName);lib"
 				GenerateManifest="false"
-				IgnoreDefaultLibraryNames="msvcprtd.lib"
+				IgnoreDefaultLibraryNames="Graphics.dll"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -166,7 +166,7 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(CUDA_LIB_PATH)&quot;;&quot;$(CUDA_SDK_LIB_PATH)&quot;;&quot;$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(SolutionDir)\common\lib&quot;"
 				GenerateManifest="false"
-				IgnoreDefaultLibraryNames="MSVCRTD.lib"
+				IgnoreDefaultLibraryNames="Graphics.dll"
 				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -252,6 +252,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(CUDA_LIB_PATH_32);$(CUDA_SDK_LIB_PATH);$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName);lib"
 				GenerateManifest="false"
+				IgnoreDefaultLibraryNames="Graphics.dll"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				LargeAddressAware="2"
@@ -344,7 +345,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(CUDA_LIB_PATH);$(CUDA_SDK_LIB_PATH);$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName);lib"
 				GenerateManifest="false"
-				IgnoreDefaultLibraryNames="MSVCRT.lib"
+				IgnoreDefaultLibraryNames="Graphics.dll"
 				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -352,90 +353,6 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="EmuDebug|Win32"
-			OutputDirectory="$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				InlineFunctionExpansion="0"
-				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="$(CUDA_SDK_INC_PATH);$(CUDA_INC_PATH);.\..\common\src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				OpenMP="true"
-				UsePrecompiledHeader="2"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="4"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="cudart.lib freeglut32.lib glew32.lib"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(CUDA_LIB_PATH_32);$(CUDA_SDK_LIB_PATH);$(SolutionDir)\bin\$(PlatformName)\$(ConfigurationName);lib"
-				GenerateManifest="false"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -590,15 +507,7 @@
 						Name="VCCLCompilerTool"
 						FloatingPointModel="2"
 						UsePrecompiledHeader="0"
-						DebugInformationFormat="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
+						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -631,6 +540,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\src\Graphics_dynlink.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -659,14 +572,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -706,294 +611,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Render and Graphics"
-			>
-			<File
-				RelativePath=".\src\Graphics\Camera.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\FieldRender.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\FieldRender.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\FrontendGUI.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\FrontendGUI.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\Renderer.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\src\Graphics\Renderer.h"
-				>
-			</File>
-			<Filter
-				Name="freeglut"
-				>
-				<File
-					RelativePath=".\src\Graphics\GL\freeglut.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\freeglut_dynlink.c"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="EmuDebug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="EmuDebug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\freeglut_dynlink.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\freeglut_std.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="Qt"
-				>
-			</Filter>
-			<Filter
-				Name="GL"
-				>
-				<File
-					RelativePath=".\src\Graphics\GL\freeglut_ext.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\glew.c"
-					>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\glew_static.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\glut.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\glutExtra.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\glxew.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\Graphics\GL\wglew.h"
-					>
-				</File>
-			</Filter>
-		</Filter>
-		<Filter
 			Name="CpuID"
 			>
 			<File
@@ -1025,14 +642,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="EmuDebug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
