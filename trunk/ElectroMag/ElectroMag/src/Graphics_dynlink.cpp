@@ -17,6 +17,8 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 ***********************************************************************************************/
 
 #include "Graphics_dynlink.h"
+#include <iostream>
+
 
 namespace Graphics
 {
@@ -84,7 +86,7 @@ using namespace  Graphics;
         if (name == 0) {std::cerr<<dlerror()<<std::endl;return SYMBOL_NOT_FOUND;}
 
 #endif
-#include <iostream>
+
 namespace Graphics
 {
 ModuleLoadCode LoadModule()
