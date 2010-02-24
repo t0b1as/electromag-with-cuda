@@ -103,9 +103,11 @@ __device__ inline Vector3<T> operator / (Vector3<T> vec, T scalar)
 	return vec3Div(vec, scalar);	// 3 FLOPs
 };
 
-/*=============================================================================
-C style vector functions
-=============================================================================*/
+////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief C style vector functions
+///
+///@{
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
 __device__ inline Vector3<T> vec3(Vector3<T> head, Vector3<T> tail)
@@ -201,7 +203,36 @@ __device__ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>m
 	result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
 	return result;							// Total: 9 FLOPs
 };
-
+////////////////////////////////////////////////////////////////////////////////////////////////
+///@}
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Vector manipulation functions
+///
+///@{
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Vector rotation with orthogonal and normalized direction vector
+///
+/// Returns the rotation of vector 'r' in the direction specified by the vector 'side' \n
+/// NOTE: This assumes that 'side' is unitary and orthogonal to r. Supplying a vector that is
+/// not normalized or orthogonal to r will produce erroneous results
+////////////////////////////////////////////////////////////////////////////////////////////////
+template <class T>
+inline Vector3<T> vec3RotationOrthoNormal(
+							   const Vector3<T> r,		///< The vector to rotate
+							   const Vector3<T> side,	///< The normalized direction in which to rotate the vector
+							   const T angle					///< The angle of rotation in radians
+							   )
+{
+	// A vector can be rotated in a plane by considering using the orthogonal versors r^, and s^
+	// The rotated vector can be computed as <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
+	// Since r * r^ is r, the formula can be simplified to:
+	// <rRot> = |<r>|*sin(a)*s^ + <r> *cos(a)
+	Vector3<T> rRot = side * vec3Len(r) * sin(angle) + r * cos(angle);
+	return rRot;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////
+///@}
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif//_VECTOR_H
 

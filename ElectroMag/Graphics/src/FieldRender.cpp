@@ -400,42 +400,53 @@ void FieldRender::keyboard(unsigned char key, int x, int y)
 }
 
 static int leftButtonState = GLUT_UP;
+static int rightButtonState = GLUT_UP;
 static Vector2<int> oldMousePos;
 
 void FieldRender::motion(int x, int y)
 {
-	if(leftButtonState == GLUT_UP) return;
-	const int dx = oldMousePos.x - x;
+	const int dx = x - oldMousePos.x;
 	const int dy = y - oldMousePos.y;
 	oldMousePos.x = x; oldMousePos.y = y;
-	GLdouble rotY = mainCam.GetFOV() * (GLdouble)dy/winDim.y;
-	GLdouble rotX = mainCam.GetFOV() * (GLdouble)winDim.x/winDim.y * (GLdouble)dx/winDim.x;
-	mainCam.Rotate(rotX, rotY, Degree);
-	//glutPostRedisplay();
+	if(leftButtonState == GLUT_DOWN)
+	{
+		GLdouble rotY = mainCam.GetFOV() * (GLdouble)dy/winDim.y;
+		GLdouble rotX = mainCam.GetFOV() * (GLdouble)winDim.x/winDim.y * (GLdouble)-dx/winDim.x;
+		mainCam.Rotate(rotX, rotY, Degree);
+	}
+	else if(rightButtonState == GLUT_DOWN)
+	{
+		// A horizontal mose sweep across the whole window should rotate by 360deg or 2*PI
+		GLdouble rotX = 2 * PI * (GLdouble)dx/winDim.x;
+		GLdouble rotY = 2 * PI * (GLdouble)dy/winDim.y * (GLdouble)winDim.y/winDim.x ;
+		mainCam.RotateAroundCenter(rotX, rotY, Radian);
+	}
 }
 
 #define WHEEL_UP 3
 #define WHEEL_DOWN 4
 void FieldRender::mouse(int button, int state, int x, int y)
 {
-	if (button == GLUT_LEFT_BUTTON) leftButtonState = state;
+	// Keep track of the mouse position. this will be needed by the motion function
 	oldMousePos.x = x;
 	oldMousePos.y = y;
 
-	if(state == GLUT_DOWN)
+	
 	switch(button)
 	{
 	case GLUT_LEFT_BUTTON:
+		leftButtonState = state;
 		break;
 	case GLUT_RIGHT_BUTTON:
+		rightButtonState = state;
 		break;
 	case GLUT_MIDDLE_BUTTON:
 		break;
 	case WHEEL_UP:
-		mainCam.ZoomExponential(10);
+		if(state == GLUT_DOWN) mainCam.ZoomExponential(10);
 		break;
 	case WHEEL_DOWN:
-		mainCam.ZoomExponential(-10);
+		if(state == GLUT_DOWN) mainCam.ZoomExponential(-10);
 		break;
 	default:
 		break;
@@ -503,7 +514,7 @@ void FieldRender::fieldDisplayVBO()
 	
 
 	// Draw infobar in top-right corner
-	DrawOverlay();//mainCam);
+	DrawOverlay();
 
 	// Flush the buffer to ensure everything is displayed correctly
 	glutSwapBuffers();
