@@ -28,6 +28,11 @@ void DeleteFieldRenderer(Render::Renderer* objectToDelete)
 	delete objectToDelete;
 }
 
+void FieldRender::SendMessage(Render::RendererCommData* message)
+{
+	this->SendMessage((FieldRenderer::FieldRenderCommData*) message);
+}
+
 void FieldRender::SendMessage(FieldRenderer::FieldRenderCommData* message)
 {
 	if(!message) return;
@@ -46,9 +51,4 @@ void FieldRender::SendMessage(FieldRenderer::FieldRenderCommData* message)
 		break;
 	}
 
-}
-
-void FieldRender::SendMessage(Render::RendererCommData* message)
-{
-	this->SendMessage((FieldRenderer::FieldRenderCommData*) message);
 }

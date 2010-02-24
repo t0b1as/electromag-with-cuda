@@ -75,7 +75,7 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 	glLoadIdentity();
 	// Draw Background
 	GLfloat bgHeight = 110, bgWidth = 176;
-	glColor4f(0.0, 0.4, 0.0, 0.5);
+	glColor4f(0.0f, 0.4f, 0.0f, 0.5f);
 	glBegin(GL_POLYGON);
 	glVertex3f(0,0,0);
 	glVertex3f(bgWidth, 0,0);
@@ -176,7 +176,7 @@ void FieldRender::fieldDisplay()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
-	glColor4f(0.0, 0.2, 0.0, 0.5);
+	glColor4f(0.0f, 0.2f, 0.0f, 0.5f);
 	glBegin(GL_POLYGON);
 	glVertex3f(0,0,0);
 	glVertex3f(176, 0,0);

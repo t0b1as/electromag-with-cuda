@@ -74,7 +74,7 @@ struct Vec3SOA
 C++ style vector functions and operators
 =============================================================================*/
 template <class T>
-__device__ inline void operator += (Vector3<T> &rhs, const Vector3<T> b)
+__device__ inline void operator += (Vector3<T> &rhs, /*const*/ Vector3<T> b)
 {
 	rhs.x += b.x; rhs.y += b.y; rhs.z += b.z;		// 3 FLOPs
 };

@@ -41,18 +41,6 @@
 				GenerateAlternateCodePaths="5"
 				Parallelization="true"/>
 		</Configuration>
-		<Configuration
-			Name="EmuDebug|Win32">
-			<Tool
-				Name="CppCmplrTool"
-				EnableEnhancedInstructionSet="1000"/>
-		</Configuration>
-		<Configuration
-			Name="EmuDebug|x64">
-			<Tool
-				Name="CppCmplrTool"
-				EnableEnhancedInstructionSet="1000"/>
-		</Configuration>
 	</Configurations>
 	<Files>
 		<Filter

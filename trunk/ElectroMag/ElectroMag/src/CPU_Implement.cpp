@@ -889,7 +889,6 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 		When compiling with the Intel C++ compiler, the OpenMP runtime will automatically choose  the
 		ideal number of threads based oh the runtime system's cache resources. The code will therefore
 		run faster if omp_set_num_threads is not specified.
-		The GNU and the Microsoft compiler produce highly suboptimal code
 	*/
 
 	//#pragma unroll_and_jam

@@ -35,6 +35,7 @@ int CalcField(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& 
 			  size_t n, double resolution,  perfPacket& perfData, bool useCurvature = false);
 
 // This allows us to readibly keep track of timing information within wrappers
+// NOTE: any change here, and all sources should be recompiled to be on the safe side
 enum CalcField_timingSteps
 {
 	xySize,			///< Size in bytes of xy components
@@ -48,12 +49,10 @@ enum CalcField_timingSteps
 	zHtoD,			///< Time for transferring z  componens from page-locked memory to device
 	xyDtoH,			///< Time for transferring xy componens from device to page-locked memory
 	xyHtoHb,		///< Time for transferring xy componens from page-locked memory to main array
-	zDtoH,			///< Time for transferring xy componens from device to page-locked memory
-	zHtoHb,			///< Time for transferring xy componens from page-locked memory to main array
+	zDtoH,			///< Time for transferring z  componens from device to page-locked memory
+	zHtoHb,			///< Time for transferring z  componens from page-locked memory to main array
 	mFree,			///< Time for freeing page-locked and device memory
 	timingSize		///< Total number of timing/performance parameters
 };
-// and disable the idiotic warning: "warning #2158: enum qualified name is nonstandard"
-//#pragma warning(disable:2158)
 
 #endif//_CUDA_INTEROP_H
