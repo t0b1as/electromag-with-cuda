@@ -32,13 +32,15 @@ struct CoalescedFieldLineArray
 		xyPitch, zPitch;
 };
 
+namespace Vector
+{
 template<>
 struct Vec3SOA<CUdeviceptr>
 {
 	CUdeviceptr xyInterleaved;
 	CUdeviceptr z;
 };
-
+}
 
 template<>
 struct CoalescedFieldLineArray<CUdeviceptr>
@@ -51,7 +53,7 @@ struct CoalescedFieldLineArray<CUdeviceptr>
 template<class T>
 struct PointChargeArray
 {
-	pointCharge<T> *chargeArr;
+	electro::pointCharge<T> *chargeArr;
 	size_t nCharges, paddedSize;
 };
 

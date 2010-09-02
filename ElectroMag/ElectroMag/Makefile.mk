@@ -9,7 +9,8 @@ CXXsources= $(SRCDIR)/ElectroMag.cpp $(SRCDIR)/CPU_Implement.cpp $(SRCDIR)/stdaf
 
 OBJDIR= obj
 OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o\
-	$(OBJDIR)/CPUID.o $(OBJDIR)/Graphics_dynlink.o
+	$(OBJDIR)/CPUID.o $(OBJDIR)/Graphics_dynlink.o\
+	$(OBJDIR)/Particle_System.o
 
 .PHONY: clean all
 
@@ -17,7 +18,7 @@ OBJS= $(OBJDIR)/ElectroMag.o $(OBJDIR)/CPU_Implement.o $(OBJDIR)/stdafx.o\
 all: $(TARGET_DIR)/$(TARGET)
 
 # Rule for linking all objects
-$(TARGET_DIR)/$(TARGET): $(OBJS)
+$(TARGET_DIR)/$(TARGET): $(OBJS) $(LIB_PATH)/$(GPGPU_LIB)
 	@echo =======================================================
 	@echo = Linking Everything                                  =
 	@echo =======================================================

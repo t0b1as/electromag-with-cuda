@@ -38,10 +38,12 @@ while /arch:SSE2 /fp:fast allow the use of SSE registers
 #pragma message --- Cygwin detected. OpenMP not supported by Cygwin!!! ---
 #pragma message --- Expect CPU side performance to suck!!! ---
 #endif
-#define CoreFunctor electroPartField
+#define CoreFunctor electro::PartField
 #define CoreFunctorFLOP electroPartFieldFLOP
 #define CalcField_CPU_FLOP(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 13) )
 #define CalcField_CPU_FLOP_Curvature(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 45) )
+
+using namespace electro;
 
 template<class T>
 int CalcField_CPU_T(Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
@@ -949,17 +951,17 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
                 /* temp += electroPartField(charges[point], prevPoint);
                  *
                  */
-                Accum[0] += electroPartField(charge, prevPoint[0], elec_k);
+                Accum[0] += electro::PartField(charge, prevPoint[0], elec_k);
 
 #				if (LINES_PARRALELISM > 1)
-                Accum[1] += electroPartField(charge, prevPoint[1], elec_k);
+                Accum[1] += electro::PartField(charge, prevPoint[1], elec_k);
 #				endif
 #				if (LINES_PARRALELISM == 3)
 #				error LINES_PARRALELISM Should not be set to 3, as the alignment mask may fail to function properly
 #				endif
 #				if (LINES_PARRALELISM > 3)
-				Accum[2] += electroPartField(charge, prevPoint[2], elec_k);
-				Accum[3] += electroPartField(charge, prevPoint[3], elec_k);
+				Accum[2] += electro::PartField(charge, prevPoint[2], elec_k);
+				Accum[3] += electro::PartField(charge, prevPoint[3], elec_k);
 #				endif
 #				if (LINES_PARRALELISM > 4)
 #				error Too many lines per iteration

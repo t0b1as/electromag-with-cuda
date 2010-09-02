@@ -23,7 +23,8 @@ SRCDIR=src
 CPU_OBJS= $(OBJDIR)/Electrostatics.o $(OBJDIR)/CUDA_manager.o\
 	$(OBJDIR)/CL_Manager.o\
 	$(OBJDIR)/cuda_drvapi_dynlink.o $(OBJDIR)/OpenCL_Dyn_Load.o\
-	$(OBJDIR)/Abstract_Functor.o $(OBJDIR)/CUDA_Electrostatics.o
+	$(OBJDIR)/Abstract_Functor.o\
+	$(OBJDIR)/CUDA_Electrostatics.o $(OBJDIR)/CL_Electrostatics.o
 
 
 # CUDA objects and targets
@@ -97,3 +98,5 @@ clean:
 	@rm -f $(PTX_OBJS)
 	@rm -f $(CUBIN_OBJS)
 	@rm -r -f $(OBJDIR)
+
+# DO NOT DELETE

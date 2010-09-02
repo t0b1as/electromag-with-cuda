@@ -277,8 +277,8 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
 
 	clGetDeviceInfo(this->deviceID,
             CL_DEVICE_MAX_COMPUTE_UNITS,
-			sizeof(this->maxComputeUits),
-            (void*)&this->maxComputeUits,
+			sizeof(this->maxComputeUnits),
+            (void*)&this->maxComputeUnits,
             0);
 
 	clGetDeviceInfo(this->deviceID,
@@ -475,10 +475,18 @@ void ClManager::ListAllDevices(std::ostream& out)
 {
     for(size_t i = 0; i < nrPlatforms; i++)
     {
-        out<<" Platform: "<<platforms[i].name<<std::endl;
-        for(size_t j = 0; j < platforms[i].nrDevices; j++)
+		clPlatformProp* current = &platforms[i];
+        out<<" Platform: "<<current->name<<std::endl;
+		out<<"  Version: "<<current->version<<std::endl;
+		out<<"  Vendor: "<<current->vendor<<std::endl;
+        for(size_t j = 0; j < current->nrDevices; j++)
         {
-            out<<" Device: "<<platforms[i].devices[j].name<<std::endl;
+			clDeviceProp* dev = &current->devices[j];
+            out<<"   Device: "<<dev->name<<std::endl;
+			out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"<<std::endl;
+			out<<"    Compute units (cores): "<<dev->maxComputeUnits<<std::endl;
+			out<<"    Single-precision SIMD width: "<<dev->preferredVectorWidth_Float<<std::endl;
+			out<<"    Double-precision SIMD width: "<<dev->preferredVectorWidth_Double<<std::endl;
         }
         out<<std::endl;
     }

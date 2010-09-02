@@ -58,7 +58,7 @@ struct CpuidFeatures
 			// Second ID string
 			unsigned BrandIndex		:8;///< Brand Index
 			unsigned QwordCFLUSH	:8;///< CLFLUSH cache line size / 8
-			unsigned LogicProcCount	:8;///< Reserved
+			unsigned LogicProcCount	:8;///< Maximum number of addressable IDs for logical processors
 			unsigned ApicID			:8;///< APIC Physical ID
 			// Third ID string
 			unsigned SSE3			:1;///< Streaming SIMD Extensions 3 support
@@ -88,7 +88,7 @@ struct CpuidFeatures
 			unsigned AES    		:1;///< AES instruction
 			unsigned XSAVE			:1;///< XSAVE/XSTOR States
 			unsigned OSXSAVE		:1;///< OS-enabled extended state management
-			unsigned AVX256			:1;///< AVX256 Extensions support
+			unsigned AVX			:1;///< AVX256 Extensions support
 			unsigned Reserved34 	:3;///< Reserved
 			// Fourth ID String
 			unsigned FPU			:1;///< Floating-Point Unit on Chip

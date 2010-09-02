@@ -1,5 +1,5 @@
 /***********************************************************************************************
-Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
  * This file is part of ElectroMag.
 
     ElectroMag is free software: you can redistribute it and/or modify
@@ -15,39 +15,12 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-#ifndef _FIELDRENDER_H
-#define	_FIELDRENDER_H
 
-#include "Renderer.h"
-#include "Data Structures.h"
-#include "Electrostatics.h"
+#ifndef _PARTICLE_DYNAMICS_H
+#define	_PARTICLE_DYNAMICS_H
 
-namespace FieldRenderer
-{
-
-struct GLpacket
-{
-	Array<electro::pointCharge<float> > *charges;
-	Array<Vector3<float> > *lines;
-	size_t nlines, lineLen;
-	size_t elementSize;//8 for double 4 for float
-};
-
-enum MessageType
-{
-    NoMessage = 0,      ///< Nothing is happening
-    SendingGLData,      ///< *commData contains a GLpacket
-    SendingPerfPointer, ///< *commData contains a double with the GFLOP/s pefomrmance
-    RequestQuitFlag,    ///< we should put the address of shouldIQuit in commData
-};
-
-struct FieldRenderCommData: public Render::RendererCommData
-{
-    MessageType messageType;
-};
-}
+#include "Vector.h"
 
 
-
-#endif	/* _FIELDRENDER_H */
+#endif//_PARTICLE_DYNAMICS_H
 

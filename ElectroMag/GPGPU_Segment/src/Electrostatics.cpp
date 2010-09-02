@@ -25,7 +25,7 @@ These guarantee that the specializations will be compiled and included in the
 export library
  */////////////////////////////////////////////////////////////////////////////////
 
-int CalcField(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
+int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
         size_t n, float resolution, perfPacket& perfData, bool useCurvature)
 {
 	//return CalcFieldEs::MultiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
@@ -41,7 +41,7 @@ int CalcField(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& po
 	/**/
 };
 
-int CalcField(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
+int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
         size_t n, double resolution, perfPacket& perfData, bool useCurvature)
 {
 	//return CalcFieldEs::Wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);

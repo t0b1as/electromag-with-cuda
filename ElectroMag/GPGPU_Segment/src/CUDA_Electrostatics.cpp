@@ -244,7 +244,7 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 	// Find the memory needed for the point charges
 	params->GPUchargeData.paddedSize =
 		((params->GPUchargeData.nCharges + params->blockDim -1)/
-		params->blockDim) * params->blockDim * sizeof(pointCharge<T>);
+		params->blockDim) * params->blockDim * sizeof(electro::pointCharge<T>);
 	// Compute the available safe memory for the field lines
 	size_t freeRAM = (size_t)free - params->GPUchargeData.paddedSize;	// Now find the amount remaining for the field lines
 	// FInd the total amount of memory required by the field lines
@@ -339,10 +339,10 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources(size_t deviceID)
 		errlog<<" Failed "<<params->GPUfieldData.nSteps<<" batches "<<zCompSize * linesPerSeg<<" bytes each."<<std::endl;
 		errlog<<" Driver reported "<<free/1024/1024<<"MB available"<<std::endl;
 		cuMemGetInfo((unsigned int*)&free, (unsigned int*)&total);
-		errlog<<" Driver now reports "<<free/1024/1024<<"MB available."<<std::endl;
 		errlog<<" First request allocated "\
 			<<params->GPUfieldData.nSteps * params->GPUfieldData.xyPitch/1024/1024\
-			<<"MB \n Second request for "\
+                        <<"MB \n Driver now reports "<<free/1024/1024<<"MB available."\
+			<<"\n Second request for "\
 			<<params->GPUfieldData.nSteps * zCompSize * linesPerSeg/1024/1024\
 			<<"MB failed with code "<<errCode<<std::endl;
 		// Free any previously allocated memory
@@ -671,10 +671,10 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor(
     const size_t zCompSize = (pFieldLinesData->GetElemSize()) / 3;
 
 	//----------------------------------Copy point charges----------------------------------//
-    size = params->GPUchargeData.nCharges * sizeof (pointCharge<T>);
+    size = params->GPUchargeData.nCharges * sizeof (electro::pointCharge<T>);
 	CUDA_SAFE_CALL(cuMemcpyHtoD( params->GPUchargeData.chargeArr, pPointChargeData->GetDataPointer(),(unsigned int) size));
     CUDA_SAFE_CALL(cuMemsetD32( params->GPUchargeData.chargeArr
-		+ (CUdeviceptr)(params->GPUchargeData.nCharges * sizeof(pointCharge<T>)), 0,
+		+ (CUdeviceptr)(params->GPUchargeData.nCharges * sizeof(electro::pointCharge<T>)), 0,
             (unsigned int)((params->GPUchargeData.paddedSize - size) * sizeof (T)) / 4));
 
 	const size_t elementsPerSegment = params->nBlocksPerSegment * params->blockXSize;
@@ -919,7 +919,7 @@ CUresult CudaElectrosFunctor<T>::CallKernel(FunctorData *params, size_t kernelEl
 	CUDA_SAFE_CALL(cuParamSetv(params->singlestepKernel, offset, (void*)&zParam, size));
 	offset += size;
 
-	pointCharge<T> * pointChargeParam = (pointCharge<T> *)(size_t)params->GPUchargeData.chargeArr;
+	electro::pointCharge<T> * pointChargeParam = (electro::pointCharge<T> *)(size_t)params->GPUchargeData.chargeArr;
 	size = sizeof(pointChargeParam);
 	CUDA_SAFE_CALL(cuParamSetv(params->multistepKernel, offset, (void*)&pointChargeParam, size));
 	CUDA_SAFE_CALL(cuParamSetv(params->singlestepKernel, offset, (void*)&pointChargeParam, size));

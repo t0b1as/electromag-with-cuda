@@ -22,6 +22,8 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include "CUDA Definitions.h"
 
 
+namespace Vector
+{
 template <class T>
 struct Vector2
 {
@@ -48,7 +50,7 @@ struct Vector3
 	};
 	T z;
 };
-/* // Warning: the specialization causes kernel execution to terminate with unknown error 
+/* // Warning: the specialization causes GPU kernel execution to terminate with unknown error
 // Explicit structure alignment
 template<>
 struct __align__(8) Vector2<float>
@@ -194,6 +196,20 @@ __device__ inline T vec3Len(Vector3<T> vec)
 	return sqrt(vec3LenSq(vec));							// 6 FLOPs
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Resturns the dot product of two vectors
+///
+////////////////////////////////////////////////////////////////////////////////////////////////
+template <class T>
+__device__ inline T vec3Dot(const Vector3<T> A, const Vector3<T> B)
+{
+	return (A.x * B.x + A.y * B.y + A.z * B.z);
+};						// Total: 5 FLOPs
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Returns the cross product of two vectors
+///
+////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 __device__ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>middle)
 {
@@ -217,23 +233,41 @@ __device__ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>m
 /// not normalized or orthogonal to r will produce erroneous results
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
-inline Vector3<T> vec3RotationOrthoNormal(
+__device__ inline Vector3<T> vec3RotationOrthoNormal(
 							   const Vector3<T> r,		///< The vector to rotate
 							   const Vector3<T> side,	///< The normalized direction in which to rotate the vector
 							   const T angle					///< The angle of rotation in radians
 							   )
 {
-	// A vector can be rotated in a plane by considering using the orthogonal versors r^, and s^
+	// A vector can be rotated in a plane by using the orthogonal versors r^, and s^
 	// The rotated vector can be computed as <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
-	// Since r * r^ is r, the formula can be simplified to:
+	// Since |<r>| * r^ is <r>, the formula can be simplified to:
 	// <rRot> = |<r>|*sin(a)*s^ + <r> *cos(a)
-	Vector3<T> rRot = side * vec3Len(r) * sin(angle) + r * cos(angle);
-	return rRot;
+	Vector3<T> rRot = side * (vec3Len(r) * sin(angle)) + r * cos(angle);	// 15 FLOPs: 6len + (1 sin + 1 mul) + 3 mul + 1 cos + 3 mul
+	return rRot;					// Total: 15FLOP
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief returns the inverse square of the vector
+///
+/// Computes the inverse square vector r^ /r^2, or <r>/r^3 (which are mathematically equivalent)
+///		as needed by the Inverse Square Law
+////////////////////////////////////////////////////////////////////////////////////////////////
+template <class T>
+__device__ inline Vector3<T> vec3InverseSquare(Vector3<T> r)
+{
+	T lenSq = vec3LenSq(r);				// 5 FLOP
+	return r / (lenSq * sqrt(lenSq));	// 5 FLOP
+						// Total: 10FLOP
+}
+
+// FIXME: not int, size_t
+const int vec3InverseSquareFLOP = 10;
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///@}
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
+}//namespace Vector
+using namespace Vector;
 #endif//_VECTOR_H
 
 

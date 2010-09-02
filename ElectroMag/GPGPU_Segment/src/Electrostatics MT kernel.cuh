@@ -20,6 +20,8 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "Config.h"
 #include "Electrostatics.h"
 
+using namespace electro;
+
 template<class T>
 struct pointChargeBankConflictKill
 {

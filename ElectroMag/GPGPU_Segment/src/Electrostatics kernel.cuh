@@ -20,6 +20,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "Electrostatics.h"
 #include "Config.h"
 
+using namespace electro;
 
 template<unsigned int LineSteps>
 __global__ void CalcField_SPkernel(Vector2<float>* xyInterleaved, float* z, pointCharge<float> *Charges,
