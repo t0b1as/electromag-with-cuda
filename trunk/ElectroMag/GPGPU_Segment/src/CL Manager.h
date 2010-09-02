@@ -192,7 +192,7 @@ public:
         ///\brief CL_DEVICE_MAX_COMPUTE_UNITS
         ///
         /// The number of parallel compute cores on the OpenCL device. The minimum value is 1.
-        cl_uint maxComputeUits;
+        cl_uint maxComputeUnits;
 
         
         ///\brief CL_DEVICE_MAX_CONSTANT_ARGS

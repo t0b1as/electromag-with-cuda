@@ -15,6 +15,10 @@ LDFLAGS = -lglut -lGLEW -lGLU
 OBJDIR=obj
 SRCDIR=src
 
+
+CCFLAGS += -fPIC
+CXXFLAGS += -fPIC
+
 # Target produced by this makefie
 LOCAL_TARGET= $(LIB_PATH)/$(GRAPHICS_LIB)$(GRAPHICS_LIB_POSTFIX)
 

@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 	std::clog<<" SSSE3: \t"<<support[cpuInfo.SSSE3]<<std::endl;
 	std::clog<<" SSE4.1:\t"<<support[cpuInfo.SSE41]<<std::endl;
 	std::clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<std::endl;
-	std::clog<<" AVX256:\t"<<support[cpuInfo.AVX256]<<std::endl;
+	std::clog<<" AVX256:\t"<<support[cpuInfo.AVX]<<std::endl;
     
     // Now that checks are performed, start the Frontend
     //if(visualProgressBar) MainGUI.StartAsync();
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 	// Initialze data containers
 	size_t nw = (int)simConfig.nx, nh = (int)simConfig.ny, nd = (int)simConfig.nz,  n = nh * nw * nd, p = (int)simConfig.pStatic, len = (int)simConfig.len;
 	Array<Vector3<FPprecision> > CPUlines, GPUlines;
-	Array<pointCharge<FPprecision> > charges(p, 256);
+	Array<electro::pointCharge<FPprecision> > charges(p, 256);
 	// Only allocate memory if cpu comparison mode is specified
 	if(GPUenable) GPUlines.AlignAlloc(n*len);
 	if(CPUenable) CPUlines.AlignAlloc(n*len);
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 	volatile bool * shouldIQuit = 0;
 	if(display)
 	{
-		GLdata.charges = (Array<pointCharge<float> >*)&charges;
+		GLdata.charges = (Array<electro::pointCharge<float> >*)&charges;
 		GLdata.lines = (Array<Vector3<float> >*)arrMain;
 		GLdata.nlines = n;
 		GLdata.lineLen = len;

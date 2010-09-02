@@ -27,7 +27,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #define BLOCK_DIM_MT (BLOCK_X_MT * BLOCK_Y_MT)
 //#define MT_OCCUPANCY 4
 
-#define CoreFunctor electroPartField
+#define CoreFunctor electro::PartField
 #define CoreFunctorFLOP electroPartFieldFLOP
 
 #define CalcField_kernelFLOP(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 13) )
@@ -39,8 +39,8 @@ const char* multistepModuleNamePTX      = "Electrostatics_Multistep.ptx";
 const char* singlestepModuleNameCUBIN	= "Electrostatics.cubin";
 const char* singlestepModuleNamePTX 	= "Electrostatics.ptx";
 
-const char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
-const char* singlestepKernel_SP_MT_Curvature= "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvP7Vector2IfEPfP11pointChargeIfEjjjjf";
+const char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvPN6Vector7Vector2IfEEPfPN7electro11pointChargeIfEEjjjjf";
+const char* singlestepKernel_SP_MT_Curvature    = "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvPN6Vector7Vector2IfEEPfPN7electro11pointChargeIfEEjjjjf";
 const char* multistepKernel_SP_MT			= "CalcField_MTkernel";
 const char* singlestepKernel_SP_MT			= "CalcField_MTkernel";
 const char* multistepKernel_SP				= "CalcField_SPkernel";

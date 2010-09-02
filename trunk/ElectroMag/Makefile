@@ -40,3 +40,4 @@ Graphics-debug:
 Electromag-run: GPGPU_segment Graphics
 	$(MAKE) run -C ElectroMag
 
+# DO NOT DELETE

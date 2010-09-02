@@ -46,7 +46,7 @@ public:
 		/// Pointer to host array of field lines
 		Array<Vector3<T> > *pFieldLineData;
 		/// Pointer to host array of point charges
-		Array<pointCharge<T> > *pPointChargeData;
+		Array<electro::pointCharge<T> > *pPointChargeData;
 		/// Number of field lines contained in pFieldLineData
 		size_t nLines;
 		/// Vector resolution 
@@ -133,7 +133,7 @@ private:
 	/// Pointer to field lines structure
 	Array<Vector3<T> > *pFieldLinesData;
 	/// Pointer to static point charges structrue
-	Array<pointCharge<T> > *pPointChargeData;
+	Array<electro::pointCharge<T> > *pPointChargeData;
 	/// Number of field lines
 	size_t nLines;
 	/// Vector resolution

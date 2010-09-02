@@ -87,7 +87,7 @@ void CopyFieldLineArray(Array<Vector3<T1> >& destination,	///< Destination array
 }
 
 template<class T>
-void InitializePointChargeArray(Array<pointCharge<T> > &charges,
+void InitializePointChargeArray(Array<electro::pointCharge<T> > &charges,
 								size_t lenght,
 								bool random)
 {
@@ -105,16 +105,16 @@ void InitializePointChargeArray(Array<pointCharge<T> > &charges,
 }
 
 template<class T1, class T2>
-void CopyPointChargeArray(Array<pointCharge<T1> >& destination,	///< Destination array
-			   Array<pointCharge<T2> >& source,			///< Source array
+void CopyPointChargeArray(Array<electro::pointCharge<T1> >& destination,	///< Destination array
+			   Array<electro::pointCharge<T2> >& source,			///< Source array
 			   size_t start,						///< Index of first element to copy
 			   size_t elements						///< Number of elements to copy
 			   )
 {
 	for(size_t i = start; i < elements; i++)
 	{
-		pointCharge<T2> src = source[i];
-		pointCharge<T1> dest;
+		electro::pointCharge<T2> src = source[i];
+		electro::pointCharge<T1> dest;
 		dest.position.x = (T1)src.position.x;
 		dest.position.y = (T1)src.position.y;
 		dest.position.z = (T1)src.position.z;

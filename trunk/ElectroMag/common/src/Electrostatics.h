@@ -23,6 +23,10 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #include "CUDA Definitions.h"
 #include "Vector.h"
 
+
+namespace electro
+{
+
 #define electro_k  8.987551787E9
 
 
@@ -59,12 +63,12 @@ struct __align__(16) pointCharge<double>
 
 // We need this for wierd types
 template <class T>
-inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> point, T electroK)
+inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, T electroK)
 {
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, (T)electroK * charge.magnitude /	// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
+	return r * (T)electroK * charge.magnitude /	// 3 FLOP (vecMul)
+		(lenSq * (T)sqrt(lenSq));						// 4 FLOP (1 sqrt + 3 mul,div)
 	// NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
 	// Since we have one division and one multiplication, this should be more efficient due to the
 	// Fact that most architectures perform multiplication way faster than division. Also on some
@@ -72,12 +76,12 @@ inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> 
 };						// Total: 15 FLOP
 
 template <class T>
-inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> point)
+inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 {
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
 	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)// GPU architectures this yields a more precise result.
+		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
 };	
 
 #if defined(__CUDACC__)
@@ -87,7 +91,7 @@ inline __device__ Vector3<T> electroPartField(pointCharge<T> charge, Vector3<T> 
 // since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
 // NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
 template <>
-__device__ Vector3<float> electroPartField(pointCharge<float> charge, Vector3<float> point)
+__device__ Vector3<float> PartField(pointCharge<float> charge, Vector3<float> point)
 {
 	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
 	float lenSq = vec3LenSq(r);								// 5 FLOP
@@ -95,7 +99,7 @@ __device__ Vector3<float> electroPartField(pointCharge<float> charge, Vector3<fl
 		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
-__device__ Vector3<double> electroPartField(pointCharge<double> charge, Vector3<double> point)
+__device__ Vector3<double> PartField(pointCharge<double> charge, Vector3<double> point)
 {
 	Vector3<double> r = vec3(point, charge.position);			// 3 FLOP
 	double lenSq = vec3LenSq(r);								// 5 FLOP
@@ -106,9 +110,24 @@ __device__ Vector3<double> electroPartField(pointCharge<double> charge, Vector3<
 
 #define electroPartFieldFLOP 15
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief  Operates on the inverse quare vector to give the magnetic field
+///
+////////////////////////////////////////////////////////////////////////////////////////////////
+template <class T>
+inline __device__ Vector3<T> PartFieldOp(
+		T qSrc,
+		Vector3<T> rInvSq
+		)
+{
+	return (T)electro_k * qSrc * rInvSq;	// 4 FLOP ( 1 mul, 3 vecMul)
+					// Total: 5 FLOP
+};
+#define electroPartFieldOpFLOP 5
+
 // Returns the partial field vector without multiplying by electro_k to save one FLOP
 template <class T>
-inline __device__ Vector3<T> electroPartFieldVec(pointCharge<T> charge, Vector3<T> point)
+inline __device__ Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
 {
 	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
 	T lenSq = vec3LenSq(r);								// 5 FLOP
@@ -124,7 +143,7 @@ inline __device__ Vector3<T> electroPartFieldVec(pointCharge<T> charge, Vector3<
 // since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
 // NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
 template <>
-__device__ Vector3<float> electroPartFieldVec(pointCharge<float> charge, Vector3<float> point)
+__device__ Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float> point)
 {
 	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
 	float lenSq = vec3LenSq(r);								// 5 FLOP
@@ -132,7 +151,7 @@ __device__ Vector3<float> electroPartFieldVec(pointCharge<float> charge, Vector3
 		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
-__device__ Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vector3<double> point)
+__device__ Vector3<double> PartFieldVec(pointCharge<double> charge, Vector3<double> point)
 {
 	Vector3<double> r = vec3(point, charge.position);		// 3 FLOP
 	double lenSq = vec3LenSq(r);							// 5 FLOP
@@ -140,5 +159,7 @@ __device__ Vector3<double> electroPartFieldVec(pointCharge<double> charge, Vecto
 		rsqrt(lenSq) / lenSq );								// 4 FLOP (1 sqrt + 3 mul,div)
 };
 #endif
+
+}//namespace electro
 
 #endif// _ELECTROSTATICS_H

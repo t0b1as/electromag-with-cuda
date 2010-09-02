@@ -29,9 +29,9 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #endif
 
 
-int CalcField(Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
+int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
 			  size_t n, float resolution,  perfPacket& perfData, bool useCurvature = false);
-int CalcField(Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
+int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
 			  size_t n, double resolution,  perfPacket& perfData, bool useCurvature = false);
 
 // This allows us to readibly keep track of timing information within wrappers
