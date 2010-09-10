@@ -22,6 +22,7 @@ In the event you do not have the CUDA toolkit installed, the compilation will co
 Normally, all you have to do is cd to the directory and:
 
 cmake .
+
 make
 
 ===Using Graphics Support===
