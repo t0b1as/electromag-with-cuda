@@ -39,5 +39,3 @@ After compiling the Graphics module, you will need to create a symbolic link to 
 = Using the Intel C++ compiler =
 
 See cmake documentation
-
-Descend into the root of ElectroMag and type make at a shell.
