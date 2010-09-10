@@ -103,7 +103,7 @@ void FrontendGUI::frontendDisplay()
 	PrintGlutString("This window informs you that Electromag is running,\n but does nothing else.",GLUT_BITMAP_HELVETICA_12, 40, 60, 0);
     if(*calcProgress)
     {
-        sprintf(progress, "%2.2lf %%", *calcProgress*100);
+        sprintf(progress, "%2.2f %%", *calcProgress*100);
         PrintGlutString(progress, GLUT_BITMAP_HELVETICA_12, 222, 110, 0);
         CPUprogress.Draw();
         
@@ -160,7 +160,7 @@ void FrontendGUI::reshape(int w, int h)
 	glLoadIdentity();
 	glViewport(0, 0, w, h);
     gluOrtho2D(0, w, h, 0);
-};
+}
 
 void FrontendGUI::keyboard(unsigned char key, int x, int y)
 {

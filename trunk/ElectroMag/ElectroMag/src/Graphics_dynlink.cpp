@@ -82,7 +82,7 @@ using namespace  Graphics;
     }
 
     #define GET_PROC(name)                                          \
-        name = (__##name)dlsym(emGraphLib, #name);                 \
+        name = (__##name)(size_t)dlsym(emGraphLib, #name);                 \
         if (name == 0) {std::cerr<<dlerror()<<std::endl;return SYMBOL_NOT_FOUND;}
 
 #endif

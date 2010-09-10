@@ -8,7 +8,7 @@
  * agreement from NVIDIA Corporation is strictly prohibited.
  * 
  */
-// This software contains source code provided by NVIDIA Corporation
+/* This software contains source code provided by NVIDIA Corporation	*/
  
  
 #pragma once
@@ -34,16 +34,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    typedef unsigned int CUdeviceptr;       ///< CUDA device pointer
+    typedef unsigned int CUdeviceptr;       /**< CUDA device pointer		*/
 
-    typedef int CUdevice;                   ///< CUDA device
-    typedef struct CUctx_st *CUcontext;     ///< CUDA context
-    typedef struct CUmod_st *CUmodule;      ///< CUDA module
-    typedef struct CUfunc_st *CUfunction;   ///< CUDA function
-    typedef struct CUarray_st *CUarray;     ///< CUDA array
-    typedef struct CUtexref_st *CUtexref;   ///< CUDA texture reference
-    typedef struct CUevent_st *CUevent;     ///< CUDA event
-    typedef struct CUstream_st *CUstream;   ///< CUDA stream
+    typedef int CUdevice;                   /**< CUDA device				*/
+    typedef struct CUctx_st *CUcontext;     /**< CUDA context				*/
+    typedef struct CUmod_st *CUmodule;      /**< CUDA module				*/
+    typedef struct CUfunc_st *CUfunction;   /**< CUDA function				*/
+    typedef struct CUarray_st *CUarray;     /**< CUDA array					*/
+    typedef struct CUtexref_st *CUtexref;   /**< CUDA texture reference		*/
+    typedef struct CUevent_st *CUevent;     /**< CUDA event					*/
+    typedef struct CUstream_st *CUstream;   /**< CUDA stream				*/
 
 /************************************
  **
@@ -61,7 +61,7 @@ typedef enum CUctx_flags_enum {
     CU_CTX_SCHED_MASK  = 0x3,
     CU_CTX_BLOCKING_SYNC = 4,   ///< Use blocking synchronization
     CU_CTX_MAP_HOST = 8,        ///< Support mapped pinned allocations
-    CU_CTX_FLAGS_MASK  = 0xf,
+    CU_CTX_FLAGS_MASK  = 0xf
 } CUctx_flags;
 
 /**
@@ -69,7 +69,7 @@ typedef enum CUctx_flags_enum {
  */
 typedef enum CUevent_flags_enum {
     CU_EVENT_DEFAULT       = 0, ///< Default event flag
-    CU_EVENT_BLOCKING_SYNC = 1, ///< Event uses blocking synchronization
+    CU_EVENT_BLOCKING_SYNC = 1 ///< Event uses blocking synchronization
 } CUevent_flags;
 
 /**
@@ -92,7 +92,7 @@ typedef enum CUarray_format_enum {
 typedef enum CUaddress_mode_enum {
     CU_TR_ADDRESS_MODE_WRAP = 0,    ///< Wrapping address mode
     CU_TR_ADDRESS_MODE_CLAMP = 1,   ///< Clamp to edge address mode
-    CU_TR_ADDRESS_MODE_MIRROR = 2,  ///< Mirror address mode
+    CU_TR_ADDRESS_MODE_MIRROR = 2  ///< Mirror address mode
 } CUaddress_mode;
 
 /**
