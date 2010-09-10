@@ -3,19 +3,26 @@
 
 = Introduction =
 
-In order to compile ElectroMag you will need either GCC with C++ support (G++), or the Intel C++ compiler. In most cases, descending into the root directory of ElectroMag and typing make in a shell should work.
+In order to compile ElectroMag you will need GCC and cmake.
 
 
 = Details =
 
 ElectroMag does not explicitly depend on any proprietary blob. Any proprietary binary that ElectroMag uses is dynamically linked, so that ElectroMag may continue to work in entirely free systems. Therefore, you may still compile ElectroMag even if you do not have the proprietary NVIDIA drivers and/or the CUDA toolkit installed.
-It may also be possible to use OpenCL on NVIDIA cards with the upcoming support from nouveau.
+It will also be possible to use OpenCL on NVIDIA cards with the upcoming support from nouveau.
 
 ==Prerequisites==
-  # GCC or Intel C++ compiler
-  # GNU make
+  # GCC or other C++ compiler
+  # cmake
+  # Optionally, GL, GLU, GLEW, and GLUT developmental files to compile the graphics module
+  # Optionally, the CUDA runtime to compile the GPGPU code.
 
 In the event you do not have the CUDA toolkit installed, the compilation will complete successfully, but GPU executable code will not be created. In that case, you may obtain the GPU modules from the downloads page. Make sure you get the version with the correct bitness for your build. Due to the design of CUDA, 32-bit modules are not interoperable with 64-bit builds of Electromag and vice-versa.Once you obtain the correct modles, simply copy them in the same folder with the ElectroMag executable.
+
+Normally, all you have to do is cd to the directory and:
+
+cmake .
+make
 
 ===Using Graphics Support===
 
@@ -26,16 +33,10 @@ To compile the graphics module, you will need the following developmental librar
   # GLU
   # freeglut 2.6.0 headers are included in the source distribution
 
-After compiling the Graphics module, you will need to create a symbolic link to "libEMagGraphics.so" (found in ./common/lib after compilation) in /usr/lib for the Graphics module to be loaded by ElectroMag. This is a limitation of how Linux handles dynamic linking, not a limitation of Electromag
+After compiling the Graphics module, you will need to create a symbolic link to "libEMagGraphics.so" (found in ./common/lib after compilation) in /usr/lib for the Graphics module to be loaded by ElectroMag. This is a limitation of how Linux handles dynamic linking, not a limitation of ElectroMag
 
 = Using the Intel C++ compiler =
 
-The Intel C++ compiler is no longer needed to attain optimal performance. You will most likely get the same performance with GCC.
-
-You will first need to edit Config.mk:
-  * uncomment the following line: "include ../Makefile-Intel.mk"
-  * comment out the following line "include ../Makefile-GNU.mk"
-
-Then you will need to edit Makefile-Intel.mk, and make sure that ICL_PATH points to the correct location of the compiler's executable files.
+See cmake documentation
 
 Descend into the root of ElectroMag and type make at a shell.
