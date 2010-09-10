@@ -32,7 +32,7 @@
  * include, in the user documentation and internal comments to the code,
  * the above Disclaimer and U.S. Government End Users Notice.
  */
-// This file contains source code provided by NVIDIA Corporation
+/* This file contains source code provided by NVIDIA Corporation	*/
 
 #include <stdio.h>
 #include "cuda_drvapi_dynlink.h"
@@ -198,11 +198,11 @@ __cuStreamDestroy                *cuStreamDestroy;
     }
 
     #define GET_PROC_LONG(name, ftype, alias)                       \
-        alias = (ftype *)dlsym(CudaDrvLib, #name);                  \
+        alias = (ftype *)(size_t)dlsym(CudaDrvLib, #name);                  \
         if (alias == NULL) return CUDA_ERROR_UNKNOWN
 
     #define GET_PROC(name)                                          \
-        name = (__##name *)dlsym(CudaDrvLib, #name);                 \
+        name = (__##name *)(size_t)dlsym(CudaDrvLib, #name);                 \
         if (name == NULL) return CUDA_ERROR_UNKNOWN
 
 #endif

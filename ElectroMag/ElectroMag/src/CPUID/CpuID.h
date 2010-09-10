@@ -24,7 +24,7 @@ namespace CPUID
 {
 enum CPUIDInfoType
 {
-	String = 0, FeatureSupport = 1,
+	String = 0, FeatureSupport = 1
 
 };
 struct CpuidString

@@ -932,7 +932,7 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
 		// Intentionally starts from 1, since step 0 is reserved for the starting points
 		for(__int64 step = 1; step < totalSteps; step++)
 		{
-#			pragma unroll
+//#			pragma unroll
 			for(size_t i = 0; i < LINES_PARRALELISM; i++)
 				Accum[i].x = Accum[i].y = Accum[i].z = zero;
 
@@ -975,7 +975,7 @@ int CalcField_CPU_T_Curvature<float>(Array<Vector3<float> >& fieldLines, Array<p
              * pLines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
              * prevVec = temp;
              */
-#			pragma unroll
+//#			pragma unroll
             for(size_t i = 0; i < LINES_PARRALELISM; i++)
             {
             // T k = vec3LenSq(temp);

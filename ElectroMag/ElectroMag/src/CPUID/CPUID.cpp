@@ -39,11 +39,11 @@ void GetCpuidString(CpuidString *stringStruct)
 	stringStruct->CPUInfo[1] = info[1];
 	stringStruct->CPUInfo[2] = info[3];// 2->3 not an error
 	stringStruct->CPUInfo[3] = info[2];// 3->2 not an error
-};
+}
 
 void GetCpuidFeatures(CpuidFeatures *featureStruct)
 {
 	__cpuid(featureStruct->CPUInfo, FeatureSupport);
-};
+}
 
 }//namespace CPUID

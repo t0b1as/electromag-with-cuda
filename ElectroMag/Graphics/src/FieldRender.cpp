@@ -57,7 +57,7 @@ FieldRender::FieldRender()
 	nrLinesVBO = 0;
 	perfGFLOP = 0;
 	this->dataBound = false;
-};
+}
 
 FieldRender::~FieldRender()
 {
@@ -189,7 +189,7 @@ void FieldRender::fieldDisplay()
 
 	// Flush the buffer to ensure everything is displayed correctly
 	glutSwapBuffers();
-};
+}
 
 void FieldRender::Start()
 {
@@ -274,7 +274,7 @@ void FieldRender::Start()
 	QueryHPCFrequency(&HPCfreq);
 	// Now that data initialization is complete, start glut
 	glutMainLoop();
-};
+}
 
 void FieldRender::GLInit()
 {
@@ -307,13 +307,13 @@ void FieldRender::GLInit()
 	// start GLEW
 	glewInit();
 	VBOsupported = glewIsSupported("GL_ARB_vertex_buffer_object");		
-};
+}
 
 void FieldRender::reshape(int w, int h)
 {
 	winDim.x = w; winDim.y = h;
 	glViewport(0, 0 , w, h);
-};
+}
 
 void FieldRender::keyboard(unsigned char key, int x, int y)
 {
@@ -518,7 +518,7 @@ void FieldRender::fieldDisplayVBO()
 
 	// Flush the buffer to ensure everything is displayed correctly
 	glutSwapBuffers();
-};
+}
 
 void FieldRender::AsyncStartFunc()
 {

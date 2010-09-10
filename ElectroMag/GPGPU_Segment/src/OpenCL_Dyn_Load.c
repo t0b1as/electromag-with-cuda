@@ -136,7 +136,7 @@ __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
     }
 
     #define GET_PROC(name)                                          \
-        name = (__##name *)dlsym(ClLib, #name);                 \
+        name = (__##name *)(size_t)dlsym(ClLib, #name);                 \
         if (name == NULL) return CL_DEVICE_NOT_AVAILABLE
 
 #endif

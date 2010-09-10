@@ -39,7 +39,7 @@ int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<flo
 	return retVal;
 
 	/**/
-};
+}
 
 int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
         size_t n, double resolution, perfPacket& perfData, bool useCurvature)
@@ -54,7 +54,7 @@ int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<do
 	return retVal;
 
 	/**/
-};
+}
 
 
 

@@ -434,6 +434,6 @@ private:
 
 extern ClManager GlobalClManager;
 
-};// Namespace OpenCL
+}// Namespace OpenCL
 
 
