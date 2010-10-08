@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 2.8)
 # credit to kicad project
 # Non gcc users sorry. You will have to set the compiler flags manually
 # Intel compiler users see Makefile-Intel.mk for options I used in the old days
-#	However, the code is optimized, and either compiler will produce optimal results
-#	So, just use GCC to avoid headaches
+#   However, the code is optimized, and either compiler will produce optimal results
+#   So, just use GCC to avoid headaches
 #
 # NOTE: You will most likely want these flags set for any meaningful performance
 # The code in electromag is optimized to take advantage of SSE, and avoid use of SSE
