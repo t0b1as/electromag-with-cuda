@@ -44,7 +44,7 @@ size_t FieldRender::lineSkip;
 size_t FieldRender::RenderData::bufferedLines;
 double FieldRender::perfGFLOP;
 
-static __int64 HPCfreq;
+static long long HPCfreq;
 // DEBUG
 
 Vector2<GLint> winDim = {250, 250};
@@ -97,8 +97,8 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 	PrintGlutString(perf, GLUT_BITMAP_HELVETICA_12, 20, 105);
 
 	// Compute and print FPS
-	static __int64 start = 0;
-	static __int64 end = 0;
+	static long long start = 0;
+	static long long end = 0;
 	static size_t frames = 0;
 	static char fps[32];
 	QueryHPCTimer(&end);

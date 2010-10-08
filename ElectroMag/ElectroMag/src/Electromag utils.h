@@ -29,109 +29,109 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 typedef void* ArrayHandle;
 
 template<class T>
-void InitializeFieldLineArray(Array<Vector3<T> > &arrMain,								///< Pointer to the array to initialize
-						 const size_t n,												///< Number of field lines in the array
-						 const size_t width, const size_t height, const size_t depth,	///< Distribution of array
-						 bool random													///< Initialize randomly, or in a grid if false
-						 )
+void InitializeFieldLineArray ( Array<Vector3<T> > &arrMain,                                ///< Pointer to the array to initialize
+                                const size_t n,                                             ///< Number of field lines in the array
+                                const size_t width, const size_t height, const size_t depth,///< Distribution of array
+                                bool random                                                 ///< Initialize randomly, or in a grid if false
+                              )
 {
-	// Initialize field line grid
-	if(random)
-	{
-		__int64 pseudoSeed; QueryHPCTimer(&pseudoSeed);
-		srand(pseudoSeed%RAND_MAX);
-		// Random Filed line initialization
-		for(size_t i = 0; i < n ; i++)
-		{
-			arrMain[i].x = (T)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-			arrMain[i].y = (T)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-			arrMain[i].z = (T)(rand()-RAND_MAX/2)/RAND_MAX*10000;
-		}
-	}
-	else
-	{
-		T zVal = (T)(-((T)depth)/2 + 1E-5);
-		for(size_t k = 0; k < depth; k++, zVal++)// z coord
-		{
-			T yVal = (T)(-((T)height)/2 + 1E-5);
-			for(size_t j = 0; j < height; j++, yVal++)// y coord
-			{
-				T xVal = (T)(-((T)width)/2 + 1E-5);
-				for(size_t i = 0; i < width; i++, xVal++)// x coord
-				{
-					arrMain[k*width*height + j*width + i].x = (T) 10*xVal;
-					arrMain[k*width*height + j*width + i].y = (T) 10*yVal;
-					arrMain[k*width*height + j*width + i].z = (T) 10*zVal;
-				}
-			}
-		}
-	}
+    // Initialize field line grid
+    if ( random )
+    {
+        long long pseudoSeed; QueryHPCTimer ( &pseudoSeed );
+        srand ( pseudoSeed%RAND_MAX );
+        // Random Filed line initialization
+        for ( size_t i = 0; i < n ; i++ )
+        {
+            arrMain[i].x = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+            arrMain[i].y = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+            arrMain[i].z = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+        }
+    }
+    else
+    {
+        T zVal = ( T ) ( - ( ( T ) depth ) /2 + 1E-5 );
+        for ( size_t k = 0; k < depth; k++, zVal++ ) // z coord
+        {
+            T yVal = ( T ) ( - ( ( T ) height ) /2 + 1E-5 );
+            for ( size_t j = 0; j < height; j++, yVal++ ) // y coord
+            {
+                T xVal = ( T ) ( - ( ( T ) width ) /2 + 1E-5 );
+                for ( size_t i = 0; i < width; i++, xVal++ ) // x coord
+                {
+                    arrMain[k*width*height + j*width + i].x = ( T ) 10*xVal;
+                    arrMain[k*width*height + j*width + i].y = ( T ) 10*yVal;
+                    arrMain[k*width*height + j*width + i].z = ( T ) 10*zVal;
+                }
+            }
+        }
+    }
 }
 
 template<class T1, class T2>
-void CopyFieldLineArray(Array<Vector3<T1> >& destination,	///< Destination array
-			   Array<Vector3<T2> >& source,			///< Source array
-			   size_t start,						///< Index of first element to copy
-			   size_t elements						///< Number of elements to copy
-			   )
+void CopyFieldLineArray ( Array<Vector3<T1> >& destination, ///< Destination array
+                          Array<Vector3<T2> >& source,          ///< Source array
+                          size_t start,                     ///< Index of first element to copy
+                          size_t elements                       ///< Number of elements to copy
+                        )
 {
-	for(size_t i = start; i < elements; i++)
-	{
-		Vector3<T2> srcVec = source[i];
-		Vector3<T1> destVec;
-		destVec.x = (T1)srcVec.x;
-		destVec.y = (T1)srcVec.y;
-		destVec.z = (T1)srcVec.z;
-		destination[i] = destVec;
-	}
+    for ( size_t i = start; i < elements; i++ )
+    {
+        Vector3<T2> srcVec = source[i];
+        Vector3<T1> destVec;
+        destVec.x = ( T1 ) srcVec.x;
+        destVec.y = ( T1 ) srcVec.y;
+        destVec.z = ( T1 ) srcVec.z;
+        destination[i] = destVec;
+    }
 }
 
 template<class T>
-void InitializePointChargeArray(Array<electro::pointCharge<T> > &charges,
-								size_t lenght,
-								bool random)
+void InitializePointChargeArray ( Array<electro::pointCharge<T> > &charges,
+                                  size_t lenght,
+                                  bool random )
 {
-	__int64 pseudoSeed; QueryHPCTimer(&pseudoSeed);
-	if (random) srand(pseudoSeed%RAND_MAX);
-	else srand(1);
-	// Initialize values
-	for(size_t i = 0; i < lenght ; i++)
-	{
-		charges[i].position.x = (T)(rand()-(T)RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].position.y = (T)(rand()-(T)RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].position.z = (T)(rand()-(T)RAND_MAX/2)/RAND_MAX*10000;//(FPprecision)i + 1;
-		charges[i].magnitude  = (T)(rand()-(T)RAND_MAX/10)/RAND_MAX; //0.001f;
-	}
+    long long pseudoSeed; QueryHPCTimer ( &pseudoSeed );
+    if ( random ) srand ( pseudoSeed%RAND_MAX );
+    else srand ( 1 );
+    // Initialize values
+    for ( size_t i = 0; i < lenght ; i++ )
+    {
+        charges[i].position.x = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
+        charges[i].position.y = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
+        charges[i].position.z = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
+        charges[i].magnitude  = ( T ) ( rand()- ( T ) RAND_MAX/10 ) /RAND_MAX; //0.001f;
+    }
 }
 
 template<class T1, class T2>
-void CopyPointChargeArray(Array<electro::pointCharge<T1> >& destination,	///< Destination array
-			   Array<electro::pointCharge<T2> >& source,			///< Source array
-			   size_t start,						///< Index of first element to copy
-			   size_t elements						///< Number of elements to copy
-			   )
+void CopyPointChargeArray ( Array<electro::pointCharge<T1> >& destination,  ///< Destination array
+                            Array<electro::pointCharge<T2> >& source,           ///< Source array
+                            size_t start,                       ///< Index of first element to copy
+                            size_t elements                     ///< Number of elements to copy
+                          )
 {
-	for(size_t i = start; i < elements; i++)
-	{
-		electro::pointCharge<T2> src = source[i];
-		electro::pointCharge<T1> dest;
-		dest.position.x = (T1)src.position.x;
-		dest.position.y = (T1)src.position.y;
-		dest.position.z = (T1)src.position.z;
-		dest.magnitude  = (T1)src.magnitude;
-		destination[i] = dest;
-	}
+    for ( size_t i = start; i < elements; i++ )
+    {
+        electro::pointCharge<T2> src = source[i];
+        electro::pointCharge<T1> dest;
+        dest.position.x = ( T1 ) src.position.x;
+        dest.position.y = ( T1 ) src.position.y;
+        dest.position.z = ( T1 ) src.position.z;
+        dest.magnitude  = ( T1 ) src.magnitude;
+        destination[i] = dest;
+    }
 }
 
-void MonitorProgressConsole(volatile double * progress)
+void MonitorProgressConsole ( volatile double * progress )
 {
-    const double step = (double)1/60;
+    const double step = ( double ) 1/60;
     std::cout<<"[__________________________________________________________]"<<std::endl;
-    for(double next=step; next < (1.0 - 1E-3); next += step)
+    for ( double next=step; next < ( 1.0 - 1E-3 ); next += step )
     {
-        while(*progress < next)
+        while ( *progress < next )
         {
-            Threads::Pause(250);
+            Threads::Pause ( 250 );
         }
         std::cout<<".";
         // Flush to make sure progress indicator is displayed immediately
@@ -142,9 +142,9 @@ void MonitorProgressConsole(volatile double * progress)
 
 }
 
-void StartConsoleMonitoring(volatile double * progress)
+void StartConsoleMonitoring ( volatile double * progress )
 {
     Threads::ThreadHandle hThread;
-    Threads::CreateNewThread((unsigned long (*)(void*))MonitorProgressConsole, (void *)progress, &hThread);
+    Threads::CreateNewThread ( ( unsigned long ( * ) ( void* ) ) MonitorProgressConsole, ( void * ) progress, &hThread );
 }
 #endif//_ELECTROMAG_UTILS_H
