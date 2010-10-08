@@ -1,6 +1,8 @@
 #================================================
 # CMake declarations for GPGPU_Segment
 #================================================
+
+# Host source files
 set(GPGPU_SRCS
     src/Abstract_Functor.cpp
     src/CL_Electrostatics.cpp
@@ -9,14 +11,14 @@ set(GPGPU_SRCS
     src/CUDA_manager.cpp
     src/Electrostatics.cpp
     src/cuda_drvapi_dynlink.c
-	src/OpenCL_Dyn_Load.c
+    src/OpenCL_Dyn_Load.c
 )
 
 
 	add_library( GPGPU_Segment STATIC
 			${GPGPU_SRCS})
 
-
+#GPU source files
 set(CUDA_SRCS
 	src/Electrostatics.cu
 	src/Electrostatics_Multistep.cu
@@ -58,6 +60,6 @@ IF(CUDA_FOUND)
 				${generated_cubin_files})
 
 
-ELSE(CUDA_FOUND)
+ELSE()
 	MESSAGE("CUDA toolkit not found. Not building GPU code.")
-ENDIF(CUDA_FOUND)
+ENDIF()

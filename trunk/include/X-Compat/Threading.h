@@ -36,28 +36,28 @@ typedef HANDLE ThreadHandle;
 // Thread management
 inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *hThread, unsigned long *threadID =0)
 {
-	unsigned long tempID;
-	ThreadHandle temp = CreateThread(0,0, (LPTHREAD_START_ROUTINE)startRoutine, parameters, 0, &tempID);
-	if(hThread) *hThread = temp;
-	if(threadID) *threadID = tempID;
+    unsigned long tempID;
+    ThreadHandle temp = CreateThread(0,0, (LPTHREAD_START_ROUTINE)startRoutine, parameters, 0, &tempID);
+    if (hThread) *hThread = temp;
+    if (threadID) *threadID = tempID;
 };
 
 inline unsigned long WaitForThread(ThreadHandle hThread)
 {
-	DWORD exitCode;
-	WaitForSingleObject(hThread, INFINITE);
-	GetExitCodeThread(hThread, &exitCode);
-	return (unsigned long) exitCode;
+    DWORD exitCode;
+    WaitForSingleObject(hThread, INFINITE);
+    GetExitCodeThread(hThread, &exitCode);
+    return (unsigned long) exitCode;
 };
 inline void KillThread(ThreadHandle hThread)
 {
-	TerminateThread(hThread, NULL);
+    TerminateThread(hThread, NULL);
 };
 
 
 inline void Pause(unsigned int miliseconds)
 {
-	Sleep(miliseconds);
+    Sleep(miliseconds);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,28 +72,28 @@ inline void Pause(unsigned int miliseconds)
 #pragma pack(push,8)
 typedef struct tagTHREADNAME_INFO
 {
-   DWORD dwType; // Must be 0x1000.
-   LPCSTR szName; // Pointer to name (in user addr space).
-   DWORD dwThreadID; // Thread ID (-1=caller thread).
-   DWORD dwFlags; // Reserved for future use, must be zero.
+    DWORD dwType; // Must be 0x1000.
+    LPCSTR szName; // Pointer to name (in user addr space).
+    DWORD dwThreadID; // Thread ID (-1=caller thread).
+    DWORD dwFlags; // Reserved for future use, must be zero.
 } THREADNAME_INFO;
 #pragma pack(pop)
 
 inline void SetThreadName( DWORD dwThreadID, char* threadName)
 {
-   THREADNAME_INFO info;
-   info.dwType = 0x1000;
-   info.szName = threadName;
-   info.dwThreadID = dwThreadID;
-   info.dwFlags = 0;
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = threadName;
+    info.dwThreadID = dwThreadID;
+    info.dwFlags = 0;
 
-   __try
-   {
-      RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
-   }
-   __except(EXCEPTION_EXECUTE_HANDLER)
-   {
-   }
+    __try
+    {
+        RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
 }
 #else
 // For compilers that do not know the __try/__except syntax, such as Cygwin and MinGW
@@ -106,29 +106,29 @@ inline void SetThreadName( DWORD dwThreadID, char* threadName)
 ///\brief Mutex Management
 ////////////////////////////////////////////////////////////////////////////////////////////////
 typedef HANDLE MutexHandle;
-#undef CreateMutex	///FIXME: name collision
+#undef CreateMutex  ///FIXME: name collision
 
 /// Creates a Mutex
 inline void CreateMutex(MutexHandle *hMutex)
 {
-	*hMutex = CreateMutexW(NULL, NULL, NULL);
+    *hMutex = CreateMutexW(NULL, NULL, NULL);
 };
 
 /// Destroys hMutex
 inline void DestroyMutex(MutexHandle hMutex)
 {
-	CloseHandle(hMutex);
+    CloseHandle(hMutex);
 };
 
 /// Locks hMutex
 inline void LockMutex(MutexHandle hMutex)
 {
-	WaitForSingleObject(hMutex, INFINITE);
+    WaitForSingleObject(hMutex, INFINITE);
 };
 /// Unlocks hMutex
 inline void UnlockMutex(MutexHandle hMutex)
 {
-	ReleaseMutex(hMutex);
+    ReleaseMutex(hMutex);
 };
 
 #elif defined(__unix__)
@@ -140,26 +140,26 @@ namespace Threads
 typedef pthread_t ThreadHandle;
 inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *hThread, unsigned long *threadID =0)
 {
-	ThreadHandle temp;
-	pthread_create(&temp, 0, (void* (*)(void *))startRoutine, parameters);
-	if(hThread) *hThread = temp;
+    ThreadHandle temp;
+    pthread_create(&temp, 0, (void* (*)(void *))startRoutine, parameters);
+    if (hThread) *hThread = temp;
 }
 
 inline unsigned long WaitForThread(ThreadHandle hThread)
 {
-	unsigned long* pExitCode;
-	pthread_join(hThread, (void**)&pExitCode);
-	return *pExitCode;
+    unsigned long* pExitCode;
+    pthread_join(hThread, (void**)&pExitCode);
+    return *pExitCode;
 }
 
 inline void KillThread(ThreadHandle hThread)
 {
-	pthread_cancel(hThread);
+    pthread_cancel(hThread);
 }
 
 inline void Pause(unsigned int miliseconds)
 {
-	usleep(miliseconds*1000);
+    usleep(miliseconds*1000);
 }
 
 inline void SetThreadName( unsigned long threadID, const char* threadName)
@@ -181,18 +181,18 @@ inline void CreateMutex(MutexHandle *hMutex)
 /// Destroys hMutex
 inline void DestroyMutex(MutexHandle hMutex)
 {
-	pthread_mutex_destroy(&hMutex);
+    pthread_mutex_destroy(&hMutex);
 }
 
 /// Locks hMutex
 inline void LockMutex(MutexHandle &hMutex)
 {
-	pthread_mutex_lock(&hMutex);
+    pthread_mutex_lock(&hMutex);
 }
 /// Unlocks hMutex
 inline void UnlockMutex(MutexHandle &hMutex)
 {
-	pthread_mutex_unlock(&hMutex);
+    pthread_mutex_unlock(&hMutex);
 }
 #else
 #error Compilation platform not found or not supported. Define _WIN32 or _WIN64 or __unix__ to select a platform.
