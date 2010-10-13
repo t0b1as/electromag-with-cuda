@@ -30,29 +30,29 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 
 int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
-			  size_t n, float resolution,  perfPacket& perfData, bool useCurvature = false);
+              size_t n, float resolution,  perfPacket& perfData, bool useCurvature = false);
 int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
-			  size_t n, double resolution,  perfPacket& perfData, bool useCurvature = false);
+              size_t n, double resolution,  perfPacket& perfData, bool useCurvature = false);
 
 // This allows us to readibly keep track of timing information within wrappers
 // NOTE: any change here, and all sources should be recompiled to be on the safe side
 enum CalcField_timingSteps
 {
-	xySize,			///< Size in bytes of xy components
-	zSize,			///< Size in bytes of z components
-	kernelLoad,		///< Time for loading the kernel module
-	kernelExec,		///< Time for kernel execution
-	resAlloc,		///< Time for allocating resources, including device and host memory
-	xyHtoH,			///< Time for transferring xy componens from main array to page-locked memory
-	xyHtoD,			///< Time for transferring xy componens from page-locked memory to device
-	zHtoH,			///< Time for transferring z  componens from main array to page-locked memory
-	zHtoD,			///< Time for transferring z  componens from page-locked memory to device
-	xyDtoH,			///< Time for transferring xy componens from device to page-locked memory
-	xyHtoHb,		///< Time for transferring xy componens from page-locked memory to main array
-	zDtoH,			///< Time for transferring z  componens from device to page-locked memory
-	zHtoHb,			///< Time for transferring z  componens from page-locked memory to main array
-	mFree,			///< Time for freeing page-locked and device memory
-	timingSize		///< Total number of timing/performance parameters
+    xySize,         ///< Size in bytes of xy components
+    zSize,          ///< Size in bytes of z components
+    kernelLoad,     ///< Time for loading the kernel module
+    kernelExec,     ///< Time for kernel execution
+    resAlloc,       ///< Time for allocating resources, including device and host memory
+    xyHtoH,         ///< Time for transferring xy componens from main array to page-locked memory
+    xyHtoD,         ///< Time for transferring xy componens from page-locked memory to device
+    zHtoH,          ///< Time for transferring z  componens from main array to page-locked memory
+    zHtoD,          ///< Time for transferring z  componens from page-locked memory to device
+    xyDtoH,         ///< Time for transferring xy componens from device to page-locked memory
+    xyHtoHb,        ///< Time for transferring xy componens from page-locked memory to main array
+    zDtoH,          ///< Time for transferring z  componens from device to page-locked memory
+    zHtoHb,         ///< Time for transferring z  componens from page-locked memory to main array
+    mFree,          ///< Time for freeing page-locked and device memory
+    timingSize      ///< Total number of timing/performance parameters
 };
 
 #endif//_CUDA_INTEROP_H

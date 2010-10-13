@@ -45,13 +45,13 @@ struct RendererCommData
 {
     void *commData;
 };
-class EMAG_APIENTRY Renderer	//abstract
+class EMAG_APIENTRY Renderer    //abstract
 {
 public:
-	//Renderer(){};
-	//virtual ~Renderer(){};
-	virtual void Init()=0;
-	virtual void Draw()=0;
+    //Renderer(){};
+    //virtual ~Renderer(){};
+    virtual void Init()=0;
+    virtual void Draw()=0;
     /// Creates a new thread that starts the renderer asynchronously
     virtual void StartAsync() = 0;
     /// Kills the renderer thread
@@ -59,7 +59,7 @@ public:
     /// Allows sending message and data to the renderer
     /// The exact form of the data is implementation-defined
     virtual void SendMessage(RendererCommData * messageData) = 0;
-protected:  
+protected:
     /// Pure function that can initialize the renderer asynchronously
     virtual void AsyncStartFunc() = 0;
 };

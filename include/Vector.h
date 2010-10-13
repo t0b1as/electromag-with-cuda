@@ -27,40 +27,40 @@ namespace Vector
 template <class T>
 struct Vector2
 {
-	T x, y;
+    T x, y;
 };
 
 #ifndef __CUDACC__
 template <class T>
 struct Vector3
 {
-	T x, y, z;
+    T x, y, z;
 };
 #else
 template <class T>
 struct Vector3
 {
-	union
-	{
-		Vector2<T> xy;
-		struct
-		{
-			T x, y;
-		};
-	};
-	T z;
+    union
+    {
+        Vector2<T> xy;
+        struct
+        {
+            T x, y;
+        };
+    };
+    T z;
 };
 /* // Warning: the specialization causes GPU kernel execution to terminate with unknown error
 // Explicit structure alignment
 template<>
 struct __align__(8) Vector2<float>
 {
-	float x, y;
+    float x, y;
 };
 template<>
 struct __align__(16) Vector2<double>
 {
-	double x, y;
+    double x, y;
 };
 */
 #endif
@@ -68,8 +68,8 @@ struct __align__(16) Vector2<double>
 template<class T>
 struct Vec3SOA
 {
-	Vector2<T>* xyInterleaved;
-	T* z;
+    Vector2<T>* xyInterleaved;
+    T* z;
 };
 
 /*=============================================================================
@@ -78,31 +78,33 @@ C++ style vector functions and operators
 template <class T>
 __device__ inline void operator += (Vector3<T> &rhs, /*const*/ Vector3<T> b)
 {
-	rhs.x += b.x; rhs.y += b.y; rhs.z += b.z;		// 3 FLOPs
+    rhs.x += b.x;
+    rhs.y += b.y;
+    rhs.z += b.z;       // 3 FLOPs
 }
 
 template <class T>
 __device__ inline Vector3<T> operator + (const Vector3<T> A, const Vector3<T> B)
 {
-	return vec3Add(A, B);			// 3 FLOPs
+    return vec3Add(A, B);           // 3 FLOPs
 }
 
 template <class T>
 __device__ inline Vector3<T> operator - (const Vector3<T> A, const Vector3<T> B)
 {
-	return vec3Sub(A, B);			// 3 FLOPs
+    return vec3Sub(A, B);           // 3 FLOPs
 }
 
 template <class T>
 __device__ inline Vector3<T> operator * (Vector3<T> vec, T scalar)
 {
-	return vec3Mul(vec, scalar);	// 3 FLOPs
+    return vec3Mul(vec, scalar);    // 3 FLOPs
 }
 
 template <class T>
 __device__ inline Vector3<T> operator / (Vector3<T> vec, T scalar)
 {
-	return vec3Div(vec, scalar);	// 3 FLOPs
+    return vec3Div(vec, scalar);    // 3 FLOPs
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,86 +116,88 @@ __device__ inline Vector3<T> operator / (Vector3<T> vec, T scalar)
 template<class T>
 __device__ inline Vector3<T> vec3(Vector3<T> head, Vector3<T> tail)
 {
-	Vector3<T> result = {head.x-tail.x, head.y-tail.y, head.z-tail.z};
-	return result;	// 3 FLOPs
+    Vector3<T> result = {head.x-tail.x, head.y-tail.y, head.z-tail.z};
+    return result;  // 3 FLOPs
 }
 template <class T>
 __device__ inline void vec3Addto(Vector3<T>& rhs, const Vector3<T> b)
 {
-	rhs.x += b.x; rhs.y += b.y; rhs.z += b.z;		// 3 FLOPs
+    rhs.x += b.x;
+    rhs.y += b.y;
+    rhs.z += b.z;       // 3 FLOPs
 }
 template <class T>
 __device__ inline Vector3<T> vec3Add(Vector3<T> A, Vector3<T> B)
 {
-	Vector3<T> result;
-	result.x = A.x + B.x;
-	result.y = A.y + B.y;
-	result.z = A.z + B.z;
-	return result;	// 3 FLOPs
+    Vector3<T> result;
+    result.x = A.x + B.x;
+    result.y = A.y + B.y;
+    result.z = A.z + B.z;
+    return result;  // 3 FLOPs
 }
 template <class T>
 __device__ inline Vector3<T> vec3Sub(Vector3<T> A, Vector3<T> B)
 {
-	Vector3<T> result;
-	result.x = A.x - B.x;
-	result.y = A.y - B.y;
-	result.z = A.z - B.z;
-	return result;	// 3 FLOPs
+    Vector3<T> result;
+    result.x = A.x - B.x;
+    result.y = A.y - B.y;
+    result.z = A.z - B.z;
+    return result;  // 3 FLOPs
 }
 template <class T>
 __device__ inline Vector3<T> vec3Mul(Vector3<T> vec, T scalar)
 {
-	Vector3<T> result;
-	result.x = vec.x*scalar;
-	result.y = vec.y*scalar;
-	result.z = vec.z*scalar;
-	return result;	// 3 FLOPs
+    Vector3<T> result;
+    result.x = vec.x*scalar;
+    result.y = vec.y*scalar;
+    result.z = vec.z*scalar;
+    return result;  // 3 FLOPs
 }
 template <class T>
 __device__ inline Vector3<T> vec3Div(Vector3<T> vec, T scalar)
 {
-	Vector3<T> result;
-	result.x = vec.x/scalar;
-	result.y = vec.y/scalar;
-	result.z = vec.z/scalar;
-	return result;	// 3 FLOPs
+    Vector3<T> result;
+    result.x = vec.x/scalar;
+    result.y = vec.y/scalar;
+    result.z = vec.z/scalar;
+    return result;  // 3 FLOPs
 }
 
 template <class T>
 __device__ inline Vector3<T> vec3Unit(Vector3<T> vec)
 {
-	T len = vec3Len(vec);									// 6 FLOPs
-	Vector3<T> result = {vec.x/len, vec.y/len, vec.z/len};	// 3 FLOPs
-	return result;										// Total: 9 FLOPs
+    T len = vec3Len(vec);                                   // 6 FLOPs
+    Vector3<T> result = {vec.x/len, vec.y/len, vec.z/len};  // 3 FLOPs
+    return result;                                      // Total: 9 FLOPs
 }
 // Saves 2 FLOPs when taking the unit of a vector and multiplying it by a scalar
 template <class T>
 __device__ inline Vector3<T> vec3SetLen(Vector3<T> vec, T scalarLen)
 {
-	T len = vec3Len(vec);									// 6 FLOPs
-	scalarLen /= len;										// 1 FLOP
-	return vec3Mul(vec, scalarLen);							// 3 FLOPs
-	// Total: 10 FLOPs
+    T len = vec3Len(vec);                                   // 6 FLOPs
+    scalarLen /= len;                                       // 1 FLOP
+    return vec3Mul(vec, scalarLen);                         // 3 FLOPs
+    // Total: 10 FLOPs
 }
 // Same as above, but works by dividing by len rather than multiplying
 template <class T>
 __device__ inline Vector3<T> vec3SetInvLen(Vector3<T> vec, T scalarInvLen)
 {
-	T len = vec3Len(vec);										// 6 FLOPs
-	scalarInvLen *= len;										// 1 FLOP
-	return vec3Div(vec, scalarInvLen);							// 3 FLOPs
-	// Total: 10 FLOPs
+    T len = vec3Len(vec);                                       // 6 FLOPs
+    scalarInvLen *= len;                                        // 1 FLOP
+    return vec3Div(vec, scalarInvLen);                          // 3 FLOPs
+    // Total: 10 FLOPs
 }
 
 template <class T>
 __device__ inline T vec3LenSq(Vector3<T> vec)
 {
-	return (vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);		// 5 FLOPs
+    return (vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);       // 5 FLOPs
 }
 template <class T>
 __device__ inline T vec3Len(Vector3<T> vec)
 {
-	return sqrt(vec3LenSq(vec));							// 6 FLOPs
+    return sqrt(vec3LenSq(vec));                            // 6 FLOPs
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,8 +207,8 @@ __device__ inline T vec3Len(Vector3<T> vec)
 template <class T>
 __device__ inline T vec3Dot(const Vector3<T> A, const Vector3<T> B)
 {
-	return (A.x * B.x + A.y * B.y + A.z * B.z);
-}						// Total: 5 FLOPs
+    return (A.x * B.x + A.y * B.y + A.z * B.z);
+}                       // Total: 5 FLOPs
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Returns the cross product of two vectors
@@ -213,11 +217,11 @@ __device__ inline T vec3Dot(const Vector3<T> A, const Vector3<T> B)
 template <class T>
 __device__ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>middle)
 {
-	Vector3<T> result;
-	result.x = index.y * middle.z - index.z * middle.y;		// 3 FLOPs
-	result.y = index.z * middle.x - index.x * middle.z;		// 3 FLOPs
-	result.z = index.x * middle.y - index.y * middle.x;		// 3 FLOPs
-	return result;							// Total: 9 FLOPs
+    Vector3<T> result;
+    result.x = index.y * middle.z - index.z * middle.y;     // 3 FLOPs
+    result.y = index.z * middle.x - index.x * middle.z;     // 3 FLOPs
+    result.z = index.x * middle.y - index.y * middle.x;     // 3 FLOPs
+    return result;                          // Total: 9 FLOPs
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///@}
@@ -234,31 +238,31 @@ __device__ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>m
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 __device__ inline Vector3<T> vec3RotationOrthoNormal(
-							   const Vector3<T> r,		///< The vector to rotate
-							   const Vector3<T> side,	///< The normalized direction in which to rotate the vector
-							   const T angle					///< The angle of rotation in radians
-							   )
+    const Vector3<T> r,     ///< The vector to rotate
+    const Vector3<T> side,  ///< The normalized direction in which to rotate the vector
+    const T angle                   ///< The angle of rotation in radians
+)
 {
-	// A vector can be rotated in a plane by using the orthogonal versors r^, and s^
-	// The rotated vector can be computed as <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
-	// Since |<r>| * r^ is <r>, the formula can be simplified to:
-	// <rRot> = |<r>|*sin(a)*s^ + <r> *cos(a)
-	Vector3<T> rRot = side * (vec3Len(r) * sin(angle)) + r * cos(angle);	// 15 FLOPs: 6len + (1 sin + 1 mul) + 3 mul + 1 cos + 3 mul
-	return rRot;					// Total: 15FLOP
+    // A vector can be rotated in a plane by using the orthogonal versors r^, and s^
+    // The rotated vector can be computed as <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
+    // Since |<r>| * r^ is <r>, the formula can be simplified to:
+    // <rRot> = |<r>|*sin(a)*s^ + <r> *cos(a)
+    Vector3<T> rRot = side * (vec3Len(r) * sin(angle)) + r * cos(angle);    // 15 FLOPs: 6len + (1 sin + 1 mul) + 3 mul + 1 cos + 3 mul
+    return rRot;                    // Total: 15FLOP
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief returns the inverse square of the vector
 ///
 /// Computes the inverse square vector r^ /r^2, or <r>/r^3 (which are mathematically equivalent)
-///		as needed by the Inverse Square Law
+///     as needed by the Inverse Square Law
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 __device__ inline Vector3<T> vec3InverseSquare(Vector3<T> r)
 {
-	T lenSq = vec3LenSq(r);				// 5 FLOP
-	return r / (lenSq * sqrt(lenSq));	// 5 FLOP
-						// Total: 10FLOP
+    T lenSq = vec3LenSq(r);             // 5 FLOP
+    return r / (lenSq * sqrt(lenSq));   // 5 FLOP
+    // Total: 10FLOP
 }
 
 // FIXME: not int, size_t

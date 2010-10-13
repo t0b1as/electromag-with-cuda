@@ -15,10 +15,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-GL/glew.h and GL/glut.h are found in the nVidia CUDA SDK
-For Windows, must link to both freeglut.lib, and glew64.lib, and have freeglut.dll and glew64.dll in the application path
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
 #include <GL/glew.h>
 #include "GL/freeglut.h"
 #include "GL/glutExtra.h"

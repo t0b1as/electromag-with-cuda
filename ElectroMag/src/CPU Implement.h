@@ -26,7 +26,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 
 template<class T>
 int CalcField_CPU(Array<Vector3<T> >& fieldLines, Array<electro::pointCharge<T> >& pointCharges,
-			  const size_t n, T resolution, perfPacket& perfData, bool useCurvature = false);
+                  const size_t n, T resolution, perfPacket& perfData, bool useCurvature = false);
 
 #endif//_CPU_IMPLEMENT_H
 

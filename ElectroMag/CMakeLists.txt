@@ -15,4 +15,4 @@ add_executable(ElectroMag
     )
 
 target_link_libraries(ElectroMag
-				GPGPU_Segment  ${CMAKE_DL_LIBS})
+                GPGPU_Segment  ${CMAKE_DL_LIBS})

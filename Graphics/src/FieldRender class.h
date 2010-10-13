@@ -34,92 +34,93 @@ using namespace FieldRenderer;
 class FieldRender: public GLRenderer
 {
 private:
-	static FieldRenderer::GLpacket GLdata;
-	static ProjectionMode PM;
-	static Camera mainCam;
-	static size_t lineSkip;
-	// performance of calculations;
-	static double perfGFLOP;
-	void GLInit();
-	/*static*/ struct RenderData
-	{
-		static size_t bufferedLines;
-	};
+    static FieldRenderer::GLpacket GLdata;
+    static ProjectionMode PM;
+    static Camera mainCam;
+    static size_t lineSkip;
+    // performance of calculations;
+    static double perfGFLOP;
+    void GLInit();
+    /*static*/
+    struct RenderData
+    {
+        static size_t bufferedLines;
+    };
 
-	// GL specific data
-	bool VBOsupported;
-	static unsigned int chargesVBO;
-	static unsigned int colorVBO;
-	static unsigned int *linesVBOs;
-	static size_t nrLinesVBO;
-	static float* colors;
+    // GL specific data
+    bool VBOsupported;
+    static unsigned int chargesVBO;
+    static unsigned int colorVBO;
+    static unsigned int *linesVBOs;
+    static size_t nrLinesVBO;
+    static float* colors;
 
     //Data about data
     bool dataBound;
 
     // signals that the renderes has finished
     static volatile bool quitFlag;
-    
+
     void AsyncStartFunc();
 
-	///\brief Message reciever functor
-	///
-	/// Overrides SendMessage from renderer, and passes the message to the message parser
+    ///\brief Message reciever functor
+    ///
+    /// Overrides SendMessage from renderer, and passes the message to the message parser
     void SendMessage(Render::RendererCommData *message);
-	
-	///\brief Message parser functor
-	///
-	/// Parses external messages recieved by SendMessage(Render::RendererCommData *message)
+
+    ///\brief Message parser functor
+    ///
+    /// Parses external messages recieved by SendMessage(Render::RendererCommData *message)
     void SendMessage(FieldRenderer::FieldRenderCommData* message);
 
 public:
-	FieldRender();
+    FieldRender();
 
-	~FieldRender();
-	
-	void Draw()
-	{
-	};
+    ~FieldRender();
 
-	void RenderPacket(FieldRenderer::GLpacket data)
-	{
+    void Draw()
+    {
+    };
+
+    void RenderPacket(FieldRenderer::GLpacket data)
+    {
         this->dataBound = true;
-		GLdata = data;
-	}
+        GLdata = data;
+    }
 
-	void SetLineSkip(size_t skip)
-	{
-		lineSkip = skip?skip:1;
-	}
+    void SetLineSkip(size_t skip)
+    {
+        lineSkip = skip?skip:1;
+    }
 
-	void SetPerfGFLOP(double performance)
-	{
-		perfGFLOP = performance;
-	}
+    void SetPerfGFLOP(double performance)
+    {
+        perfGFLOP = performance;
+    }
 
-	void Start();
+    void Start();
 
 private:
-    
+
     unsigned long AsyncStartFunc(void * parameters);
-    
-	static void fieldDisplay();
-	
-	static void fieldDisplayVBO();
 
-	static void reshape(int w, int h);
+    static void fieldDisplay();
 
-	static void keyboard(unsigned char key, int x, int y);
+    static void fieldDisplayVBO();
 
-	static void mouse(int button, int state, int x, int y);
+    static void reshape(int w, int h);
 
-	static void motion(int x, int y);
+    static void keyboard(unsigned char key, int x, int y);
 
-	static void DrawOverlay();
+    static void mouse(int button, int state, int x, int y);
+
+    static void motion(int x, int y);
+
+    static void DrawOverlay();
 
 };
 
-#ifdef	__cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -128,7 +129,7 @@ extern "C" {
     EMAG_APIENTRY void DeleteFieldRenderer(Render::Renderer* objectToDelete);
 
 
-#ifdef	__cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

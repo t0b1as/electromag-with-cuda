@@ -33,8 +33,8 @@ namespace electro
 template <class T>
 struct pointCharge
 {
-	Vector3<T> position;
-	T magnitude;
+    Vector3<T> position;
+    T magnitude;
 };
 
 #ifdef __CUDACC__
@@ -42,22 +42,22 @@ struct pointCharge
 template <>
 struct __align__(16) pointCharge<float>
 {
-	union
-	{
-		float4 ftype;
-		struct
-		{
-			Vector3<float> position;
-			float magnitude;
-		};
-	};
+    union
+    {
+        float4 ftype;
+        struct
+        {
+            Vector3<float> position;
+            float magnitude;
+        };
+    };
 };
 
 template<>
 struct __align__(16) pointCharge<double>
 {
-	Vector3<double> position;
-	double magnitude;
+    Vector3<double> position;
+    double magnitude;
 };
 #endif
 
@@ -65,24 +65,24 @@ struct __align__(16) pointCharge<double>
 template <class T>
 inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, T electroK)
 {
-	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
-	T lenSq = vec3LenSq(r);								// 5 FLOP
-	return r * (T)electroK * charge.magnitude /	// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq));						// 4 FLOP (1 sqrt + 3 mul,div)
-	// NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
-	// Since we have one division and one multiplication, this should be more efficient due to the
-	// Fact that most architectures perform multiplication way faster than division. Also on some
-	// GPU architectures this yields a more precise result.
-}						// Total: 15 FLOP
+    Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
+    T lenSq = vec3LenSq(r);                             // 5 FLOP
+    return r * (T)electroK * charge.magnitude / // 3 FLOP (vecMul)
+           (lenSq * (T)sqrt(lenSq));                        // 4 FLOP (1 sqrt + 3 mul,div)
+    // NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
+    // Since we have one division and one multiplication, this should be more efficient due to the
+    // Fact that most architectures perform multiplication way faster than division. Also on some
+    // GPU architectures this yields a more precise result.
+}                       // Total: 15 FLOP
 
 template <class T>
 inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 {
-	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
-	T lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, (T)electro_k * charge.magnitude /	// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq)) );						// 4 FLOP (1 sqrt + 3 mul,div)
-}	
+    Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
+    T lenSq = vec3LenSq(r);                             // 5 FLOP
+    return vec3Mul(r, (T)electro_k * charge.magnitude / // 3 FLOP (vecMul)
+                   (lenSq * (T)sqrt(lenSq)) );                      // 4 FLOP (1 sqrt + 3 mul,div)
+}
 
 #if defined(__CUDACC__)
 // Yet another CUDA optimization:
@@ -93,18 +93,18 @@ inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 template <>
 __device__ Vector3<float> PartField(pointCharge<float> charge, Vector3<float> point)
 {
-	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
-	float lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, (float)electro_k * charge.magnitude *	// 3 FLOP (vecMul)
-		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
+    Vector3<float> r = vec3(point, charge.position);        // 3 FLOP
+    float lenSq = vec3LenSq(r);                             // 5 FLOP
+    return vec3Mul(r, (float)electro_k * charge.magnitude * // 3 FLOP (vecMul)
+                   rsqrtf(lenSq) / lenSq );                         // 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
 __device__ Vector3<double> PartField(pointCharge<double> charge, Vector3<double> point)
 {
-	Vector3<double> r = vec3(point, charge.position);			// 3 FLOP
-	double lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, (double)electro_k * charge.magnitude *	// 3 FLOP (vecMul)
-		rsqrt(lenSq) / lenSq );								// 4 FLOP (1 sqrt + 3 mul,div)
+    Vector3<double> r = vec3(point, charge.position);           // 3 FLOP
+    double lenSq = vec3LenSq(r);                                // 5 FLOP
+    return vec3Mul(r, (double)electro_k * charge.magnitude *    // 3 FLOP (vecMul)
+                   rsqrt(lenSq) / lenSq );                              // 4 FLOP (1 sqrt + 3 mul,div)
 };
 #endif
 
@@ -116,12 +116,12 @@ __device__ Vector3<double> PartField(pointCharge<double> charge, Vector3<double>
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 inline __device__ Vector3<T> PartFieldOp(
-		T qSrc,
-		Vector3<T> rInvSq
-		)
+    T qSrc,
+    Vector3<T> rInvSq
+)
 {
-	return (T)electro_k * qSrc * rInvSq;	// 4 FLOP ( 1 mul, 3 vecMul)
-					// Total: 5 FLOP
+    return (T)electro_k * qSrc * rInvSq;    // 4 FLOP ( 1 mul, 3 vecMul)
+    // Total: 5 FLOP
 }
 #define electroPartFieldOpFLOP 5
 
@@ -129,11 +129,11 @@ inline __device__ Vector3<T> PartFieldOp(
 template <class T>
 inline __device__ Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
 {
-	Vector3<T> r = vec3(point, charge.position);		// 3 FLOP
-	T lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, charge.magnitude /				// 3 FLOP (vecMul)
-		(lenSq * (T)sqrt(lenSq)) );						// 3 FLOP (1 sqrt + 2 mul-div)
-}						// Total: 14 FLOP
+    Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
+    T lenSq = vec3LenSq(r);                             // 5 FLOP
+    return vec3Mul(r, charge.magnitude /                // 3 FLOP (vecMul)
+                   (lenSq * (T)sqrt(lenSq)) );                      // 3 FLOP (1 sqrt + 2 mul-div)
+}                       // Total: 14 FLOP
 #define electroPartFieldVecFLOP 14
 
 #if defined(__CUDACC__)
@@ -145,18 +145,18 @@ inline __device__ Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> poin
 template <>
 __device__ Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float> point)
 {
-	Vector3<float> r = vec3(point, charge.position);		// 3 FLOP
-	float lenSq = vec3LenSq(r);								// 5 FLOP
-	return vec3Mul(r, charge.magnitude *					// 3 FLOP (vecMul)
-		rsqrtf(lenSq) / lenSq );							// 4 FLOP (1 sqrt + 3 mul,div)
+    Vector3<float> r = vec3(point, charge.position);        // 3 FLOP
+    float lenSq = vec3LenSq(r);                             // 5 FLOP
+    return vec3Mul(r, charge.magnitude *                    // 3 FLOP (vecMul)
+                   rsqrtf(lenSq) / lenSq );                         // 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
 __device__ Vector3<double> PartFieldVec(pointCharge<double> charge, Vector3<double> point)
 {
-	Vector3<double> r = vec3(point, charge.position);		// 3 FLOP
-	double lenSq = vec3LenSq(r);							// 5 FLOP
-	return vec3Mul(r, charge.magnitude *					// 3 FLOP (vecMul)
-		rsqrt(lenSq) / lenSq );								// 4 FLOP (1 sqrt + 3 mul,div)
+    Vector3<double> r = vec3(point, charge.position);       // 3 FLOP
+    double lenSq = vec3LenSq(r);                            // 5 FLOP
+    return vec3Mul(r, charge.magnitude *                    // 3 FLOP (vecMul)
+                   rsqrt(lenSq) / lenSq );                              // 4 FLOP (1 sqrt + 3 mul,div)
 };
 #endif
 

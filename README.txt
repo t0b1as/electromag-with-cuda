@@ -4,8 +4,8 @@
 Copyright Alexandru Gagniuc
 
 Required packages:
-    gcc-c++
-    OpenMP devel library (libgomp)
+    gcc-c++ (use other compilers at your own risk)
+    OpenMP devel library (libgomp or the omp that comes with your compiler)
 Optional packages for CUDA:
     CUDA toolkit 2.3 or later
 Optional packages for Graphics display

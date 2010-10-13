@@ -26,34 +26,34 @@ export library
  */////////////////////////////////////////////////////////////////////////////////
 
 int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
-        size_t n, float resolution, perfPacket& perfData, bool useCurvature)
+              size_t n, float resolution, perfPacket& perfData, bool useCurvature)
 {
-	//return CalcFieldEs::MultiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
-	
-	CudaElectrosFunctor<float> multiGpuFunctor;
-	CudaElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-	multiGpuFunctor.BindData((void*) &dataParams);
+    //return CalcFieldEs::MultiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
 
-	unsigned long retVal = multiGpuFunctor.Run();
+    CudaElectrosFunctor<float> multiGpuFunctor;
+    CudaElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+    multiGpuFunctor.BindData((void*) &dataParams);
 
-	return retVal;
+    unsigned long retVal = multiGpuFunctor.Run();
 
-	/**/
+    return retVal;
+
+    /**/
 }
 
 int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
-        size_t n, double resolution, perfPacket& perfData, bool useCurvature)
+              size_t n, double resolution, perfPacket& perfData, bool useCurvature)
 {
-	//return CalcFieldEs::Wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);
-	CudaElectrosFunctor<double> multiGpuFunctor;
-	CudaElectrosFunctor<double>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-	multiGpuFunctor.BindData((void*) &dataParams);
+    //return CalcFieldEs::Wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);
+    CudaElectrosFunctor<double> multiGpuFunctor;
+    CudaElectrosFunctor<double>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+    multiGpuFunctor.BindData((void*) &dataParams);
 
-	unsigned long retVal = multiGpuFunctor.Run();
+    unsigned long retVal = multiGpuFunctor.Run();
 
-	return retVal;
+    return retVal;
 
-	/**/
+    /**/
 }
 
 

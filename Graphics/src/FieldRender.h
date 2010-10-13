@@ -16,7 +16,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
 #ifndef _FIELDRENDER_H
-#define	_FIELDRENDER_H
+#define _FIELDRENDER_H
 
 #include "Renderer.h"
 #include "Data Structures.h"
@@ -27,10 +27,10 @@ namespace FieldRenderer
 
 struct GLpacket
 {
-	Array<electro::pointCharge<float> > *charges;
-	Array<Vector3<float> > *lines;
-	size_t nlines, lineLen;
-	size_t elementSize;//8 for double 4 for float
+    Array<electro::pointCharge<float> > *charges;
+    Array<Vector3<float> > *lines;
+    size_t nlines, lineLen;
+    size_t elementSize;//8 for double 4 for float
 };
 
 enum MessageType
@@ -49,5 +49,5 @@ struct FieldRenderCommData: public Render::RendererCommData
 
 
 
-#endif	/* _FIELDRENDER_H */
+#endif  /* _FIELDRENDER_H */
 

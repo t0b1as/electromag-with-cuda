@@ -34,24 +34,24 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #define CalcField_kernelFLOP_Curvature(n,p) ( n * (p *(CoreFunctorFLOP + 3) + 45) )
 
 #ifdef ES_FUNCTOR_INCLUDE
-const char* multistepModuleNameCUBIN	= "Electrostatics_Multistep.cubin";
+const char* multistepModuleNameCUBIN    = "Electrostatics_Multistep.cubin";
 const char* multistepModuleNamePTX      = "Electrostatics_Multistep.ptx";
-const char* singlestepModuleNameCUBIN	= "Electrostatics.cubin";
-const char* singlestepModuleNamePTX 	= "Electrostatics.ptx";
+const char* singlestepModuleNameCUBIN   = "Electrostatics.cubin";
+const char* singlestepModuleNamePTX     = "Electrostatics.ptx";
 
-const char* multistepKernel_SP_MT_Curvature	= "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvPN6Vector7Vector2IfEEPfPN7electro11pointChargeIfEEjjjjf";
+const char* multistepKernel_SP_MT_Curvature = "_Z35CalcField_MTkernel_CurvatureComputeILj32EEvPN6Vector7Vector2IfEEPfPN7electro11pointChargeIfEEjjjjf";
 const char* singlestepKernel_SP_MT_Curvature    = "_Z35CalcField_MTkernel_CurvatureComputeILj1EEvPN6Vector7Vector2IfEEPfPN7electro11pointChargeIfEEjjjjf";
-const char* multistepKernel_SP_MT			= "CalcField_MTkernel";
-const char* singlestepKernel_SP_MT			= "CalcField_MTkernel";
-const char* multistepKernel_SP				= "CalcField_SPkernel";
-const char* singlestepKernel_SP				= "CalcField_SPkernel";
+const char* multistepKernel_SP_MT           = "CalcField_MTkernel";
+const char* singlestepKernel_SP_MT          = "CalcField_MTkernel";
+const char* multistepKernel_SP              = "CalcField_SPkernel";
+const char* singlestepKernel_SP             = "CalcField_SPkernel";
 
-const char* multistepKernel_DP_MT_Curvature	= "not available";
+const char* multistepKernel_DP_MT_Curvature = "not available";
 const char* singlestepKernel_DP_MT_Curvature= "not available";
-const char* multistepKernel_DP_MT			= "CalcField_MTkernel_DP";
-const char* singlestepKernel_DP_MT			= "CalcField_MTkernel_DP";
-const char* multistepKernel_DP				= "CalcField_DPkernel";
-const char* singlestepKernel_DP				= "CalcField_DPkernel";
+const char* multistepKernel_DP_MT           = "CalcField_MTkernel_DP";
+const char* singlestepKernel_DP_MT          = "CalcField_MTkernel_DP";
+const char* multistepKernel_DP              = "CalcField_DPkernel";
+const char* singlestepKernel_DP             = "CalcField_DPkernel";
 #endif//ES_FUNCTOR_INCLUDE
 
 #endif//_CONFIG_H

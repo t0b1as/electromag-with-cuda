@@ -25,7 +25,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 
 inline void* AlignedMalloc(size_t size, size_t alignment)
 {
-	return _aligned_malloc(size, alignment);
+    return _aligned_malloc(size, alignment);
 }
 
 #elif defined(__unix__)
@@ -33,7 +33,7 @@ inline void* AlignedMalloc(size_t size, size_t alignment)
 
 inline void* AlignedMalloc(size_t size, size_t alignment)
 {
-	return memalign(alignment, size);
+    return memalign(alignment, size);
 }
 
 #else
