@@ -5,16 +5,16 @@
 
 inline void QueryHPCTimer(long long *time)
 {
-	LARGE_INTEGER winTimer;
-	QueryPerformanceCounter(&winTimer);
-	*time = winTimer.QuadPart;
+    LARGE_INTEGER winTimer;
+    QueryPerformanceCounter(&winTimer);
+    *time = winTimer.QuadPart;
 };
 
 inline void QueryHPCFrequency(long long *freq)
 {
-	LARGE_INTEGER winFreq;
-	QueryPerformanceFrequency(&winFreq);
-	*freq = winFreq.QuadPart;
+    LARGE_INTEGER winFreq;
+    QueryPerformanceFrequency(&winFreq);
+    *freq = winFreq.QuadPart;
 };
 
 #elif defined(__unix__)
@@ -26,14 +26,14 @@ const long long TIMER_FREQUENCY = (long long)1E6;
 
 inline void QueryHPCTimer(long long *time)
 {
-	timeval linTimer;
-	gettimeofday(&linTimer, 0);
-	*time = linTimer.tv_sec * TIMER_FREQUENCY + linTimer.tv_usec;
+    timeval linTimer;
+    gettimeofday(&linTimer, 0);
+    *time = linTimer.tv_sec * TIMER_FREQUENCY + linTimer.tv_usec;
 }
 
 inline void QueryHPCFrequency(long long *freq)
 {
-	*freq = TIMER_FREQUENCY;
+    *freq = TIMER_FREQUENCY;
 }
 #undef TIMER_FREQUENCY
 

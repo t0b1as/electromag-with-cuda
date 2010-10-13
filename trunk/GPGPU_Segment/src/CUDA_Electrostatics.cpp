@@ -690,7 +690,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor (
         //----------------------------------Copy xy components----------------------------------//
         const size_t linesPitch = pFieldLinesData->GetElemSize();
         const char *linesBase = ( ( ( char * ) pFieldLinesData->GetDataPointer() ) + params->startIndex * linesPitch + segmentStep * elementsPerSegment * linesPitch );
-        // Copy components in pinned memory for transfer
+        // Copy components to pinned memory for transfer
         CUDA_MEMCPY2D copyParams =
         {
             0, 0, CU_MEMORYTYPE_HOST, linesBase, 0, 0, ( unsigned int ) linesPitch,

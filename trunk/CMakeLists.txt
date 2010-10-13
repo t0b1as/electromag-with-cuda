@@ -29,11 +29,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_C_FLAGS_DEBUG "-std=c99 -pedantic -Wall -g3 -ggdb3 -DDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
     set(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -pedantic -Wall -g3 -ggdb3 -DDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
 
-    # Set default flags if build type is not specified.
-    # Not specifying Release should bring the same arguments as Debug
-    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS_DEBUG})
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
-endif(CMAKE_COMPILER_IS_GNUCXX)
+endif()
 
 #================================================
 # Include directories used by all targets

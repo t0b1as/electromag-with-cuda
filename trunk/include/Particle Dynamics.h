@@ -17,7 +17,7 @@ Copyright (C) 2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 ***********************************************************************************************/
 
 #ifndef _PARTICLE_DYNAMICS_H
-#define	_PARTICLE_DYNAMICS_H
+#define _PARTICLE_DYNAMICS_H
 
 #include "Vector.h"
 

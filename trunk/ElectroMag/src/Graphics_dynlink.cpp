@@ -28,60 +28,60 @@ __DeleteFieldRenderer DeleteFieldRenderer;
 
 #if defined(_WIN32) || defined(_WIN64)
 
-    #include <Windows.h>
+#include <Windows.h>
 using namespace  Graphics;
 
-    #ifdef UNICODE
-    static LPCWSTR __EmGraphLibName = L"Graphics.dll";
-    #else
-    static LPCSTR __EmGraphLibName = "Graphics.dll";
-    #endif
+#ifdef UNICODE
+static LPCWSTR __EmGraphLibName = L"Graphics.dll";
+#else
+static LPCSTR __EmGraphLibName = "Graphics.dll";
+#endif
 
-    typedef HMODULE EM_GRAPH_LIB;
+typedef HMODULE EM_GRAPH_LIB;
 
-    Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
+Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
+{
+    *pInstance = LoadLibrary(__EmGraphLibName);
+    if (*pInstance == NULL)
     {
-        *pInstance = LoadLibrary(__EmGraphLibName);
-        if (*pInstance == NULL)
-        {
-            return Graphics::FILE_NOT_FOUND;
-        }
-        return Graphics::SUCCESS;
+        return Graphics::FILE_NOT_FOUND;
     }
+    return Graphics::SUCCESS;
+}
 
-    #define GET_PROC(name)                                          \
+#define GET_PROC(name)                                          \
         name = (__##name)GetProcAddress(emGraphLib, #name);        \
-		if (name == NULL) return Graphics::SYMBOL_NOT_FOUND
+        if (name == NULL) return Graphics::SYMBOL_NOT_FOUND
 
 #elif defined(__unix__) || defined(__APPLE__) || defined(__MACOSX)
 
-    #include <dlfcn.h>
-    #if defined(__APPLE__) || defined(__MACOSX)
-    static char __EmGraphLibNameLocal[] = "libEMagGraphics.dylib";
-    static char __EmGraphLibName[] = "/usr/local/cuda/lib/libEMagGraphics.dylib";
-    #else
-    static char __EmGraphLibNameLocal[] = "./libEMagGraphics.so";
-    static char __EmGraphLibName[] = "libEMagGraphics.so";
-    #endif
+#include <dlfcn.h>
+#if defined(__APPLE__) || defined(__MACOSX)
+static char __EmGraphLibNameLocal[] = "libEMagGraphics.dylib";
+static char __EmGraphLibName[] = "/usr/local/cuda/lib/libEMagGraphics.dylib";
+#else
+static char __EmGraphLibNameLocal[] = "./libEMagGraphics.so";
+static char __EmGraphLibName[] = "libEMagGraphics.so";
+#endif
 
-    typedef void * EM_GRAPH_LIB;
+typedef void * EM_GRAPH_LIB;
 
-    Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
+Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
+{
+    *pInstance = dlopen(__EmGraphLibNameLocal, RTLD_NOW);
+    if (*pInstance == 0)
     {
-        *pInstance = dlopen(__EmGraphLibNameLocal, RTLD_NOW);
+        *pInstance = dlopen(__EmGraphLibName, RTLD_NOW);
         if (*pInstance == 0)
         {
-            *pInstance = dlopen(__EmGraphLibName, RTLD_NOW);
-            if (*pInstance == 0)
-            {
-				std::cerr<<dlerror()<<std::endl;
-                return Graphics::FILE_NOT_FOUND;
-            }
+            std::cerr<<dlerror()<<std::endl;
+            return Graphics::FILE_NOT_FOUND;
         }
-        return Graphics::SUCCESS;
     }
+    return Graphics::SUCCESS;
+}
 
-    #define GET_PROC(name)                                          \
+#define GET_PROC(name)                                          \
         name = (__##name)(size_t)dlsym(emGraphLib, #name);                 \
         if (name == 0) {std::cerr<<dlerror()<<std::endl;return SYMBOL_NOT_FOUND;}
 
@@ -91,17 +91,17 @@ namespace Graphics
 {
 ModuleLoadCode LoadModule()
 {
-	EM_GRAPH_LIB emGraphLib;
-	ModuleLoadCode errCode;
+    EM_GRAPH_LIB emGraphLib;
+    ModuleLoadCode errCode;
 
-	errCode = LoadEmGraphLib(&emGraphLib);
-	if(errCode != SUCCESS)
-	{
-		return errCode;
-	}
-	GET_PROC(CreateFieldRenderer);
-	GET_PROC(DeleteFieldRenderer);
+    errCode = LoadEmGraphLib(&emGraphLib);
+    if (errCode != SUCCESS)
+    {
+        return errCode;
+    }
+    GET_PROC(CreateFieldRenderer);
+    GET_PROC(DeleteFieldRenderer);
 
-	return SUCCESS;
+    return SUCCESS;
 }
 }

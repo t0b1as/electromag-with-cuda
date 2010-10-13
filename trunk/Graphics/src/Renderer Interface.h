@@ -21,7 +21,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef _RENDERER_INTERFACE_H
-#define	_RENDERER_INTERFACE_H
+#define _RENDERER_INTERFACE_H
 #include "Renderer.h"
 #include "X-Compat/Threading.h"
 
@@ -41,14 +41,16 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 class RendererInterface: public Render::Renderer
 {
 public:
-    RendererInterface(){rendererThread = 0;};
-    virtual ~RendererInterface(){};
+    RendererInterface() {
+        rendererThread = 0;
+    };
+    virtual ~RendererInterface() {};
     virtual void StartAsync();
     virtual void KillAsync();
-	// This needs to be redefined here to ensure that dynamic linking on Windows
-	// will not generate a pure virtual funvtion call error
-	// How or why this happens is a mystery, but this fix seems to work.
-	virtual void SendMessage(Render::RendererCommData * messageData) = 0;
+    // This needs to be redefined here to ensure that dynamic linking on Windows
+    // will not generate a pure virtual funvtion call error
+    // How or why this happens is a mystery, but this fix seems to work.
+    virtual void SendMessage(Render::RendererCommData * messageData) = 0;
 protected:
     /// A handle to the thread handling the rendering
     Threads::ThreadHandle rendererThread;
@@ -59,29 +61,29 @@ protected:
 class GLRenderer : public RendererInterface
 {
 public:
-	GLRenderer();
-	virtual ~GLRenderer();
-	virtual void Init();
+    GLRenderer();
+    virtual ~GLRenderer();
+    virtual void Init();
 protected:
-	// openGL specific initialization function
-	virtual void GLInit()=0;
-	// Display function to be implemented in derived renderer classes
-	//virtual static void Display()=0;
-	/*/ Void input handling functions that can be overriden by derived classes
-	virtual static void Keyboard(unsigned char key, int x, int y){};
-	virtual static void Mouse(int button, int state, int x, int y){};
-	virtual static void Reshape(int width, int height){};
-	virtual static void Motion(int x, int y){};
-	*/
+    // openGL specific initialization function
+    virtual void GLInit()=0;
+    // Display function to be implemented in derived renderer classes
+    //virtual static void Display()=0;
+    /*/ Void input handling functions that can be overriden by derived classes
+    virtual static void Keyboard(unsigned char key, int x, int y){};
+    virtual static void Mouse(int button, int state, int x, int y){};
+    virtual static void Reshape(int width, int height){};
+    virtual static void Motion(int x, int y){};
+    */
 private:
-	static unsigned int  GlRenderers;
-	static const unsigned int maxGlRenderers;
-	bool isActive;
+    static unsigned int  GlRenderers;
+    static const unsigned int maxGlRenderers;
+    bool isActive;
     static bool glutIsInit;
 };
 
 
-#endif	/* _RENDERER_INTERFACE_H */
+#endif  /* _RENDERER_INTERFACE_H */
 
 ///@}
 ////////////////////////////////////////////////////////////////////////////////////////////////

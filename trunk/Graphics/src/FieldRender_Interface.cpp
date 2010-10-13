@@ -20,35 +20,35 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 Render::Renderer* CreateFieldRenderer()
 {
-	return new FieldRender;
+    return new FieldRender;
 }
 
 void DeleteFieldRenderer(Render::Renderer* objectToDelete)
 {
-	delete objectToDelete;
+    delete objectToDelete;
 }
 
 void FieldRender::SendMessage(Render::RendererCommData* message)
 {
-	this->SendMessage((FieldRenderer::FieldRenderCommData*) message);
+    this->SendMessage((FieldRenderer::FieldRenderCommData*) message);
 }
 
 void FieldRender::SendMessage(FieldRenderer::FieldRenderCommData* message)
 {
-	if(!message) return;
-	switch(message->messageType)
-	{
-	case FieldRenderer::NoMessage:
-		break;
-	case FieldRenderer::SendingGLData:
-		this->RenderPacket(*(FieldRenderer::GLpacket*)message->commData);
-		break;
-	case FieldRenderer::SendingPerfPointer:
-		this->SetPerfGFLOP(*(double*)message->commData);
-		break;
-	case FieldRenderer::RequestQuitFlag:
-		message->commData = (void*)&this->quitFlag;
-		break;
-	}
+    if (!message) return;
+    switch (message->messageType)
+    {
+    case FieldRenderer::NoMessage:
+        break;
+    case FieldRenderer::SendingGLData:
+        this->RenderPacket(*(FieldRenderer::GLpacket*)message->commData);
+        break;
+    case FieldRenderer::SendingPerfPointer:
+        this->SetPerfGFLOP(*(double*)message->commData);
+        break;
+    case FieldRenderer::RequestQuitFlag:
+        message->commData = (void*)&this->quitFlag;
+        break;
+    }
 
 }

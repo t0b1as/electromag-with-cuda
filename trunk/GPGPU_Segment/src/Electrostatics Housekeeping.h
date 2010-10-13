@@ -27,9 +27,9 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 template<class T>
 struct CoalescedFieldLineArray
 {
-	Vec3SOA<T> coalLines;
-	size_t nLines, nSteps,
-		xyPitch, zPitch;
+    Vec3SOA<T> coalLines;
+    size_t nLines, nSteps,
+    xyPitch, zPitch;
 };
 
 namespace Vector
@@ -37,37 +37,37 @@ namespace Vector
 template<>
 struct Vec3SOA<CUdeviceptr>
 {
-	CUdeviceptr xyInterleaved;
-	CUdeviceptr z;
+    CUdeviceptr xyInterleaved;
+    CUdeviceptr z;
 };
 }
 
 template<>
 struct CoalescedFieldLineArray<CUdeviceptr>
 {
-	Vec3SOA<CUdeviceptr> coalLines;
-	size_t nLines, nSteps,
-		xyPitch, zPitch;
+    Vec3SOA<CUdeviceptr> coalLines;
+    size_t nLines, nSteps,
+    xyPitch, zPitch;
 };
 
 template<class T>
 struct PointChargeArray
 {
-	electro::pointCharge<T> *chargeArr;
-	size_t nCharges, paddedSize;
+    electro::pointCharge<T> *chargeArr;
+    size_t nCharges, paddedSize;
 };
 
 template<>
 struct PointChargeArray<CUdeviceptr>
 {
-	CUdeviceptr chargeArr;
-	size_t nCharges, paddedSize;
+    CUdeviceptr chargeArr;
+    size_t nCharges, paddedSize;
 };
 
 // Macro for compacting timing calls
 #define TIME_CALL(call, time) QueryHPCTimer(&start);\
-			call;\
-			QueryHPCTimer(&end);\
-			time = ((double)(end - start) / freq);
+            call;\
+            QueryHPCTimer(&end);\
+            time = ((double)(end - start) / freq);
 
 #endif//_ELECTROSTATICS_HOUSEKEEPING_H

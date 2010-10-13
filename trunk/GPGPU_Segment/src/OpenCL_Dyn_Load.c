@@ -89,53 +89,53 @@ __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
 
 #if defined(_WIN32) || defined(_WIN64)
 
-    #include <Windows.h>
+#include <Windows.h>
 
-    #ifdef UNICODE
-    static LPCWSTR __ClLibName = L"OpenCl.dll";
-    #else
-    static LPCSTR __ClLibName = "OpenCl.dll";
-    #endif
+#ifdef UNICODE
+static LPCWSTR __ClLibName = L"OpenCl.dll";
+#else
+static LPCSTR __ClLibName = "OpenCl.dll";
+#endif
 
-    typedef HMODULE CL_LIBRARY;
+typedef HMODULE CL_LIBRARY;
 
-    cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
+cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
+{
+    *pInstance = LoadLibrary(__ClLibName);
+    if (*pInstance == NULL)
     {
-        *pInstance = LoadLibrary(__ClLibName);
-        if (*pInstance == NULL)
-        {
-            return CL_DEVICE_NOT_FOUND;
-        }
-        return CL_SUCCESS;
+        return CL_DEVICE_NOT_FOUND;
     }
+    return CL_SUCCESS;
+}
 
-    #define GET_PROC(name)                                          \
+#define GET_PROC(name)                                          \
         name = (__##name *)GetProcAddress(ClLib, #name);        \
         if (name == NULL) return CL_DEVICE_NOT_AVAILABLE
 
 #elif defined(__unix__) || defined(__APPLE__) || defined(__MACOSX)
 
-    #include <dlfcn.h>
+#include <dlfcn.h>
 
-    #if defined(__APPLE__) || defined(__MACOSX)
-    static char __ClLibName[] = "/usr/lib/libOpenCL.dylib";
-    #else
-    static char __ClLibName[] = "libOpenCL.so";
-    #endif
+#if defined(__APPLE__) || defined(__MACOSX)
+static char __ClLibName[] = "/usr/lib/libOpenCL.dylib";
+#else
+static char __ClLibName[] = "libOpenCL.so";
+#endif
 
-    typedef void * CL_LIBRARY;
+typedef void * CL_LIBRARY;
 
-    cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
+cl_int CL_LOAD_LIBRARY(CL_LIBRARY *pInstance)
+{
+    *pInstance = dlopen(__ClLibName, RTLD_NOW);
+    if (*pInstance == NULL)
     {
-        *pInstance = dlopen(__ClLibName, RTLD_NOW);
-        if (*pInstance == NULL)
-        {
-            return CL_DEVICE_NOT_FOUND;
-        }
-        return CL_SUCCESS;
+        return CL_DEVICE_NOT_FOUND;
     }
+    return CL_SUCCESS;
+}
 
-    #define GET_PROC(name)                                          \
+#define GET_PROC(name)                                          \
         name = (__##name *)(size_t)dlsym(ClLib, #name);                 \
         if (name == NULL) return CL_DEVICE_NOT_AVAILABLE
 
@@ -147,7 +147,7 @@ cl_int CL_API_CALL clLibLoad()
     CL_LIBRARY ClLib;
     cl_int result;
     result = CL_LOAD_LIBRARY(&ClLib);
-    if(result != CL_SUCCESS)
+    if (result != CL_SUCCESS)
     {
         return result;
     }
