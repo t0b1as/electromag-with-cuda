@@ -18,6 +18,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 #include "CUDA Interop.h"
 #include "CUDA_Electrostatics.h"
+#include "CL Electrostatics.hpp"
 
 /*////////////////////////////////////////////////////////////////////////////////
 Define specializations of the field function that call the generic template
@@ -54,6 +55,16 @@ int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<do
     return retVal;
 
     /**/
+}
+
+void TestCL(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
+            size_t n, float resolution,  perfPacket& perfData, bool useCurvature)
+{
+    //CLElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+    CLtest.BindData((void*) 0);
+    
+    CLtest.Run();
+    
 }
 
 

@@ -20,6 +20,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 #include "Abstract Functor.h"
 
+template <class T>
 class CLElectrosFunctor: public AbstractFunctor
 {
 public:
@@ -47,6 +48,18 @@ public:
 private:
 
 };
+
+extern CLElectrosFunctor<float> CLtest;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Electrostatics functor constructor
+///
+/// Initializes critical variables
+////////////////////////////////////////////////////////////////////////////////////////////////
+template<class T>
+CLElectrosFunctor<T>::CLElectrosFunctor()
+{
+}
 
 
 #endif//CL_ELECTROSTATICS_HPP

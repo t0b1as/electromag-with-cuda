@@ -55,4 +55,6 @@ enum CalcField_timingSteps
     timingSize      ///< Total number of timing/performance parameters
 };
 
+void TestCL(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
+              size_t n, float resolution,  perfPacket& perfData, bool useCurvature = false);
 #endif//_CUDA_INTEROP_H
