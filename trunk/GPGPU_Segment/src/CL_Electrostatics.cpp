@@ -21,8 +21,9 @@ CLElectrosFunctor<float> CLtest;
 
 #include "X-Compat/HPC Timing.h"
 #include <iostream>
+#include "OpenCL_Dyn_Load.h"
 
-// We may later change this to functor-specific, or even device-secific error strea,
+// We may later change this to functor-specific, or even device-secific error stream,
 #define errlog std::cerr
 
 //template<class T>
@@ -85,6 +86,7 @@ bool CLElectrosFunctor<T>::FailOnFunctor ( size_t functorIndex )
 template<class T>
 void CLElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
 {
+    *nDev = 1;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Uses a guess-and-hope-for-the-best method of distributing data among functors
@@ -95,47 +97,6 @@ void CLElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
 template<class T>
 void CudaElectrosFunctor<T>::PartitionData()
 {
-    // Multiple of alignment for the number of threads
-    // FIXME: aligning to a preset alignment size does not take into considerations devices
-    // with non-power of 2 multiprocessors. Thiis can generate empty threads, and may not be efficient
-    // alignment size should take the number of multiprocessors into consideration at the very least
-    // the block size should also be considered for maximum efficiency
-    const size_t segAlign = 256;
-    // Determine the maximum number of parallel segments as the number of GPUs
-    const unsigned int segments = ( unsigned int ) this->nDevices;
-    // Determine the number of lines to be processed by each GPU, and aling it to a multiple of segAlign
-    // This prevents empty threads from being created on more than one GPU
-    const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 ) / segAlign ) * segAlign;
-    // Create data for performance info
-    pPerfData->stepTimes.Alloc ( timingSize * segments );
-    pPerfData->stepTimes.Memset ( ( T ) 0 );
-    // Create arrays
-    this->functorParamList.Alloc ( segments );
-
-    size_t remainingLines = this->nLines;
-    size_t nCharges = this->pPointChargeData->GetSize();
-    size_t steps = this->pFieldLinesData->GetSize() /this->nLines;
-    unsigned int blockXSize = 0;
-    for ( size_t devID = 0; devID < segments; devID++ )
-    {
-        FunctorData *dataParams = &functorParamList[devID];
-        blockXSize = dataParams->blockXSize;
-        // Initialize parameter arrays
-        size_t segDataSize = ( remainingLines < segSize ) ? remainingLines : segSize;
-        dataParams->startIndex = this->nLines - remainingLines;
-        dataParams->elements = segDataSize;
-        dataParams->pPerfData =  new perfPacket; // Deleted in destructor
-        // Constructor is not called automatically, so we need to use ReAlloc (FIXME: possible source of bugs)
-        dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
-        dataParams->pPerfData->stepTimes.Memset ( 0 );
-        dataParams->pPerfData->progress = 0;
-        dataParams->GPUchargeData.nCharges = nCharges;
-        dataParams->GPUfieldData.nSteps = steps;
-        //dataParams->GPUfieldData.nLines = segDataSize;
-        dataParams->lastOpErrCode = CUDA_ERROR_NOT_INITIALIZED;// Flag that resources have not yet been allocated
-        dataParams->ctxIsUsable = false;
-        remainingLines -= segSize;
-    }
 }
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,9 +108,36 @@ void CudaElectrosFunctor<T>::PartitionData()
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
 void CLElectrosFunctor<T>::BindData (
-    void *dataParameters    ///< [in] Pointer to a structure of type BindDataParams
+    void *aDataParameters    ///< [in] Pointer to a structure of type BindDataParams
 )
 {
+    struct ElectrostaticFunctor<T>::BindDataParams *params =
+            ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+    // Check validity of parameters
+    if ( params->nLines == 0
+        || params->resolution == 0
+        || params->pFieldLineData == 0
+        || params->pPointChargeData == 0
+        )
+    {
+        this->lastOpErrCode = CL_INVALID_VALUE;
+        return;
+    }
+    
+    this->pFieldLinesData = params ->pFieldLineData;
+    this->pPointChargeData = params ->pPointChargeData;
+    this->nLines = params->nLines;
+    this->resolution = params->resolution;
+    this->useCurvature = params->useCurvature;
+    this->pPerfData = &params->perfData;
+    
+    // Partitioning of data is necessary before resource allocation
+    // since resource allocation depends on the way data is partitioned
+    //PartitionData();
+    
+    this->lastOpErrCode = CL_SUCCESS;
+    this->dataBound = true;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,7 +174,6 @@ void CLElectrosFunctor<T>::PostRun()
 /*template<class T>
 CUresult CLElectrosFunctor<T>::AllocateGpuResources ( size_t deviceID )
 {
-    return 0;
 }
 */
 
@@ -202,30 +189,6 @@ CUresult CLElectrosFunctor<T>::AllocateGpuResources ( size_t deviceID )
 template<class T>
 CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 {
-    enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
-    CUresult errCode, lastBadError = CUDA_SUCCESS;
-    CUdevice currentGPU;
-    cuCtxGetDevice ( &currentGPU );
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUchargeData.chargeArr );
-    if ( errCode != CUDA_SUCCESS )
-    {
-        errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
-        lastBadError = errCode;
-    };
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUfieldData.coalLines.xyInterleaved );
-    if ( errCode != CUDA_SUCCESS )
-    {
-        errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
-        lastBadError = errCode;
-    };
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUfieldData.coalLines.z );
-    if ( errCode != CUDA_SUCCESS )
-    {
-        errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
-        lastBadError = errCode;
-    };
-
-    return lastBadError;
 }
 */
 
@@ -298,96 +261,6 @@ unsigned long CLElectrosFunctor<T>::AuxFunctor()
 template<class T>
 CUresult CudaElectrosFunctor<T>::CallKernel ( FunctorData *params, size_t kernelElements )
 {
-    unsigned int bX = params->useMT ? BLOCK_X_MT : BLOCK_X;
-    unsigned int bY = params->useMT ? BLOCK_Y_MT : 1;
-    // Compute dimension requirements
-    dim3 block ( bX, bY, 1 ),
-    grid ( ( ( unsigned int ) kernelElements + bX - 1 ) /bX, 1, 1 );
-    CUresult errCode = CUDA_SUCCESS;
-
-    // Load the multistep kernel parameters
-    // Although device pointers are passed as CUdeviceptr, the kernel treats them as regular pointers.
-    // Because of this, on 64-bit platforms, CUdeviceptr and regular pointers will have different sizes,
-    // causing kernel parameters to be misaligned. For this reason, device pointers must be converted to
-    // host pointers, and passed to the kernel accordingly.
-
-    int offset = 0;
-    unsigned int size = 0;
-    Vector2<T> * xyParam = ( Vector2<T> * ) ( size_t ) params->GPUfieldData.coalLines.xyInterleaved;
-    size = sizeof ( xyParam );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &xyParam, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &xyParam, size ) );
-    offset += size;
-
-    T* zParam = ( T* ) ( size_t ) params->GPUfieldData.coalLines.z;
-    size = sizeof ( zParam );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &zParam, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &zParam, size ) );
-    offset += size;
-
-    electro::pointCharge<T> * pointChargeParam = ( electro::pointCharge<T> * ) ( size_t ) params->GPUchargeData.chargeArr;
-    size = sizeof ( pointChargeParam );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &pointChargeParam, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &pointChargeParam, size ) );
-    offset += size;
-
-    unsigned int xyPitch = ( unsigned int ) params->GPUfieldData.xyPitch;
-    size = sizeof ( xyPitch );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &xyPitch, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &xyPitch, size ) );
-    offset += size;
-
-    unsigned int zPitch = ( unsigned int ) params->GPUfieldData.zPitch;
-    size = sizeof ( zPitch );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &zPitch, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &zPitch, size ) );
-    offset += size;
-
-    unsigned int points = ( unsigned int ) params->GPUchargeData.nCharges;
-    size = sizeof ( points );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &points, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &points, size ) );
-    offset += size;
-
-    const int fieldIndexParamSize = sizeof ( unsigned int );
-    // Do not set field index here, but before Launching the kernel
-    const unsigned int fieldIndexParamOffset = offset;
-    offset += fieldIndexParamSize;
-
-    size = sizeof ( resolution );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->multistepKernel, offset, ( void* ) &resolution, size ) );
-    CUDA_SAFE_CALL ( cuParamSetv ( params->singlestepKernel, offset, ( void* ) &resolution, size ) );
-    offset += size;
-
-    CUDA_SAFE_CALL ( cuParamSetSize ( params->multistepKernel, offset ) );
-    CUDA_SAFE_CALL ( cuParamSetSize ( params->singlestepKernel, offset ) );
-
-    // Set Block Dimensions
-    CUDA_SAFE_CALL ( cuFuncSetBlockShape ( params->multistepKernel, block.x, block.y, block.z ) );
-    CUDA_SAFE_CALL ( cuFuncSetBlockShape ( params->singlestepKernel, block.x, block.y, block.z ) );
-
-    // Compute real-time progress data
-    double stepWeight = ( double ) kernelElements/params->elements/params->GPUfieldData.nSteps;
-    // LAUNCH THE KERNEL
-    unsigned int i = 1;
-    while ( i < ( params->GPUfieldData.nSteps - KERNEL_STEPS ) )
-    {
-        CUDA_SAFE_CALL ( cuCtxSynchronize() );// <- Remove this to crash the video driver
-        cuParamSetv ( params->multistepKernel, fieldIndexParamOffset, ( void* ) &i, fieldIndexParamSize );
-        cuLaunchGrid ( params->multistepKernel, grid.x, grid.y );
-        i += KERNEL_STEPS;
-        params->pPerfData->progress += stepWeight * KERNEL_STEPS;
-    }
-    while ( i < params->GPUfieldData.nSteps )
-    {
-        CUDA_SAFE_CALL ( cuCtxSynchronize() );// <- Remove this to crash the video driver
-        cuParamSetv ( params->singlestepKernel, fieldIndexParamOffset, ( void* ) &i, fieldIndexParamSize );
-        cuLaunchGrid ( params->singlestepKernel, grid.x, grid.y );
-        i++;
-        params->pPerfData->progress += stepWeight;
-    }
-    CUDA_SAFE_CALL ( cuCtxSynchronize() );
-    return CUDA_SUCCESS;
 }
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,30 +275,6 @@ CUresult CudaElectrosFunctor<T>::CallKernel ( FunctorData *params, size_t kernel
 template<class T>
 CUresult CudaElectrosFunctor<T>::LoadModules ( size_t deviceID )
 {
-    FunctorData *data = &this->functorParamList[deviceID];
-    // Attempt to first load a cubin module. If that fails, load the slower ptx module
-    CUresult errCode;
-    if ( cuModuleLoad ( &data->singlestepModule,
-                        singlestepModuleNameCUBIN ) != CUDA_SUCCESS )
-    {
-        // Try to load from ptx code
-        errCode = cuModuleLoad ( &data->singlestepModule,
-                                 singlestepModuleNamePTX );
-        if ( errCode != CUDA_SUCCESS )
-            return errCode;
-    }
-    if ( cuModuleLoad ( &data->multistepModule,
-                        multistepModuleNameCUBIN ) != CUDA_SUCCESS )
-    {
-        // Try to load from ptx code
-        errCode = cuModuleLoad ( &data->multistepModule,
-                                 multistepModuleNamePTX );
-        if ( errCode != CUDA_SUCCESS )
-            return errCode;
-    }
-
-    return CUDA_SUCCESS;
-
 }
 */
 
@@ -457,30 +306,6 @@ CUresult CudaElectrosFunctor<T>::LoadKernels ( size_t deviceID )
 template<>
 CUresult CudaElectrosFunctor<float>::LoadKernels ( size_t deviceID )
 {
-    FunctorData *data = &this->functorParamList[deviceID];
-    CUresult errCode;
-    if ( useCurvature ) // Curvature computation is only available in the MT kernel
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_SP_MT_Curvature ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, singlestepKernel_SP_MT_Curvature ) );
-    }
-    else if ( &this->functorParamList[deviceID].useMT ) // Has the wrapper padded the memory for the MT kernel?
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_SP_MT ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, singlestepKernel_SP_MT ) );
-    }
-    else    // Nope, just for the regular kernel
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_SP ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, singlestepKernel_SP ) );
-    }
-    return CUDA_SUCCESS;
 }
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -495,31 +320,6 @@ CUresult CudaElectrosFunctor<float>::LoadKernels ( size_t deviceID )
 template<>
 CUresult CudaElectrosFunctor<double>::LoadKernels ( size_t deviceID )
 {
-    FunctorData *data = &this->functorParamList[deviceID];
-    CUresult errCode;
-    if ( useCurvature )
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_DP_MT_Curvature ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, multistepKernel_DP_MT_Curvature ) );
-    }
-    else if ( &this->functorParamList[deviceID].useMT ) // Has the wrapper padded the memory for the MT kernel?
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_DP_MT ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, singlestepKernel_DP_MT ) );
-    }
-    else    // Nope, just for the regular kernel
-    {
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->multistepKernel,
-                                               data->multistepModule, multistepKernel_DP ) );
-        CUDA_SAFE_CALL ( cuModuleGetFunction ( &data->singlestepKernel,
-                                               data->singlestepModule, singlestepKernel_DP ) );
-    }
-
-    return CUDA_SUCCESS;
 }
 */
 

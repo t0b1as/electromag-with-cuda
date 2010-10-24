@@ -22,8 +22,11 @@ protected:
     static bool deviceScanComplete;
 
     /// Performs a one-time scan to determine the number of devices
-    // and obtain the device properties
+    /// and obtain the device properties
     virtual void ScanDevices() = 0;
+    
+    /// Returns the total number of Compute devices detected
+    virtual size_t GetDeviceNo() = 0;
 };
 }// namespace deviceMan
 ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -15,11 +15,11 @@ AbstractFunctor::~AbstractFunctor()
 }
 
 
-unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *parameters)
+unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *aParameters)
 {
-    AbstractFunctor *pObject = parameters->functorClass;
+    AbstractFunctor *pObject = aParameters->functorClass;
     Threads::MutexHandle *phMutex = &pObject->hRemapMutex;
-    size_t functorID = parameters->functorIndex;
+    size_t functorID = aParameters->functorIndex;
     size_t deviceID = functorID;
     unsigned long retVal;
     bool fail = true;
@@ -74,29 +74,29 @@ unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *pa
     return retVal;
 }
 
-unsigned long AbstractFunctor::AsyncAuxFunctor(AbstractFunctor::AsyncParameters *parameters)
+unsigned long AbstractFunctor::AsyncAuxFunctor(AbstractFunctor::AsyncParameters *aParameters)
 {
-    return parameters->functorClass->AuxFunctor();
+    return aParameters->functorClass->AuxFunctor();
 }
 
 unsigned long AbstractFunctor::Run()
 {
     // Allocate needed resources on each device
-    this->AllocateResources();
+    AllocateResources();
     if (this->Fail()) return (1<<16);
 
     size_t nFunctors;
     // Create parameters for functors
-    this->GenerateParameterList(&nFunctors);
-    if (this->Fail()) return (2<<16);
+    GenerateParameterList(&nFunctors);
+    if (Fail()) return (2<<16);
 
     // Alocate resources for calling the async functors
     AbstractFunctor::AsyncParameters *launchParams = new AbstractFunctor::AsyncParameters[nFunctors];
     Threads::ThreadHandle * handles = new Threads::ThreadHandle[nFunctors];
     // Allocate and initialize resources that the async functors will use for syncronization
-    this->idleDevices = new size_t[nFunctors];
-    this->failedFunctors = new size_t[nFunctors];
-    this->nFailed = this->nIdle = 0;
+    idleDevices = new size_t[nFunctors];
+    failedFunctors = new size_t[nFunctors];
+    nFailed = nIdle = 0;
 
     for (size_t i = 0; i < nFunctors; i++)
     {
@@ -109,7 +109,7 @@ unsigned long AbstractFunctor::Run()
 
         // Set the name for the thread
         char threadName[512];
-        sprintf(threadName, "AbstractFunctor Device %lu", (unsigned long)i);
+        snprintf(threadName, 511, "AbstractFunctor Device %lu", (unsigned long)i);
         Threads::SetThreadName(threadID, threadName);
     }
 

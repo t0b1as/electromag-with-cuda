@@ -60,8 +60,8 @@ int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<do
 void TestCL(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
             size_t n, float resolution,  perfPacket& perfData, bool useCurvature)
 {
-    //CLElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-    CLtest.BindData((void*) 0);
+    CLElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+    CLtest.BindData((void*) &dataParams);
     
     CLtest.Run();
     
