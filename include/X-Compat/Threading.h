@@ -147,9 +147,14 @@ inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* paramet
 
 inline unsigned long WaitForThread(ThreadHandle hThread)
 {
+    // pthread_create requires a function returning void*,
+    // but we suplied one returning unsigned long
+    // In this case, the pointer, pExitCode will have the
+    // return value, not the adddress it is pointing to
     unsigned long* pExitCode;
     pthread_join(hThread, (void**)&pExitCode);
-    return *pExitCode;
+    // Again, return the value _of_ the pointer, not the memory pointing to
+    return (unsigned long)pExitCode;
 }
 
 inline void KillThread(ThreadHandle hThread)

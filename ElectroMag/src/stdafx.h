@@ -20,11 +20,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 #define _STDAFX_H
 
 
-#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
-
-#define ENABLE_CUDA_SUPPORT
-#define ENABLE_GL_SUPPORT
 // TODO: reference additional headers your program requires here
 #include <iostream>
 #include <fstream>

@@ -62,22 +62,22 @@ bool CudaElectrosFunctor<T>::Fail()
 /// @return True if the previous operation on functorIndex returned an error
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-bool CudaElectrosFunctor<T>::FailOnFunctor ( size_t functorIndex )
+bool CudaElectrosFunctor<T>::FailOnFunctor ( size_t aFunctorIndex )
 {
     // Check for bounds
-    if ( functorIndex >= this->nDevices ) return true;
+    if ( aFunctorIndex >= this->nDevices ) return true;
 
     // Check if functor data is allocated. functor data is allocated when a dataset is bound to this object
     if ( !this->dataBound ) return true;
 
     // Now check the error code returned during the last operation on the given functor
-    return ( this->functorParamList[functorIndex].lastOpErrCode != CUDA_SUCCESS );
+    return ( this->functorParamList[aFunctorIndex].lastOpErrCode != CUDA_SUCCESS );
 }
 
 template<class T>
-void CudaElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
+void CudaElectrosFunctor<T>::GenerateParameterList ( size_t *anDev )
 {
-    *nDev = this->nReadyForExec;
+    *anDev = this->nReadyForExec;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -139,10 +139,10 @@ void CudaElectrosFunctor<T>::PartitionData()
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
 void CudaElectrosFunctor<T>::BindData (
-    void *dataParameters    ///< [in] Pointer to a structure of type BindDataParams
+    void *aDataParameters    ///< [in] Pointer to a structure of type BindDataParams
 )
 {
-    BindDataParams *params = ( BindDataParams* ) dataParameters;
+    BindDataParams *params = ( BindDataParams* ) aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
             || params->resolution == 0
@@ -218,9 +218,9 @@ void CudaElectrosFunctor<T>::PostRun()
 ///@return CUDA_SUCCESS if no error is encountered
 //////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CUresult CudaElectrosFunctor<T>::AllocateGpuResources ( size_t deviceID )
+CUresult CudaElectrosFunctor<T>::AllocateGpuResources ( size_t aDeviceID )
 {
-    FunctorData *params = &this->functorParamList[deviceID];
+    FunctorData *params = &this->functorParamList[aDeviceID];
     if ( useCurvature )
     {
         params->useMT = true;
@@ -368,25 +368,25 @@ CUresult CudaElectrosFunctor<T>::AllocateGpuResources ( size_t deviceID )
 ///@return CUDA_SUCCESS if no error is encountered
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
+CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t aDeviceID )
 {
     enum mallocStage {chargeAlloc, xyAlloc, zAlloc};
     CUresult errCode, lastBadError = CUDA_SUCCESS;
     CUdevice currentGPU;
     cuCtxGetDevice ( &currentGPU );
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUchargeData.chargeArr );
+    errCode = cuMemFree ( this->functorParamList[aDeviceID].GPUchargeData.chargeArr );
     if ( errCode != CUDA_SUCCESS )
     {
         errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
         lastBadError = errCode;
     };
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUfieldData.coalLines.xyInterleaved );
+    errCode = cuMemFree ( this->functorParamList[aDeviceID].GPUfieldData.coalLines.xyInterleaved );
     if ( errCode != CUDA_SUCCESS )
     {
         errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
         lastBadError = errCode;
     };
-    errCode = cuMemFree ( this->functorParamList[deviceID].GPUfieldData.coalLines.z );
+    errCode = cuMemFree ( this->functorParamList[aDeviceID].GPUfieldData.coalLines.z );
     if ( errCode != CUDA_SUCCESS )
     {
         errlog<<" Error: "<<errCode<<" freeing memory at stage "<<chargeAlloc<<" on GPU"<<currentGPU<<std::endl;
@@ -572,11 +572,11 @@ void CudaElectrosFunctor<T>::ReleaseResources()
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
 unsigned long CudaElectrosFunctor<T>::MainFunctor (
-    size_t functorIndex,    ///< Functor whose data to process
-    size_t deviceIndex      ///< Device on which to process data
+    size_t aFunctorIndex,    ///< Functor whose data to process
+    size_t aDeviceIndex      ///< Device on which to process data
 )
 {
-    if ( !resourcesAllocated || ( deviceIndex >= this->nDevices ) )
+    if ( !resourcesAllocated || ( aDeviceIndex >= this->nDevices ) )
     {
         // If resources are not allocated, or deviceIndex is invalid,
         // we need to report this as a global error
@@ -584,21 +584,21 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor (
         return CUDA_ERROR_INVALID_CONTEXT;
     }
 
-    if ( !this->functorParamList[deviceIndex].ctxIsUsable )
+    if ( !this->functorParamList[aDeviceIndex].ctxIsUsable )
     {
-        this->functorParamList[deviceIndex].lastOpErrCode = CUDA_ERROR_INVALID_CONTEXT;
+        this->functorParamList[aDeviceIndex].lastOpErrCode = CUDA_ERROR_INVALID_CONTEXT;
         return CUDA_ERROR_INVALID_CONTEXT;
     }
 
-    FunctorData *params = &this->functorParamList[functorIndex];
+    FunctorData *params = &this->functorParamList[aFunctorIndex];
     params->lastOpErrCode = CUDA_ERROR_NOT_READY;// Flag that functor is not ready
     FunctorData remapData;
 
     /// FIXME: Should we remap functors here or externally?
-    if ( functorIndex != deviceIndex )
+    if ( aFunctorIndex != aDeviceIndex )
     {
 #ifdef _DEBUG
-        errlog<<" Warning, functorIndex "<<functorIndex<<" may be incompatible with device "<<deviceIndex<<std::endl;
+        errlog<<" Warning, functorIndex "<<aFunctorIndex<<" may be incompatible with device "<<aDeviceIndex<<std::endl;
 #endif//_DEBUG
         // We need to remap 'functorIndex' to 'deviceIndex'
         // For this, we need to place all context-related data from 'deviceIndex' into 'functorIndex'
@@ -607,7 +607,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor (
         // To achieve this, we declare a FunctorData structure local to MainFunctor, copy the necessarry information
         // to that structure, and change the 'params' pointer to point to that structure
 
-        FunctorData *pActive = &this->functorParamList[deviceIndex];
+        FunctorData *pActive = &this->functorParamList[aDeviceIndex];
 
         remapData.context           = pActive->context;
         remapData.hostNonpagedData  = pActive->hostNonpagedData;
@@ -632,7 +632,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor (
         remapData.elements          = params->elements;
 
         // Use the existing performance packet
-        remapData.pPerfData = this->functorParamList[functorIndex].pPerfData;
+        remapData.pPerfData = this->functorParamList[aFunctorIndex].pPerfData;
 
         // Finally make params point to the remapped structure
         params = &remapData;
@@ -867,7 +867,7 @@ unsigned long CudaElectrosFunctor<T>::MainFunctor (
     // Detach context
     CUcontext temp;
     cuCtxPopCurrent ( &temp );
-    this->functorParamList[functorIndex].lastOpErrCode = CUDA_SUCCESS;
+    this->functorParamList[aFunctorIndex].lastOpErrCode = CUDA_SUCCESS;
     return CUDA_SUCCESS;
 }
 

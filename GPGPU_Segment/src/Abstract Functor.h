@@ -28,8 +28,29 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "Data Structures.h"
 #include "X-Compat/Threading.h"
 
-
-// Experimental abstract class for standardizing functor operation
+//////////////////////////////////////////////////////////////////////////////////
+///\brief Abstract class for standardizing functor operation
+///
+/// A functor should be interpreted as a set of functions that performs
+/// a given task or se of tasks, in this context, a specific set of calculations.
+/// \n \n
+/// There are a number of considerations to take into account for a funnctor.
+/// It should organize the given data into whatever format makes more sense for
+/// for the given compute device or devices, and the functionality it implements.
+/// Alhough the data format and the functionality are dependent on the specific
+/// functionality the functor provides, some aspects are common to all functors:\n
+/// 1) The interface to the outside world \n
+/// 2) The assignment and of threads that execute the given task. Normally, when
+/// several compute devices are used by the functor, it makes most sense to assign
+/// a separate controlling thread for each device. Also, if a device, for whatever
+/// reason, fails to complete its part task, then it should be reassigned to a device
+/// that has succesfully terminated, and still has resources allocated.
+/// These points are implemented in the AbstractFunctor class, which allows derived 
+/// classes to focus on device specific functionality
+/// \n \n
+/// A TODO point is to allow several functors to share data, or even complete more
+/// complex tasks with the same given set of resources.
+//////////////////////////////////////////////////////////////////////////////////
 class AbstractFunctor
 {
 public:
@@ -41,15 +62,21 @@ public:
     {
     };
 
-    // Runs the calculations
+    ///\brief Runs the calculations
+    ///
+    /// Once the functor has been fully "initialized", with resources allocated for each device
+    /// the calculations may be started. \n
+    /// This functinality is provided by the Run function. 
     virtual unsigned long Run();
 
-    /// Binds a dataset to the object
+    ///\brief Binds a dataset to the object
     virtual void BindData(void *dataParameters) = 0;
 
-    /// Resource allocation and deallocation functions
+    /// \brief Resource allocation and deallocation functions
+    ///{@
     virtual void AllocateResources() = 0;
     virtual void ReleaseResources() = 0;
+    ///@}
 
     ///\brief Generates a list of 'nDevices' parameters to be passed to 'nDevices' functors
     ///
@@ -75,13 +102,19 @@ public:
     /// combining real-time performance and progress information
     virtual unsigned long AuxFunctor() = 0;
 
-    /// Does any necessarry tasks after all functors have completed execution
+    ///\brief Does any necessarry tasks after all functors have completed execution
     virtual void PostRun() = 0;
 
-    /// Returns true if the previous operation has failed
+    ///\brief Checks for errors on global operations
+    /// Returns true if the previous global operation has failed
     virtual bool Fail() = 0;
-    /// Returns true if the previous operation onthe given functor has failed
+    /// \brief Checks for errors on operations performed on a specific device functor
+    ///
+    /// Returns true if the previous operation on the given functor has failed
     /// Also returns true if the functor is out of bounds
+    /// This function is NOT required to be thread-safe. Its implementation should be thread-safe if
+    /// the derived class uses it in a way that requires thread-safety. The Abstract functor uses it
+    /// in sequentially with operations on the device functor.
     virtual bool FailOnFunctor(size_t functorIndex) = 0;
 
 private:
@@ -100,8 +133,15 @@ private:
     size_t * failedFunctors;
     size_t nFailed;
     size_t nIdle;
-    /// Calls the main functor statically, Then handles remapping
-    /// This function is also used as a thread entry point.
+    
+    ///\brief Calls the main functor statically, Then handles remapping
+    /// 
+    /// This also takes care of
+    /// remapping failed threads to succesfull threads. There is an implicit assumption of
+    /// homogenuity between devices (threads), but the derived class can detect a remap, and should
+    /// compensate for such inhomogenuities, should they occur.
+    /// \n
+    /// This function is also used as the thread entry point.
     static unsigned long AsyncFunctor(AsyncParameters *parameters);
     static unsigned long AsyncAuxFunctor(AsyncParameters *parameters);
 

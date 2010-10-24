@@ -18,10 +18,18 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #ifndef _CL_ELECTROSTATICS_HPP
 #define _CL_ELECTROSTATICS_HPP
 
-#include "Abstract Functor.h"
+#include "ElectrostaticFunctor.hpp"
+#include "Electrostatics.h"
+#include "CL Manager.h"
 
+typedef int CLerror;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\ingroup DEVICE_FUNCTORS
+///@{
+////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
-class CLElectrosFunctor: public AbstractFunctor
+class CLElectrosFunctor: public ElectrostaticFunctor<T>
 {
 public:
     CLElectrosFunctor();
@@ -29,10 +37,13 @@ public:
 
     //----------------------------------AbstractFunctor overriders------------------------------------//
     // These functions implement the pure functions specified by AbstractFunctor
-    // They can be called externally, and will attah and detach the GPU context accordingly
+    // They can be called externally, and will attah and detach the device context accordingly
     // These functions can be considered thread safe if they are not called simultaneously
     // from different threads
-    // The sequential order is to BindData, then AllocateResources, and only then to call the MainFunctor
+    // The sequential order is that of AbsrtactFunctor:
+    // BindData()
+    // AllocateResources()
+    // Run() - this calls the main functor
     // Executing these functions simultaneously or in a different order will cause them to fail
     void BindData(void *dataParameters);
     void AllocateResources();
@@ -45,10 +56,15 @@ public:
 
     void GenerateParameterList(size_t *nDevices);
 
+
 private:
+    /// Specifies the error code incurred during the last global operation
+    CLerror lastOpErrCode;
+    
+    static OpenCL::ClManager DeviceManager;
 
 };
-
+///@}
 extern CLElectrosFunctor<float> CLtest;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,8 +75,11 @@ extern CLElectrosFunctor<float> CLtest;
 template<class T>
 CLElectrosFunctor<T>::CLElectrosFunctor()
 {
+    //dataBound = false;
+    //resourcesAllocated = false;
+    /*nDevices =*/ DeviceManager.ListAllDevices();
+    //nReadyForExec = 0;
 }
-
 
 #endif//CL_ELECTROSTATICS_HPP
 

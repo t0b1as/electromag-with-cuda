@@ -25,7 +25,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "Electrostatics.h"
 #include "CUDA Interop.h"
 #include "CUDA Manager.h"
-#include "Abstract Functor.h"
+#include "ElectrostaticFunctor.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\ingroup DEVICE_FUNCTORS

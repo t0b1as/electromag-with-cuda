@@ -21,7 +21,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #include "GL/glutExtra.h"
 #include "FieldRender class.h"
 #include "X-Compat/HPC Timing.h"
-#include <stdio.h> // for sprintf()
+#include <stdio.h> // for snprintf()
 
 #if defined(_MSC_VER)
 #pragma warning(disable:1786)
@@ -83,14 +83,14 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 	glLoadIdentity();
 	glColor3f(1.0, 0.0, 0.0);
 	PrintGlutString("G-Tech", GLUT_BITMAP_TIMES_ROMAN_24, 40, 40);
-	char fovString[20];
-	sprintf(fovString, "FOV: %.0f", mainCam.GetFOV());
+	char fovString[32];
+	snprintf(fovString, 31, "FOV: %.0f", mainCam.GetFOV());
 	PrintGlutString(fovString, GLUT_BITMAP_HELVETICA_12, 20, 60);
 	char camPosStr[32];
-	sprintf(camPosStr, "Pos:<%.0f, %.0f, %.0f>", mainCam.GetPosition().x, mainCam.GetPosition().y, mainCam.GetPosition().z);
+	snprintf(camPosStr, 31, "Pos:<%.0f, %.0f, %.0f>", mainCam.GetPosition().x, mainCam.GetPosition().y, mainCam.GetPosition().z);
 	PrintGlutString(camPosStr, GLUT_BITMAP_HELVETICA_12, 20, 75);
-	char perf[2048];
-	sprintf(perf, "Perf: %4.0f GFLOP/s", perfGFLOP);
+	char perf[32];
+	snprintf(perf, 31, "Perf: %4.0f GFLOP/s", perfGFLOP);
 	PrintGlutString(perf, GLUT_BITMAP_HELVETICA_12, 20, 105);
 
 	// Compute and print FPS
@@ -102,7 +102,7 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 	double elapsed = (double)(end - start)/HPCfreq;
 	if( (elapsed > 1.0) && frames)
 	{
-		sprintf(fps, "FPS: %.1f", (double)frames/elapsed);
+		snprintf(fps, 31, "FPS: %.1f", (double)frames/elapsed);
 		frames = 0;
 		start = end;
 	}

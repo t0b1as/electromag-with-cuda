@@ -50,6 +50,7 @@ SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000}; // Requi
 SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};            // Should work acceptably on most multi-core CPUs
 SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
 SimulationParams BogoParams = {16, 16, 1, 50, 0, 500};
+enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
 
 // to redirect stdout and stderr to out.txt use:
 //              >out.txt  2>&1
@@ -59,12 +60,12 @@ int main ( int argc, char* argv[] )
     std::cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<std::endl;
 
     OpenCL::GlobalClManager.ListAllDevices();
+    
 
 #ifndef _DEBUG
     //freopen( "file.txt", "w", stderr );
 #endif//DEBUG
 
-    enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
     ParamLevel paramLevel = __normal;
 
     SimulationParams simConfig = DefaultParams;
@@ -247,6 +248,8 @@ int main ( int argc, char* argv[] )
     double GPUtime = 0, CPUtime = 0;
     QueryHPCFrequency ( &freq );
 
+    TestCL ( GPUlines, charges, n, 1.0, GPUperf, useCurvature );
+    
     FPprecision resolution = 1;
     if ( GPUenable )
     {
@@ -256,6 +259,7 @@ int main ( int argc, char* argv[] )
         StartConsoleMonitoring ( &GPUperf.progress );
         // Then run the calculations
         QueryHPCTimer ( &start );
+        
         failedFunctors = CalcField ( GPUlines, charges, n, resolution, GPUperf, useCurvature );
         QueryHPCTimer ( &end );
         // Make sure the next section terminates even if progress is not updated,
@@ -264,10 +268,10 @@ int main ( int argc, char* argv[] )
 
         if ( failedFunctors >= cudaDev ) display = false;
         if ( failedFunctors ) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
-        std::cout<<" GPU kernel execution time:\t"<<GPUperf.time<<" seconds"<<std::endl;
-        std::cout<<" Effective performance:\t\t"<<GPUperf.performance<<" GFLOP/s"<<std::endl;
+        std::cout<<" GPU kernel execution time:  "<<GPUperf.time<<" seconds"<<std::endl;
+        std::cout<<" Effective performance:      "<<GPUperf.performance<<" GFLOP/s"<<std::endl;
         GPUtime = double ( end-start ) /freq;
-        std::cout<<" True kernel execution time:\t"<<GPUtime<<" seconds"<<std::endl;
+        std::cout<<" True kernel execution time: "<<GPUtime<<" seconds"<<std::endl;
     }
     if ( CPUenable )
     {
