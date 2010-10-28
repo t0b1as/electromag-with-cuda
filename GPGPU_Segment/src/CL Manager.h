@@ -16,6 +16,9 @@ class ComputeDeviceManager
 public:
     ComputeDeviceManager();
     virtual ~ComputeDeviceManager() {};
+    
+    /// Returns the total number of Compute devices detected
+    virtual size_t GetNumDevices() = 0;
 protected:
     //----------------------------------------Global Context tracking---------------------------//
     /// Records wether a scan for compatible devices has already completed
@@ -24,9 +27,6 @@ protected:
     /// Performs a one-time scan to determine the number of devices
     /// and obtain the device properties
     virtual void ScanDevices() = 0;
-    
-    /// Returns the total number of Compute devices detected
-    virtual size_t GetDeviceNo() = 0;
 };
 }// namespace deviceMan
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -424,6 +424,8 @@ public:
 
     /// Lists all devices that were found during the last scan, including non-compatible ones
     static void ListAllDevices(std::ostream &out = std::cout);
+    
+    size_t GetNumDevices();
 
 private:
 
@@ -432,7 +434,12 @@ private:
     static unsigned int nrPlatforms;
     /// List of all platforms found on the machine
     static clPlatformProp *platforms;
+    
+    /// DeviceManager overriders
+    ////{@
     void ScanDevices();
+    
+    ///}@
 };
 
 extern ClManager GlobalClManager;

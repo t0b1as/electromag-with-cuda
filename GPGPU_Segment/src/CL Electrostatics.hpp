@@ -61,6 +61,9 @@ private:
     /// Specifies the error code incurred during the last global operation
     CLerror lastOpErrCode;
     
+    /// Records the total number of available compute devices
+    size_t nDevices;
+    
     static OpenCL::ClManager DeviceManager;
 
 };
@@ -77,7 +80,7 @@ CLElectrosFunctor<T>::CLElectrosFunctor()
 {
     //dataBound = false;
     //resourcesAllocated = false;
-    /*nDevices =*/ DeviceManager.ListAllDevices();
+    nDevices = DeviceManager.GetNumDevices();
     //nReadyForExec = 0;
 }
 

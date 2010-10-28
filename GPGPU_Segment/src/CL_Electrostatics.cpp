@@ -19,6 +19,9 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 CLElectrosFunctor<float> CLtest;
 
+template<class T>
+OpenCL::ClManager CLElectrosFunctor<T>::DeviceManager;
+
 #include "X-Compat/HPC Timing.h"
 #include <iostream>
 #include "OpenCL_Dyn_Load.h"
