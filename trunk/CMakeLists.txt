@@ -56,7 +56,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 find_package(OpenGL 1.6)
 find_package(GLEW 1.5)
-find_package(GLU)
 find_package(GLUT 2.6)
 
 IF(OPENGL_FOUND AND OPENGL_GLU_FOUND AND GLEW_FOUND AND GLUT_FOUND)

@@ -64,6 +64,20 @@ void ClManager::ScanDevices()
 
 }
 
+size_t ClManager::GetNumDevices()
+{
+    // Returns the number of all detected CL devices
+    // from all detected platforms
+    if(!deviceScanComplete) ScanDevices();
+    
+    size_t nDev = 0;
+    for(size_t i = 0; i < nrPlatforms; i++)
+    {
+        nDev += platforms[i].nrDevices;
+    }
+    return nDev;
+}
+
 
 
 ClManager::clDeviceProp::clDeviceProp()
