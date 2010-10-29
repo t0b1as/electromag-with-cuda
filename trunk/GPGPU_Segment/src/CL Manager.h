@@ -406,7 +406,7 @@ public:
         char extensions[1024];
 
         ///\brief Number of devices in the platform
-        unsigned int nrDevices;
+        unsigned int nDevices;
 
         ///\brief List of all devices in the platform
         clDeviceProp *devices;
@@ -431,7 +431,7 @@ private:
 
     //----------------------------------------Global Context tracking---------------------------//
     /// The number of platforms found on the machine
-    static unsigned int nrPlatforms;
+    static unsigned int nPlatforms;
     /// List of all platforms found on the machine
     static clPlatformProp *platforms;
     
