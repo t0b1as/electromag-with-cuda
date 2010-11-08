@@ -9,6 +9,12 @@ ClManager::clPlatformProp *ClManager::platforms;
 
 bool deviceMan::ComputeDeviceManager::deviceScanComplete = false;
 
+// Since classes using ClManager as their device manager are used staically, it is possible that
+// The respective class gets initialized statically before ClManager. We use this to detect such
+// a condition and correct it. This case almost always represents a programming error or
+// compiler bug.
+static bool FirstClManagerInitialized = false;
+
 deviceMan::ComputeDeviceManager::ComputeDeviceManager()
 {
 }
@@ -18,6 +24,9 @@ ClManager::ClManager()
     // Do a one-time scan for compatible GPUs
     if (!deviceScanComplete) ScanDevices();
     deviceScanComplete = true;
+    
+    // Mark initialization of first object
+    FirstClManagerInitialized = true;
 }
 
 ClManager::~ClManager()
@@ -66,6 +75,12 @@ void ClManager::ScanDevices()
 
 size_t ClManager::GetNumDevices()
 {
+    if(!FirstClManagerInitialized)
+    {
+        // Very very very severe error
+        std::cerr<<"FATAL ERROR: Attempted to use ClManager object before being initialized."<<std::endl;
+        return 0;
+    }
     // Returns the number of all detected CL devices
     // from all detected platforms
     if(!deviceScanComplete) ScanDevices();
@@ -383,39 +398,100 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
-                    sizeof(this->preferredVectorWidth_Char),
-                    (void*)&this->preferredVectorWidth_Char,
+                    sizeof(this->preferredVectorWidth_char),
+                    (void*)&this->preferredVectorWidth_char,
                     0);
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
-                    sizeof(this->preferredVectorWidth_Short),
-                    (void*)&this->preferredVectorWidth_Short,
+                    sizeof(this->preferredVectorWidth_short),
+                    (void*)&this->preferredVectorWidth_short,
                     0);
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,
-                    sizeof(this->preferredVectorWidth_Int),
-                    (void*)&this->preferredVectorWidth_Int,
+                    sizeof(this->preferredVectorWidth_int),
+                    (void*)&this->preferredVectorWidth_int,
                     0);
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
-                    sizeof(this->preferredVectorWidth_Long),
-                    (void*)&this->preferredVectorWidth_Long,
+                    sizeof(this->preferredVectorWidth_long),
+                    (void*)&this->preferredVectorWidth_long,
                     0);
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
-                    sizeof(this->preferredVectorWidth_Float),
-                    (void*)&this->preferredVectorWidth_Float,
+                    sizeof(this->preferredVectorWidth_float),
+                    (void*)&this->preferredVectorWidth_float,
                     0);
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
-                    sizeof(this->preferredVectorWidth_Double),
-                    (void*)&this->preferredVectorWidth_Double,
+                    sizeof(this->preferredVectorWidth_double),
+                    (void*)&this->preferredVectorWidth_double,
                     0);
+    
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
+                    sizeof(this->preferredVectorWidth_half),
+                    (void*)&this->preferredVectorWidth_half,
+                    0);
+    
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_HOST_UNIFIED_MEMORY,
+                    sizeof(this->hostUnifiedMemory),
+                    (void*)&this->hostUnifiedMemory,
+                    0);
+    
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,
+                    sizeof(this->nativeVectorWidth_char),
+                    (void*)&this->nativeVectorWidth_char,
+                    0);
+
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT,
+                    sizeof(this->nativeVectorWidth_short),
+                    (void*)&this->nativeVectorWidth_short,
+                    0);
+
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_INT,
+                    sizeof(this->nativeVectorWidth_int),
+                    (void*)&this->nativeVectorWidth_int,
+                    0);
+
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG,
+                    sizeof(this->nativeVectorWidth_long),
+                    (void*)&this->nativeVectorWidth_long,
+                    0);
+
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,
+                    sizeof(this->nativeVectorWidth_float),
+                    (void*)&this->nativeVectorWidth_float,
+                    0);
+
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,
+                    sizeof(this->nativeVectorWidth_double),
+                    (void*)&this->nativeVectorWidth_double,
+                    0);
+    
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,
+                    sizeof(this->nativeVectorWidth_half),
+                    (void*)&this->nativeVectorWidth_half,
+                    0);
+    
+    clGetDeviceInfo(this->deviceID,
+                    CL_DEVICE_OPENCL_C_VERSION,
+                    sizeof(this->openCL_C_version),
+                    (void*)&this->openCL_C_version,
+                    0);
+
 
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PROFILE,
@@ -499,8 +575,8 @@ void ClManager::ListAllDevices(std::ostream& out)
             out<<"   Device: "<<dev->name<<std::endl;
             out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"<<std::endl;
             out<<"    Compute units (cores): "<<dev->maxComputeUnits<<std::endl;
-            out<<"    Single-precision SIMD width: "<<dev->preferredVectorWidth_Float<<std::endl;
-            out<<"    Double-precision SIMD width: "<<dev->preferredVectorWidth_Double<<std::endl;
+            out<<"    Single-precision SIMD width: "<<dev->preferredVectorWidth_float<<std::endl;
+            out<<"    Double-precision SIMD width: "<<dev->preferredVectorWidth_double<<std::endl;
         }
         out<<std::endl;
     }
