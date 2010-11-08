@@ -65,6 +65,9 @@ private:
     size_t nDevices;
     
     static OpenCL::ClManager DeviceManager;
+    
+    /// Partitions the Data for different devices
+    void PartitionData();
 
 };
 ///@}
@@ -76,11 +79,19 @@ extern CLElectrosFunctor<float> CLtest;
 /// Initializes critical variables
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CLElectrosFunctor<T>::CLElectrosFunctor()
+CLElectrosFunctor<T>::CLElectrosFunctor():
+nDevices(0)
 {
     //dataBound = false;
     //resourcesAllocated = false;
-    nDevices = DeviceManager.GetNumDevices();
+    
+    // It is dangerous to call this in the constructor since the ClElectrosFunctor object is 
+    // not fully initialized, and as a result, DeviceManager may also not be initialized
+    // As a result, it is safer to initialize nDevices to zero and get the actual number of
+    // device later down the road, when CLElectrosFunctor is fully initialized, and
+    // DeviceManager will be guaranteed to exist
+    //nDevices = DeviceManager.GetNumDevices();
+    
     //nReadyForExec = 0;
 }
 

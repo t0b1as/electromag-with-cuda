@@ -274,32 +274,72 @@ public:
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Char;
+        cl_uint preferredVectorWidth_char;
         ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Short;
+        cl_uint preferredVectorWidth_short;
         ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Int;
+        cl_uint preferredVectorWidth_int;
         ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Long;
+        cl_uint preferredVectorWidth_long;
         ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Float;
+        cl_uint preferredVectorWidth_float;
         ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE
         ///
         ///Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
         /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-        cl_uint preferredVectorWidth_Double;
+        cl_uint preferredVectorWidth_double;
+        
+        ///\brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF
+        cl_uint preferredVectorWidth_half;
+        
+        ///\brief CL_DEVICE_HOST_UNIFIED_MEMORY
+        cl_bool hostUnifiedMemory;
+        
+        /// Returns the native ISA vector width. The vector width is defined as the number of scalar elements that can be stored in the vector.
+        /// If the cl_khr_fp64 extension is not supported, CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE must return 0.
+        /// If the cl_khr_fp16 extension is not supported, CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF must return 0.
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR
+        ///
+        cl_uint nativeVectorWidth_char;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT
+        ///
+        cl_uint nativeVectorWidth_short;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_INT
+        ///
+        cl_uint nativeVectorWidth_int;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG
+        ///
+        cl_uint nativeVectorWidth_long;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT
+        ///
+        cl_uint nativeVectorWidth_float;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE
+        ///
+        cl_uint nativeVectorWidth_double;
+        ///\brief CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF
+        ///
+        cl_uint nativeVectorWidth_half;
+        
+        ///\brief CL_DEVICE_OPENCL_C_VERSION
+        /// 
+        /// OpenCL C version string. Returns the highest OpenCL C version supported by the compiler for this device. This version string has the following format:\n
+        /// OpenCL<space>C<space><major_version.minor_version><space><vendor-specific information> \n
+        /// The major_version.minor_version value must be 1.1 if CL_DEVICE_VERSION is OpenCL 1.1. \n
+        /// The major_version.minor_version value returned can be 1.0 or 1.1 if CL_DEVICE_VERSION is OpenCL 1.0.\n
+        /// If OpenCL C 1.1 is returned, this implies that the language feature set defined in section 6 of the OpenCL 1.1 specification is supported by the OpenCL 1.0 device.
+        char openCL_C_version[256];
 
 
         ///\brief CL_DEVICE_PROFILE

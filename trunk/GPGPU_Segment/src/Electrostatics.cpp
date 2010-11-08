@@ -17,7 +17,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 ***********************************************************************************************/
 
 #include "CUDA Interop.h"
-#include "CUDA_Electrostatics.h"
+#include "CUDA_Electrostatics.hpp"
 #include "CL Electrostatics.hpp"
 
 /*////////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 CLElectrosFunctor<float> CLtest;
 
+// Declare the static device manager
 template<class T>
 OpenCL::ClManager CLElectrosFunctor<T>::DeviceManager;
 
@@ -29,9 +30,6 @@ OpenCL::ClManager CLElectrosFunctor<T>::DeviceManager;
 // We may later change this to functor-specific, or even device-secific error stream,
 #define errlog std::cerr
 
-//template<class T>
-//cuda::CudaManager CudaElectrosFunctor<T>::ElectrostaticsManager;
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Electrostatics functor destructor
@@ -39,7 +37,7 @@ OpenCL::ClManager CLElectrosFunctor<T>::DeviceManager;
 /// Deallocates all resources
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-CLElectrosFunctor<T>::~ClElectrosFunctor()
+CLElectrosFunctor<T>::~CLElectrosFunctor()
 {
     ReleaseResources();
     //for ( size_t i = 0; i < this->functorParamList.GetSize(); i++ ) delete functorParamList[i].pPerfData;
@@ -86,6 +84,62 @@ bool CLElectrosFunctor<T>::FailOnFunctor ( size_t functorIndex )
     return false;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+///\brief Uses a guess-and-hope-for-the-best method of distributing data among functors
+///
+/// Does NOT cause an error condition.
+////////////////////////////////////////////////////////////////////////////////////////////////
+template<class T>
+void CLElectrosFunctor<T>::PartitionData()
+{
+    // Get the number of available compute devices
+    if(!nDevices)
+    {
+        nDevices = DeviceManager.GetNumDevices();
+    }
+    // Multiple of alignment for the number of threads
+    // FIXME: aligning to a preset alignment size does not take into considerations devices
+    // with non-power of 2 multiprocessors. This can generate empty threads, and may not be efficient
+    // alignment size should take the number of multiprocessors into consideration at the very least
+    // the block size should also be considered for maximum efficiency
+    const size_t segAlign = 256;
+    // Determine the maximum number of parallel segments as the number of GPUs
+    const unsigned int segments = ( unsigned int ) this->nDevices;
+    // Determine the number of lines to be processed by each GPU, and aling it to a multiple of segAlign
+    // This prevents empty threads from being created on more than one GPU
+    const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 ) / segAlign ) * segAlign;
+    // Create data for performance info
+    /*pPerfData->stepTimes.Alloc ( timingSize * segments );
+    pPerfData->stepTimes.Memset ( ( T ) 0 );
+    // Create arrays
+    this->functorParamList.Alloc ( segments );
+
+    size_t remainingLines = this->nLines;
+    size_t nCharges = this->pPointChargeData->GetSize();
+    size_t steps = this->pFieldLinesData->GetSize() /this->nLines;
+    unsigned int blockXSize = 0;
+    for ( size_t devID = 0; devID < segments; devID++ )
+    {
+        FunctorData *dataParams = &functorParamList[devID];
+        blockXSize = dataParams->blockXSize;
+        // Initialize parameter arrays
+        size_t segDataSize = ( remainingLines < segSize ) ? remainingLines : segSize;
+        dataParams->startIndex = this->nLines - remainingLines;
+        dataParams->elements = segDataSize;
+        dataParams->pPerfData =  new perfPacket; // Deleted in destructor
+        // Constructor is not called automatically, so we need to use ReAlloc (FIXME: possible source of bugs)
+        dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
+        dataParams->pPerfData->stepTimes.Memset ( 0 );
+        dataParams->pPerfData->progress = 0;
+        dataParams->GPUchargeData.nCharges = nCharges;
+        dataParams->GPUfieldData.nSteps = steps;
+        //dataParams->GPUfieldData.nLines = segDataSize;
+        dataParams->lastOpErrCode = CUDA_ERROR_NOT_INITIALIZED;// Flag that resources have not yet been allocated
+        dataParams->ctxIsUsable = false;
+        remainingLines -= segSize;
+    }*/
+}
+
 template<class T>
 void CLElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
 {
@@ -115,7 +169,8 @@ void CLElectrosFunctor<T>::BindData (
 )
 {
     struct ElectrostaticFunctor<T>::BindDataParams *params =
-            ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+
+( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
         || params->resolution == 0

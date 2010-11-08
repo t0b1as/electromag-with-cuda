@@ -1,4 +1,4 @@
-#include "CUDA_Electrostatics.h"
+#include "CUDA_Electrostatics.hpp"
 #define ES_FUNCTOR_INCLUDE
 #include "Config.h"
 #undef ES_FUNCTOR_INCLUDE

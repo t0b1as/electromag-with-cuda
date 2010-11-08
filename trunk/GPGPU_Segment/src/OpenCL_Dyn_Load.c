@@ -32,7 +32,6 @@ __clCreateCommandQueue               *clCreateCommandQueue;
 __clRetainCommandQueue               *clRetainCommandQueue;
 __clReleaseCommandQueue              *clReleaseCommandQueue;
 __clGetCommandQueueInfo              *clGetCommandQueueInfo;
-__clSetCommandQueueProperty          *clSetCommandQueueProperty;
 __clCreateBuffer                     *clCreateBuffer;
 __clCreateImage2D                    *clCreateImage2D;
 __clCreateImage3D                    *clCreateImage3D;
@@ -85,6 +84,16 @@ __clEnqueueMarker                    *clEnqueueMarker;
 __clEnqueueWaitForEvents             *clEnqueueWaitForEvents;
 __clEnqueueBarrier                   *clEnqueueBarrier;
 __clGetExtensionFunctionAddress      *clGetExtensionFunctionAddress;
+
+/* OpenCL 1.1 stuff */
+__clCreateSubBuffer                  *clCreateSubBuffer;
+__clSetMemObjectDestructorCallback   *clSetMemObjectDestructorCallback;
+__clCreateUserEvent                  *clCreateUserEvent;
+__clSetUserEventStatus               *clSetUserEventStatus;
+__clSetEventCallback                 *clSetEventCallback;
+__clEnqueueReadBufferRect            *clEnqueueReadBufferRect;
+__clEnqueueWriteBufferRect           *clEnqueueWriteBufferRect;
+__clEnqueueCopyBufferRect            *clEnqueueCopyBufferRect;
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -164,7 +173,6 @@ cl_int CL_API_CALL clLibLoad()
     GET_PROC(clRetainCommandQueue               );
     GET_PROC(clReleaseCommandQueue              );
     GET_PROC(clGetCommandQueueInfo              );
-    GET_PROC(clSetCommandQueueProperty          );
     GET_PROC(clCreateBuffer                     );
     GET_PROC(clCreateImage2D                    );
     GET_PROC(clCreateImage3D                    );
@@ -217,5 +225,16 @@ cl_int CL_API_CALL clLibLoad()
     GET_PROC(clEnqueueWaitForEvents             );
     GET_PROC(clEnqueueBarrier                   );
     GET_PROC(clGetExtensionFunctionAddress      );
+
+    /* Load OpenCL 1.1  stuff*/
+    GET_PROC(clCreateSubBuffer                  );
+    GET_PROC(clSetMemObjectDestructorCallback   );
+    GET_PROC(clCreateUserEvent                  );
+    GET_PROC(clSetUserEventStatus               );
+    GET_PROC(clSetEventCallback                 );
+    GET_PROC(clEnqueueReadBufferRect            );
+    GET_PROC(clEnqueueWriteBufferRect           );
+    GET_PROC(clEnqueueCopyBufferRect            );
+
     return CL_SUCCESS;
 }
