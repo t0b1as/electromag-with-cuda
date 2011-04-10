@@ -208,7 +208,7 @@ int main ( int argc, char* argv[] )
     }
     // Initialze data containers
     size_t nw = ( int ) simConfig.nx, nh = ( int ) simConfig.ny, nd = ( int ) simConfig.nz,  n = nh * nw * nd, p = ( int ) simConfig.pStatic, len = ( int ) simConfig.len;
-    Array<Vector3<FPprecision> > CPUlines, GPUlines;
+    Vector3 <Array<FPprecision> > CPUlines, GPUlines;
     Array<electro::pointCharge<FPprecision> > charges ( p, 256 );
     // Only allocate memory if cpu comparison mode is specified
     if ( GPUenable ) GPUlines.AlignAlloc ( n*len );
@@ -226,7 +226,7 @@ int main ( int argc, char* argv[] )
     InitializePointChargeArray ( charges, p, randseed );
 
     // init starting points
-    Array<Vector3<FPprecision> > *arrMain;
+    Vector3 <Array<FPprecision> > *arrMain;
     if ( GPUenable ) arrMain = &GPUlines;
     else if ( CPUenable ) arrMain = &CPUlines;
     else
@@ -249,7 +249,7 @@ int main ( int argc, char* argv[] )
     double GPUtime = 0, CPUtime = 0;
     QueryHPCFrequency ( &freq );
 
-    TestCL ( GPUlines, charges, n, 1.0, GPUperf, useCurvature );
+    //TestCL ( GPUlines, charges, n, 1.0, GPUperf, useCurvature );
     
     FPprecision resolution = 1;
     if ( GPUenable )
@@ -261,7 +261,7 @@ int main ( int argc, char* argv[] )
         // Then run the calculations
         QueryHPCTimer ( &start );
         
-        failedFunctors = CalcField ( GPUlines, charges, n, resolution, GPUperf, useCurvature );
+        //failedFunctors = CalcField ( GPUlines, charges, n, resolution, GPUperf, useCurvature );
         QueryHPCTimer ( &end );
         // Make sure the next section terminates even if progress is not updated,
         // or is not updated entirely
@@ -278,7 +278,7 @@ int main ( int argc, char* argv[] )
     {
         StartConsoleMonitoring ( &CPUperf.progress );
         QueryHPCTimer ( &start );
-        CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf, useCurvature );
+        //CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf, useCurvature );
         QueryHPCTimer ( &end );
         CPUperf.progress = 1;
         std::cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<std::endl;

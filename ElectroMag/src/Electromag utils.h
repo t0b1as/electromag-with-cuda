@@ -29,7 +29,7 @@ Copyright (C) 2009 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
 typedef void* ArrayHandle;
 
 template<class T>
-void InitializeFieldLineArray ( Array<Vector3<T> > &arrMain,                                ///< Pointer to the array to initialize
+void InitializeFieldLineArray ( Vector3<Array<T> > &arrMain,                                ///< Pointer to the array to initialize
                                 const size_t n,                                             ///< Number of field lines in the array
                                 const size_t width, const size_t height, const size_t depth,///< Distribution of array
                                 bool random                                                 ///< Initialize randomly, or in a grid if false
@@ -43,9 +43,9 @@ void InitializeFieldLineArray ( Array<Vector3<T> > &arrMain,                    
         // Random Filed line initialization
         for ( size_t i = 0; i < n ; i++ )
         {
-            arrMain[i].x = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
-            arrMain[i].y = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
-            arrMain[i].z = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+            arrMain.x[i] = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+            arrMain.y[i] = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
+            arrMain.z[i] = ( T ) ( rand()-RAND_MAX/2 ) /RAND_MAX*10000;
         }
     }
     else
@@ -59,9 +59,9 @@ void InitializeFieldLineArray ( Array<Vector3<T> > &arrMain,                    
                 T xVal = ( T ) ( - ( ( T ) width ) /2 + 1E-5 );
                 for ( size_t i = 0; i < width; i++, xVal++ ) // x coord
                 {
-                    arrMain[k*width*height + j*width + i].x = ( T ) 10*xVal;
-                    arrMain[k*width*height + j*width + i].y = ( T ) 10*yVal;
-                    arrMain[k*width*height + j*width + i].z = ( T ) 10*zVal;
+                    arrMain.x[k*width*height + j*width + i] = ( T ) 10*xVal;
+                    arrMain.y[k*width*height + j*width + i] = ( T ) 10*yVal;
+                    arrMain.z[k*width*height + j*width + i] = ( T ) 10*zVal;
                 }
             }
         }
@@ -69,8 +69,8 @@ void InitializeFieldLineArray ( Array<Vector3<T> > &arrMain,                    
 }
 
 template<class T1, class T2>
-void CopyFieldLineArray ( Array<Vector3<T1> >& destination, ///< Destination array
-                          Array<Vector3<T2> >& source,          ///< Source array
+void CopyFieldLineArray ( Vector3<Array<T1> >& destination, ///< Destination array
+                          Vector3<Array<T2> >& source,          ///< Source array
                           size_t start,                     ///< Index of first element to copy
                           size_t elements                       ///< Number of elements to copy
                         )

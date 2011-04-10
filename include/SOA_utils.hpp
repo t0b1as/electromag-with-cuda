@@ -68,6 +68,17 @@ struct Vector3< Array <T> >
 		z.Memset(value.z);
 	}
 	
+	size_t GetSize()
+	{
+		// All elements have the same size
+		return x.GetSize();
+	}
+	
+	Vector3<T> operator[](size_t index) {
+		Vector3<T> ret = {x[index], y[index], z[index]};
+		return ret;
+	}
+	
 };
 
 }
