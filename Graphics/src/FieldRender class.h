@@ -106,8 +106,6 @@ private:
 
     static void fieldDisplay();
 
-    static void fieldDisplayVBO();
-
     static void reshape(int w, int h);
 
     static void keyboard(unsigned char key, int x, int y);
