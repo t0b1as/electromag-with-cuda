@@ -159,7 +159,7 @@ void FieldRender::fieldDisplay()
 	int pts = (GLint)GLdata.lineLen;
 	for(size_t i = 0; i<GLdata.nlines; i++)
 	{
-		glVertexPointer(3 , GL_FLOAT, (GLint)(GLdata.lines->GetElemSize()*GLdata.lines->GetSize()/GLdata.lineLen), GLdata.lines->GetDataPointer()+i);
+		//glVertexPointer(3 , GL_FLOAT, (GLint)(GLdata.lines->GetElemSize()*GLdata.lines->GetSize()/GLdata.lineLen), GLdata.lines->GetDataPointer()+i);
 		glDrawArrays(GL_LINE_STRIP, 0, pts);
 		
 	}
@@ -192,21 +192,21 @@ void FieldRender::Start()
 {
 	// Generate colors
 	const size_t elements = GLdata.nlines;
-	const size_t elemLen = GLdata.lineLen;
-	Vector3<float> *tempBuf = new Vector3<float>[elemLen];
+	const size_t lineLen = GLdata.lineLen;
+	Vector3<float> *tempBuf = new Vector3<float>[lineLen];
 	// Red to green transition
-	for(size_t i = 0; i < elemLen/2; i++)
+	for(size_t i = 0; i < lineLen/2; i++)
 	{
-		tempBuf[i].x = (float)(elemLen - 2*i)/elemLen;		// Red chanel
-		tempBuf[i].y = (float)(2*i)/elemLen;				// Green channel
+		tempBuf[i].x = (float)(lineLen - 2*i)/lineLen;		// Red chanel
+		tempBuf[i].y = (float)(2*i)/lineLen;				// Green channel
 		tempBuf[i].z = 0;									// Blue channel
 	}
 	// Green to blue transition
-	for(size_t i = elemLen/2; i < elemLen; i++)
+	for(size_t i = lineLen/2; i < lineLen; i++)
 	{
 		tempBuf[i].x = 0;											// Red chanel
-		tempBuf[i].y = (float)(elemLen- 2*(i-elemLen/2))/elemLen;	// Green channel
-		tempBuf[i].z = 2*(float)(i-elemLen/2)/elemLen;				// Blue channel
+		tempBuf[i].y = (float)(lineLen- 2*(i-lineLen/2))/lineLen;	// Green channel
+		tempBuf[i].z = 2*(float)(i-lineLen/2)/lineLen;				// Blue channel
 	}
 
 	colors = (GLfloat*)tempBuf;
@@ -226,15 +226,15 @@ void FieldRender::Start()
 		// Copy the colors to a VBO
 		glGenBuffersARB(1, &colorVBO);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, colorVBO);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, elemLen * sizeof(Vector3<float>), colors, GL_STATIC_DRAW_ARB );
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, lineLen * sizeof(Vector3<float>), colors, GL_STATIC_DRAW_ARB );
 
 
 		// Create VBO index array
 		nrLinesVBO = (elements + lineSkip - 1)/lineSkip;
 		RenderData::bufferedLines = nrLinesVBO;
 		linesVBOs = new GLuint[nrLinesVBO];
-		tempBuf = new Vector3<float>[elemLen];
-		// Create the buffers
+		tempBuf = new Vector3<float>[lineLen];
+		// Create the 
 		__glewGenBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
 		// can replace __glew* with gl*
 		// Copy all the field lines to the GPU in separate arrays
@@ -244,16 +244,16 @@ void FieldRender::Start()
 		for(size_t i = 0; i < nrLinesVBO; i++)
 		{
 			// Set the base to ni_0
-			Vector3<float> *temp = GLdata.lines->GetDataPointer() + i*lineSkip;
+			//Vector3<float> *temp = GLdata.lines->GetDataPointer() + i*lineSkip;
 			// Copy ni_0, ni_1, ni_2... to a linear array
-			for(size_t cpy = 0; cpy < elemLen; cpy++)
+			for(size_t cpy = 0; cpy < lineLen; cpy++)
 			{
-				tempBuf[cpy] = temp[cpy*elements];
+				tempBuf[cpy] = (*GLdata.lines)[cpy*elements + i*lineSkip];//temp[cpy*elements];
 			}
 			// Now that the data for ni is copied in linear memory, bind it and copy it to a VBO
 			::__glewBindBufferARB(GL_ARRAY_BUFFER_ARB, linesVBOs[i]);
 			::__glewBufferDataARB(GL_ARRAY_BUFFER_ARB,
-				GLdata.lines->GetElemSize()*elemLen,
+				GLdata.lines->GetElemSize()*lineLen,
 				tempBuf, GL_STATIC_DRAW_ARB );
 		}
 		// Unbind the buffers from any specific VBO

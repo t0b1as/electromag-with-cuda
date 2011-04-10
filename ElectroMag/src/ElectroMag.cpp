@@ -320,7 +320,7 @@ int main ( int argc, char* argv[] )
     if ( display )
     {
         GLdata.charges = ( Array<electro::pointCharge<float> >* ) &charges;
-        GLdata.lines = ( Array<Vector3<float> >* ) arrMain;
+        GLdata.lines = ( Vector3<Array<float> >* ) arrMain;
         GLdata.nlines = n;
         GLdata.lineLen = len;
         GLdata.elementSize = sizeof ( FPprecision );
