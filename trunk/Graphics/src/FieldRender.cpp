@@ -187,7 +187,7 @@ void FieldRender::Start()
 		delete[] colors;
 		colors = 0;
 		// Finally, override the regular display function to use VBOs
-		glutDisplayFunc(fieldDisplayVBO);
+		glutDisplayFunc(fieldDisplay);
 	}
 	else
     {
@@ -376,7 +376,7 @@ void FieldRender::mouse(int button, int state, int x, int y)
 	}
 }
 
-void FieldRender::fieldDisplayVBO()
+void FieldRender::fieldDisplay()
 {
 	// Clear any buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
