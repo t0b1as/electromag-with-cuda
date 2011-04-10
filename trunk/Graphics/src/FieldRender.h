@@ -18,8 +18,8 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 #ifndef _FIELDRENDER_H
 #define _FIELDRENDER_H
 
+#include <SOA_utils.hpp>
 #include "Renderer.h"
-#include "Data Structures.h"
 #include "Electrostatics.h"
 
 namespace FieldRenderer
@@ -28,7 +28,7 @@ namespace FieldRenderer
 struct GLpacket
 {
     Array<electro::pointCharge<float> > *charges;
-    Array<Vector3<float> > *lines;
+    Vector3<Array<float> > *lines;
     size_t nlines, lineLen;
     size_t elementSize;//8 for double 4 for float
 };

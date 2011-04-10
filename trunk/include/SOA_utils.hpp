@@ -74,6 +74,12 @@ struct Vector3< Array <T> >
 		return x.GetSize();
 	}
 	
+	size_t GetElemSize()
+    {
+        // All elements have the same size
+        return sizeof(Vector3<T>);
+    }
+	
 	Vector3<T> operator[](size_t index) {
 		Vector3<T> ret = {x[index], y[index], z[index]};
 		return ret;
