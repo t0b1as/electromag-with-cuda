@@ -28,6 +28,7 @@
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 #include "Electromag utils.h"
 #include "Graphics_dynlink.h"
+#include <SOA_utils.hpp>
 
 //using namespace std;
 // Use float or double; 16-bit single will generate errors
