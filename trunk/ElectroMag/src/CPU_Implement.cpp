@@ -34,7 +34,7 @@ This file is part of ElectroMag.
 using namespace electro;
 
 template<class T>
-int CalcField_CPU_T ( Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
+int CalcField_CPU_T ( Vector3<Array<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
                       const size_t n, T resolution, perfPacket& perfData )
 {
     if ( !n )
@@ -49,7 +49,6 @@ int CalcField_CPU_T ( Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& po
         return 3;
 
     // Work with data pointers to avoid excessive function calls
-    Vector3<T> *lines = fieldLines.GetDataPointer();
     pointCharge<T> *charges = pointCharges.GetDataPointer();
 
     //Used to mesure execution time
@@ -73,14 +72,15 @@ int CalcField_CPU_T ( Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& po
 
             // Set temporary cummulative field vector to zero
             Vector3<T> temp = {0,0,0},
-                              prevPoint = lines[n* ( step - 1 ) + line];
+                              prevPoint = fieldLines[n* ( step - 1 ) + line];
             for ( size_t point = 0; point < p; point++ )
             {
                 // Add partial vectors to the field vector
                 temp += CoreFunctor ( charges[point], prevPoint );  // (electroPartFieldFLOP + 3) FLOPs
             }
             // Get the unit vector of the field vector, divide it by the resolution, and add it to the previous point
-            lines[step*n + line] = ( prevPoint + vec3SetInvLen ( temp, resolution ) ); // Total: 13 FLOP (Add = 3 FLOP, setLen = 10 FLOP)
+            Vector3<T> result = ( prevPoint + vec3SetInvLen ( temp, resolution ) ); // Total: 13 FLOP (Add = 3 FLOP, setLen = 10 FLOP)
+            fieldLines.write(result , step*n + line);
         }
     }
     // take ending measurement
@@ -92,7 +92,7 @@ int CalcField_CPU_T ( Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& po
 }
 
 template<class T>
-int CalcField_CPU_T_Curvature ( Array<Vector3<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
+int CalcField_CPU_T_Curvature ( Vector3<Array<T> >& fieldLines, Array<pointCharge<T> >& pointCharges,
                                 const size_t n, T resolution, perfPacket& perfData )
 {
     if ( !n )
@@ -114,7 +114,7 @@ int CalcField_CPU_T_Curvature ( Array<Vector3<T> >& fieldLines, Array<pointCharg
         return 3;
 
     // Work with data pointers to avoid excessive function calls
-    Vector3<T> *pLines = fieldLines.GetDataPointer();
+    Vector3<T*> pLines = fieldLines.GetDataPointers();
     pointCharge<T> *charges = pointCharges.GetDataPointer();
 
     //Used to mesure execution time
@@ -140,7 +140,10 @@ int CalcField_CPU_T_Curvature ( Array<Vector3<T> >& fieldLines, Array<pointCharg
 
             // Set temporary cummulative field vector to zero
             Vector3<T> temp = {0,0,0}, prevVec, prevPoint;
-            prevVec = prevPoint = pLines[n* ( step - 1 ) + line];// Load prevVec like this to ensure similarity with GPU kernel
+            prevVec = prevPoint = {
+		    pLines.x[n* ( step - 1 ) + line],
+		    pLines.y[n* ( step - 1 ) + line],
+		    pLines.z[n* ( step - 1 ) + line]};// Load prevVec like this to ensure similarity with GPU kernel
             //#pragma unroll(4)
             //#pragma omp parallel for
             for ( size_t point = 0; point < p; point++ )
@@ -153,7 +156,8 @@ int CalcField_CPU_T_Curvature ( Array<Vector3<T> >& fieldLines, Array<pointCharg
             k = vec3Len ( vec3Cross ( temp - prevVec, prevVec ) ) / ( k*sqrt ( k ) );// 25FLOPs (3 vec sub + 9 vec cross + 10 setLen + 1 div + 1 mul + 1 sqrt)
             // Finally, add the unit vector of the field divided by the resolution to the previous point to get the next point
             // We increment the curvature by one to prevent a zero curvature from generating #NaN or #Inf, though any positive constant should work
-            pLines[step*n + line] = ( prevPoint + vec3SetInvLen ( temp, ( k+1 ) *resolution ) ); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
+            Vector3<T> result = ( prevPoint + vec3SetInvLen ( temp, ( k+1 ) *resolution ) ); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
+            fieldLines.write(result, step*n + line);
             prevVec = temp;
         }
         // update progress
@@ -169,7 +173,7 @@ int CalcField_CPU_T_Curvature ( Array<Vector3<T> >& fieldLines, Array<pointCharg
 }
 
 template<>
-int CalcField_CPU<float> ( Array<Vector3<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
+int CalcField_CPU<float> ( Vector3<Array<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
                            const size_t n, float resolution, perfPacket& perfData, bool useCurvature )
 {
     if ( useCurvature ) return CalcField_CPU_T_Curvature<float> ( fieldLines, pointCharges, n, resolution, perfData );
@@ -177,9 +181,11 @@ int CalcField_CPU<float> ( Array<Vector3<float> >& fieldLines, Array<pointCharge
 }
 
 template<>
-int CalcField_CPU<double> ( Array<Vector3<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
+int CalcField_CPU<double> ( Vector3<Array<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
                             const size_t n, double resolution, perfPacket& perfData, bool useCurvature )
 {
     if ( useCurvature ) return CalcField_CPU_T_Curvature<double> ( fieldLines, pointCharges, n, resolution, perfData );
     else return CalcField_CPU_T<double> ( fieldLines, pointCharges, n, resolution, perfData );
 }
+
+

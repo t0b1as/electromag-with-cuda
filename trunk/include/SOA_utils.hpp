@@ -79,6 +79,24 @@ struct Vector3< Array <T> >
 		return ret;
 	}
 	
+	Vector3<T*> GetDataPointers()
+	{
+		Vector3<T*> ret = {
+			x.GetDataPointer(),
+			y.GetDataPointer(),
+			z.GetDataPointer()};
+		return ret;
+	}
+	
+	// A pseudo operator =
+	Vector3<T> write (Vector3<T> value, size_t index)
+	{
+		x[index] = value.x;
+		y[index] = value.y;
+		z[index] = value.z;
+		return value;
+	}
+	
 };
 
 }

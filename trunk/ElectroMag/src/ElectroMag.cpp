@@ -278,7 +278,7 @@ int main ( int argc, char* argv[] )
     {
         StartConsoleMonitoring ( &CPUperf.progress );
         QueryHPCTimer ( &start );
-        //CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf, useCurvature );
+        CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf, useCurvature );
         QueryHPCTimer ( &end );
         CPUperf.progress = 1;
         std::cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<std::endl;
