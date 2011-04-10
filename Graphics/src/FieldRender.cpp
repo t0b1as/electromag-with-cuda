@@ -111,83 +111,6 @@ void FieldRender::DrawOverlay()//const Camera mainCam)
 
 }
 
-void FieldRender::fieldDisplay()
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glEnableClientState(GL_VERTEX_ARRAY);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	switch(PM)
-	{
-	case Perspective:
-		gluPerspective(mainCam.GetFOV(), (GLdouble)winDim.x/(GLdouble)winDim.y, Zmin, Zmax);
-		break;
-	case Orthogonal:
-		glOrtho(-winDim.x/2, winDim.x/2, -winDim.y/2, winDim.y/2, Zmin, Zmax);
-		break;
-	default:
-		break;
-	}
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	Vector3<GLdouble> camPos = mainCam.GetPosition(),
-		camCenter = mainCam.GetCenter(),
-		camUp = mainCam.GetUp();
-	gluLookAt(camPos.x , camPos.y, camPos.z,
-		camCenter.x, camCenter.y, camCenter.z,
-		camUp.x, camUp.y, camUp.z);
-
-	// Draw origin axes
-	glColor3f(1.0, 1.0, 1.0);
-	glBegin(GL_LINES);
-	glVertex3f(0,0,0); glVertex3f(100,0,0);// glVertex3f(0,100,0);	//x
-	glVertex3f(0,0,0); glVertex3f(0,100,0);// glVertex3f(0,0,100);	//y
-	glVertex3f(0,0,0); glVertex3f(0,0,100);// glVertex3f(100,0,0);	//z
-	glEnd();
-
-	// Draw Charges
-	glColor3f(0.0, 0.0, 1.0);
-	glVertexPointer(3 , GL_FLOAT, (GLint)GLdata.charges->GetElemSize(), GLdata.charges->GetDataPointer());
-	glDrawArrays(GL_POINTS, 0, (GLint)GLdata.charges->GetSize());
-
-	// Draw lines
-	glColor3f(1.0, 0.0, 0.0);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(3, GL_FLOAT, 0, colors);
-	int pts = (GLint)GLdata.lineLen;
-	for(size_t i = 0; i<GLdata.nlines; i++)
-	{
-		//glVertexPointer(3 , GL_FLOAT, (GLint)(GLdata.lines->GetElemSize()*GLdata.lines->GetSize()/GLdata.lineLen), GLdata.lines->GetDataPointer()+i);
-		glDrawArrays(GL_LINE_STRIP, 0, pts);
-		
-	}
-	glDisableClientState(GL_COLOR_ARRAY);
-
-	// draw menus
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, winDim.x, winDim.y, 0);
-	
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	glColor4f(0.0f, 0.2f, 0.0f, 0.5f);
-	glBegin(GL_POLYGON);
-	glVertex3f(0,0,0);
-	glVertex3f(176, 0,0);
-	glVertex3f(176,99,0);
-	glVertex3f(0,99,0);
-	glEnd();
-	
-	// Draw infobar
-	DrawOverlay();//mainCam);
-
-	// Flush the buffer to ensure everything is displayed correctly
-	glutSwapBuffers();
-}
-
 void FieldRender::Start()
 {
 	// Generate colors
@@ -266,7 +189,10 @@ void FieldRender::Start()
 		// Finally, override the regular display function to use VBOs
 		glutDisplayFunc(fieldDisplayVBO);
 	}
-	else fprintf(stderr, "Warning: GL_ARB_vertex_buffer_object extension not supported. Rendering may be painfully slow!!!\n");
+	else
+    {
+        fprintf(stderr, "GL_ARB_vertex_buffer_object extension not supported. Rendering cannot continue\n");
+    }
 	// Get timer frequency
 	QueryHPCFrequency(&HPCfreq);
 	// Now that data initialization is complete, start glut
