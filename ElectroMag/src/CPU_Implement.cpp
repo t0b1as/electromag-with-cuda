@@ -314,6 +314,146 @@ int CalcField_CPU_T_Curvature<float> ( Vector3<Array<float> >& fieldLines, Array
     return 0;
 }
 
+#include <emmintrin.h>
+template<>
+int CalcField_CPU_T_Curvature<double> ( Vector3<Array<double> >& fieldLines, Array<pointCharge<double> >& pointCharges,
+                                       const size_t n, double resolution, perfPacket& perfData )
+{
+    if ( !n )
+        return 1;
+    if ( resolution == 0 )
+        return 2;
+    //get the size of the computation
+    size_t p = pointCharges.GetSize();
+    size_t totalSteps = ( fieldLines.GetSize() ) /n;
+
+#undef  LINES_PARRALELISM
+#define LINES_PARRALELISM 4
+#undef SIMD_WIDTH
+#define SIMD_WIDTH 2    // Represents how many floats can be packed into an SSE Register; Must ALWAYS be 4
+#undef LINES_WIDTH
+#define LINES_WIDTH (LINES_PARRALELISM * SIMD_WIDTH)
+#undef ALIGNMENT_MASK
+#define ALIGNMENT_MASK (LINES_WIDTH * sizeof(double) - 1)
+
+    if ( n & ALIGNMENT_MASK )
+        return 5;
+
+    // since we are multithreading the computation, having
+    // perfData.progress = line / n;
+    // will not work as intended because different threads will process different ranges of line and the progress
+    // indicator will jump herratically.
+    // To solve this problem, we compute the percentage that one line represents, and add it to the total progress
+    double perStep = ( double ) LINES_WIDTH/n;
+    perfData.progress = 0;
+
+    if ( totalSteps < 2 )
+        return 3;
+
+    // Used to measure execution time
+    long long freq, start, end;
+    QueryHPCFrequency ( &freq );
+
+    // Start measuring performance
+    QueryHPCTimer ( &start );
+#pragma omp parallel for
+    for ( size_t line = 0; line < n; line+=LINES_WIDTH )
+    {
+        // Work with data pointers to avoid excessive calls to Array<T>::operator[]
+        const Vector3<double*> pLines = fieldLines.GetDataPointers();
+        const pointCharge<double> *pCharges = pointCharges.GetDataPointer();
+
+
+        Vector3<__m128d> prevPoint[LINES_PARRALELISM];
+        Vector3<__m128d> Accum[LINES_PARRALELISM], prevAccum[LINES_PARRALELISM];
+
+        // We can now load the starting points; we will only need to load them once
+        for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+        {
+            // Load data directly from memory. No shuffling necessary for SOA data
+            prevAccum[i].x = prevPoint[i].x =_mm_load_pd (&pLines.x[line + ( i*SIMD_WIDTH ) ]);
+            prevAccum[i].y = prevPoint[i].y =_mm_load_pd (&pLines.y[line + ( i*SIMD_WIDTH ) ]);
+            prevAccum[i].z = prevPoint[i].z =_mm_load_pd (&pLines.z[line + ( i*SIMD_WIDTH ) ]);
+        }
+
+
+        const __m128d zero = _mm_set1_pd ( 0.0 );
+        const __m128d elec_k = _mm_set1_pd ( electro_k );
+        const __m128d curvAdjust =_mm_set1_pd ( 1 ); // curvature adjusting constant
+        const __m128d res = _mm_set1_pd ( resolution );
+        const size_t nLines = n;
+
+        // Intentionally starts from 1, since step 0 is reserved for the starting points
+        for ( size_t step = 1; step < totalSteps; step++ )
+        {
+            for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+                Accum[i].x = Accum[i].y = Accum[i].z = zero;
+
+            for ( size_t point = 0; point < p; point++ )
+            {
+                // Add partial vectors to the field vector
+
+                /*
+                 * We only need to read one point charge at a time
+                 * It must be the same for all lines we are computing, and thus it We need
+                 * to have the same value in all four doublewords of a SSE register
+                 */
+                pointCharge<__m128d> charge;
+                __m128d reader = _mm_load_pd ( ( double* ) &pCharges[point] );
+                charge.position.x = _mm_shuffle_pd ( reader, reader, _MM_SHUFFLE2 ( 0,0 ) );
+                charge.position.y = _mm_shuffle_pd ( reader, reader, _MM_SHUFFLE2 ( 1,1 ) );
+                reader = _mm_load_pd ( (( double* ) &pCharges[point]) + 2 );
+                charge.position.z = _mm_shuffle_pd ( reader, reader, _MM_SHUFFLE2 ( 0,0 ) );
+                charge.magnitude = _mm_shuffle_pd ( reader, reader, _MM_SHUFFLE2 ( 1,1 ) );
+
+                /*
+                 * Field computation
+                 */
+                Accum[0] += electro::PartField ( charge, prevPoint[0], elec_k );
+
+#               if (LINES_PARRALELISM > 1)
+                Accum[1] += electro::PartField ( charge, prevPoint[1], elec_k );
+#               endif
+#               if (LINES_PARRALELISM == 3)
+#               error LINES_PARRALELISM Should not be set to 3, as the alignment mask may fail to function properly
+#               endif
+#               if (LINES_PARRALELISM > 3)
+                Accum[2] += electro::PartField ( charge, prevPoint[2], elec_k );
+                Accum[3] += electro::PartField ( charge, prevPoint[3], elec_k );
+#               endif
+#               if (LINES_PARRALELISM > 4)
+#               error Too many lines per iteration
+#               endif
+
+            }
+
+            for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+            {
+                /*
+                 * Curvature correction
+                 */
+                __m128d k = vec3LenSq ( Accum[i] );
+                k = vec3Len ( vec3Cross ( Accum[i] - prevAccum[i], prevAccum[i] ) ) / ( k*sqrt ( k ) );
+                prevPoint[i] += vec3SetInvLen ( Accum[i], ( k+curvAdjust ) *res );
+
+                // No shuffling needed to store data back
+                size_t base = ( nLines * step + ( i*SIMD_WIDTH ) + line );
+                _mm_stream_pd(&pLines.x[base], prevPoint[i].x);
+                _mm_stream_pd(&pLines.y[base], prevPoint[i].y);
+                _mm_stream_pd(&pLines.z[base], prevPoint[i].z);
+            }
+        }
+        // update progress
+#pragma omp atomic
+        perfData.progress += perStep;
+    }
+    // take ending measurement
+    QueryHPCTimer ( &end );
+    // Compute performance and time
+    perfData.time = ( double ) ( end - start ) / freq;
+    perfData.performance = ( n * ( ( totalSteps-1 ) * ( p* ( CoreFunctorFLOP + 3 ) + 13 ) ) / perfData.time ) / 1E9; // Convert from FLOPS to GFLOPS
+    return 0;
+}
 #endif//SSW
 
 template<>
