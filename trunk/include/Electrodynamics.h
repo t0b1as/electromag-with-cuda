@@ -25,7 +25,7 @@ namespace electro
 
 
 template <class T>
-struct __align__(16) dynamicPointCharge
+struct dynamicPointCharge
 {
     pointCharge<T> staticProp;
     Vector3<T> velocity;

@@ -20,7 +20,6 @@
 #ifndef _ELECTROSTATICS_H
 #define _ELECTROSTATICS_H
 
-#include "CUDA Definitions.h"
 #include "Vector.h"
 
 
@@ -63,7 +62,7 @@ struct __align__(16) pointCharge<double>
 
 // We need this for wierd types
 template <class T>
-inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, T electroK)
+inline Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, T electroK)
 {
     Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
     T lenSq = vec3LenSq(r);                             // 5 FLOP
@@ -76,7 +75,7 @@ inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, 
 }                       // Total: 15 FLOP
 
 template <class T>
-inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
+inline Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 {
     Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
     T lenSq = vec3LenSq(r);                             // 5 FLOP
@@ -91,7 +90,7 @@ inline __device__ Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 // since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
 // NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
 template <>
-__device__ Vector3<float> PartField(pointCharge<float> charge, Vector3<float> point)
+Vector3<float> PartField(pointCharge<float> charge, Vector3<float> point)
 {
     Vector3<float> r = vec3(point, charge.position);        // 3 FLOP
     float lenSq = vec3LenSq(r);                             // 5 FLOP
@@ -99,7 +98,7 @@ __device__ Vector3<float> PartField(pointCharge<float> charge, Vector3<float> po
                    rsqrtf(lenSq) / lenSq );                         // 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
-__device__ Vector3<double> PartField(pointCharge<double> charge, Vector3<double> point)
+Vector3<double> PartField(pointCharge<double> charge, Vector3<double> point)
 {
     Vector3<double> r = vec3(point, charge.position);           // 3 FLOP
     double lenSq = vec3LenSq(r);                                // 5 FLOP
@@ -115,7 +114,7 @@ __device__ Vector3<double> PartField(pointCharge<double> charge, Vector3<double>
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
-inline __device__ Vector3<T> PartFieldOp(
+inline Vector3<T> PartFieldOp(
     T qSrc,
     Vector3<T> rInvSq
 )
@@ -127,7 +126,7 @@ inline __device__ Vector3<T> PartFieldOp(
 
 // Returns the partial field vector without multiplying by electro_k to save one FLOP
 template <class T>
-inline __device__ Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
+inline Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
 {
     Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
     T lenSq = vec3LenSq(r);                             // 5 FLOP
@@ -143,7 +142,7 @@ inline __device__ Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> poin
 // since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
 // NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
 template <>
-__device__ Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float> point)
+Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float> point)
 {
     Vector3<float> r = vec3(point, charge.position);        // 3 FLOP
     float lenSq = vec3LenSq(r);                             // 5 FLOP
@@ -151,7 +150,7 @@ __device__ Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float>
                    rsqrtf(lenSq) / lenSq );                         // 4 FLOP (1 sqrt + 3 mul,div)
 };
 template <>
-__device__ Vector3<double> PartFieldVec(pointCharge<double> charge, Vector3<double> point)
+Vector3<double> PartFieldVec(pointCharge<double> charge, Vector3<double> point)
 {
     Vector3<double> r = vec3(point, charge.position);       // 3 FLOP
     double lenSq = vec3LenSq(r);                            // 5 FLOP
