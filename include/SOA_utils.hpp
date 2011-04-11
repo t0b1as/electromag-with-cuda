@@ -14,7 +14,6 @@
  * 
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
- * 
  */
 #ifndef SOA_UTILS_HPP_
 #define SOA_UTILS_HPP_
