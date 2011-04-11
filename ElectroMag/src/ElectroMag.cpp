@@ -20,7 +20,6 @@
 #if !defined(__CYGWIN__) // Stupid, I know, but it's a fact of life
 #include <omp.h>
 #endif
-#include "./../../GPGPU_Segment/src/CUDA Manager.h"
 #include "./../../GPGPU_Segment/src/CL Manager.h"
 #include "Electromag utils.h"
 #include "Graphics_dynlink.h"
@@ -154,26 +153,9 @@ int main ( int argc, char* argv[] )
     // Now that checks are performed, start the Frontend
     //if(visualProgressBar) MainGUI.StartAsync();
 
+    GPUenable = false; CPUenable=true;
     // Statistics show that users are happier when the program outputs fun information abot their toys
-    cuda::GlobalCudaManager.ListAllDevices();
-    // Initialize GPUs
-    int cudaDev = cuda::GlobalCudaManager.GetCompatibleDevNo();
-    if ( cudaDev > 0 )
-    {
-        std::cout<<std::endl<<" Found "<<cudaDev<<" compatible devices."<<std::endl;
-    }
-    // disable GPU mode if no compatible device detected
-    if ( !cudaDev )
-    {
-        GPUenable = false;
-        std::cout<<" Warning! No compatible GPU found."<<std::endl;
-        if ( !CPUenable )
-        {
-            CPUenable = true; // And force CPU mode
-            std::cout<<" Using optimized CPU mode with reduced parameter set."<<std::endl;
-            if ( paramLevel > __cpu ) paramLevel = __cpu;
-        }
-    }
+
     // Set correct parameter configuration
     switch ( paramLevel )
     {
@@ -251,24 +233,6 @@ int main ( int argc, char* argv[] )
     if ( GPUenable )
     {
         std::cout<<" GPU"<<std::endl;
-        int failedFunctors;
-
-        StartConsoleMonitoring ( &GPUperf.progress );
-        // Then run the calculations
-        QueryHPCTimer ( &start );
-        
-        //failedFunctors = CalcField ( GPUlines, charges, n, resolution, GPUperf, useCurvature );
-        QueryHPCTimer ( &end );
-        // Make sure the next section terminates even if progress is not updated,
-        // or is not updated entirely
-        GPUperf.progress = 1;
-
-        if ( failedFunctors >= cudaDev ) display = false;
-        if ( failedFunctors ) std::cout<<" GPU Processing incomplete. "<<failedFunctors<<" functors out of "<<cudaDev<<" failed execution"<<std::endl;
-        std::cout<<" GPU kernel execution time:  "<<GPUperf.time<<" seconds"<<std::endl;
-        std::cout<<" Effective performance:      "<<GPUperf.performance<<" GFLOP/s"<<std::endl;
-        GPUtime = double ( end-start ) /freq;
-        std::cout<<" True kernel execution time: "<<GPUtime<<" seconds"<<std::endl;
     }
     if ( CPUenable )
     {
@@ -287,29 +251,6 @@ int main ( int argc, char* argv[] )
             std::cout<<" Realistic speedup:\t\t"<<CPUtime/GPUtime<<" x"<<std::endl;
         }
     }
-
-    if ( GPUenable )
-        for ( size_t i = 0; i < GPUperf.stepTimes.GetSize() /timingSize; i++ )
-        {
-            double *base = GPUperf.stepTimes.GetDataPointer() + timingSize*i;
-            const double accountedOverhead = base[resAlloc] + base[kernelLoad] + base[xyHtoH] + base[xyHtoD] + base[zHtoH] + base[zHtoD] +
-                                             base[xyDtoH] + base[xyHtoHb] + base[zDtoH] + base[zHtoHb] + base[mFree];
-
-            std::cout<<std::endl<<" Execution unit "<<i<<std::endl;
-
-            std::cout<<" ==== Operation ======= Batch size ==== Time ========== Speed======="<<std::endl;
-            std::cout<<" xy Device to host\t"<<base[xySize]/1024/1024<<"\t\t"<<base[xyDtoH] <<"\t"<<base[xySize]/1024/1024/base[xyDtoH]<<std::endl;
-            std::cout<<" z  Device to host\t"<<base[zSize] /1024/1024<<"\t\t"<<base[zDtoH]  <<"\t"<<base[zSize] /1024/1024/base[zDtoH] <<std::endl;
-            std::cout<<" xy Host to host  \t"  <<base[xySize]/1024/1024<<"\t\t"<<base[xyHtoHb]<<"\t"<<base[xySize]/1024/1024/base[xyHtoHb]<<std::endl;
-            std::cout<<" z  Host to host  \t"  <<base[zSize] /1024/1024<<"\t\t"<<base[zHtoHb] <<"\t"<<base[zSize] /1024/1024/base[zHtoHb]<<std::endl;
-            std::cout<<" ==================================================================="<<std::endl;
-            std::cout<<" kernel execution    "<<base[kernelExec]<<"s"<<std::endl;
-            std::cout<<" kernelLoad overhead "<<base[kernelLoad]<<"s"<<std::endl;
-            std::cout<<" resAlloc   overhead "<<base[resAlloc]<<"s"<<std::endl;
-            std::cout<<" Associated overhead "<<accountedOverhead<<"s"<<std::endl;
-            std::cout<<" Unacounted overhead "<<GPUtime - accountedOverhead - base[kernelExec]<<"s"<<std::endl;
-
-        }
 
     FieldRenderer::GLpacket GLdata;
     volatile bool * shouldIQuit = 0;

@@ -15,9 +15,6 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
     You should have received a copy of the GNU General Public License
     along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-
-#include "CUDA Interop.h"
-#include "CUDA_Electrostatics.hpp"
 #include "CL Electrostatics.hpp"
 
 /*////////////////////////////////////////////////////////////////////////////////
@@ -29,32 +26,13 @@ export library
 int CalcField(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
               size_t n, float resolution, perfPacket& perfData, bool useCurvature)
 {
-    //return CalcFieldEs::MultiGPU<float>(fieldLines, pointCharges, n, resolution, perfData, useCurvature);
-
-    CudaElectrosFunctor<float> multiGpuFunctor;
-    CudaElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-    multiGpuFunctor.BindData((void*) &dataParams);
-
-    unsigned long retVal = multiGpuFunctor.Run();
-
-    return retVal;
-
-    /**/
+    return -1;
 }
 
 int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<double> >& pointCharges,
               size_t n, double resolution, perfPacket& perfData, bool useCurvature)
 {
-    //return CalcFieldEs::Wrap<double>(fieldLines, pointCharges, n, (size_t) 0, n, resolution, perfData, useCurvature);
-    CudaElectrosFunctor<double> multiGpuFunctor;
-    CudaElectrosFunctor<double>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
-    multiGpuFunctor.BindData((void*) &dataParams);
-
-    unsigned long retVal = multiGpuFunctor.Run();
-
-    return retVal;
-
-    /**/
+    return -1;
 }
 
 void TestCL(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,

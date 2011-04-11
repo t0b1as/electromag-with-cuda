@@ -29,7 +29,7 @@ namespace magnetic
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-inline __device__ Vector3<T> PartField(electro::dynamicPointCharge<T> charge, Vector3<T> point)
+inline Vector3<T> PartField(electro::dynamicPointCharge<T> charge, Vector3<T> point)
 {
     Vector3<T> r = vec3(point, charge.staticProp.position); // 3 FLOP
     T lenSq = vec3LenSq(r);                                 // 5 FLOP
@@ -45,7 +45,7 @@ inline __device__ Vector3<T> PartField(electro::dynamicPointCharge<T> charge, Ve
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-inline __device__ Vector3<T> PartFieldOp(
+inline Vector3<T> PartFieldOp(
     Vector3<T> srcVelocity,     ///< [in] The velocity vector of the particle generating the magnetic field
     T srcCharge,                ///< [in] The charge on the particle generating the field
     Vector3<T> rInvSq           ///< [in] The inverse square vector to the point where the field is of interest
@@ -59,7 +59,7 @@ inline __device__ Vector3<T> PartFieldOp(
 #define magneticPartFieldOpFLOP 13
 
 template<class T>
-inline __device__ Vector3<T> PartFieldOp(
+inline Vector3<T> PartFieldOp(
     Vector3<T> srcVelocity,     ///< [in] The velocity vector of the particle generating the magnetic field
     T srcCharge,                ///< [in] The charge on the particle generating the field
     Vector3<T> rInvSq,          ///< [in] The inverse square vector to the point where the field is of interest
@@ -77,7 +77,7 @@ inline __device__ Vector3<T> PartFieldOp(
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-inline __device__ Vector3<T> Force(electro::dynamicPointCharge<T> charge, Vector3<T> B)
+inline Vector3<T> Force(electro::dynamicPointCharge<T> charge, Vector3<T> B)
 {
     return charge.staticProp.magnitude * vec3Cross(charge.velocity, B); // 10 FLOP (1 mul, 9 cross)
     // TOTAL: 10 FLOPs
