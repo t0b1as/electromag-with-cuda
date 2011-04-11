@@ -15,10 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************************************/
-/**********************************************************************************************
-    Uses freeglut 2.6.0; freeglut source available from: <http://freeglut.sourceforge.net/>
-    freeglut may be licensed under different terms. Check freeglut.h for details
-***********************************************************************************************/
 
 #include "stdafx.h"
 #if !defined(__CYGWIN__) // Stupid, I know, but it's a fact of life
