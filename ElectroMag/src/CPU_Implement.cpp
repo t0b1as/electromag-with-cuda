@@ -172,6 +172,158 @@ int CalcField_CPU_T_Curvature ( Vector3<Array<T> >& fieldLines, Array<pointCharg
     return 0;
 }
 
+#if (defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER) || defined(__INTEL_COMPILER)
+// I think optimizations should also be available for GNU. We include MSVC as
+// well because it basically suports the same 
+#include <xmmintrin.h>
+
+template<>
+int CalcField_CPU_T_Curvature<float> ( Vector3<Array<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
+                                       const size_t n, float resolution, perfPacket& perfData )
+{
+    if ( !n )
+        return 1;
+    if ( resolution == 0 )
+        return 2;
+    //get the size of the computation
+    size_t p = pointCharges.GetSize();
+    size_t totalSteps = ( fieldLines.GetSize() ) /n;
+
+#define LINES_PARRALELISM 4
+#define SIMD_WIDTH 4    // Represents how many floats can be packed into an SSE Register; Must ALWAYS be 4
+#define LINES_WIDTH (LINES_PARRALELISM * SIMD_WIDTH)
+#define ALIGNMENT_MASK (LINES_WIDTH * sizeof(float) - 1)
+
+    if ( n & ALIGNMENT_MASK )
+        return 5;
+
+    // since we are multithreading the computation, having
+    // perfData.progress = line / n;
+    // will not work as intended because different threads will process different ranges of line and the progress
+    // indicator will jump herratically.
+    // To solve this problem, we compute the percentage that one line represents, and add it to the total progress
+    double perStep = ( double ) LINES_WIDTH/n;
+    perfData.progress = 0;
+
+    if ( totalSteps < 2 )
+        return 3;
+
+    //Used to mesure execution time
+    long long freq, start, end;
+    QueryHPCFrequency ( &freq );
+
+    // Start measuring performance
+    QueryHPCTimer ( &start );
+    /*  Each Field line is independent of the others, so that every field line can be parallelized
+        When compiling with the Intel C++ compiler, the OpenMP runtime will automatically choose  the
+        ideal number of threads based oh the runtime system's cache resources. The code will therefore
+        run faster if omp_set_num_threads is not specified.
+    */
+
+    //#pragma unroll_and_jam
+#pragma omp parallel for
+    for ( size_t line = 0; line < n; line+=LINES_WIDTH )
+    {
+        // Work with data pointers to avoid excessive calls to Array<T>::operator[]
+        const Vector3<float*> pLines = fieldLines.GetDataPointers();
+        const pointCharge<float> *pCharges = pointCharges.GetDataPointer();
+
+
+        Vector3<__m128> prevPoint[LINES_PARRALELISM];
+        Vector3<__m128> Accum[LINES_PARRALELISM], prevAccum[LINES_PARRALELISM];
+
+        // We can now load the starting points; we will only need to load them once
+        //prevVec = prevPoint = lines[n + line];// Load prevVec like this to ensure similarity with GPU kernel
+        for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+        {
+            prevAccum[i].x = prevPoint[i].x =_mm_load_ps (&pLines.x[line + ( i*SIMD_WIDTH ) ]);
+            prevAccum[i].y = prevPoint[i].y =_mm_load_ps (&pLines.y[line + ( i*SIMD_WIDTH ) ]);
+            prevAccum[i].z = prevPoint[i].z =_mm_load_ps (&pLines.z[line + ( i*SIMD_WIDTH ) ]);
+        }
+
+
+        const __m128 zero = _mm_set1_ps ( ( float ) 0 );
+        const __m128 elec_k = _mm_set1_ps ( ( float ) electro_k );
+        const __m128 curvAdjust =_mm_set1_ps ( ( float ) 1 ); // curvature adjusting constant
+        const __m128 res = _mm_set1_ps ( resolution );
+        const size_t nLines = n;
+
+        // Intentionally starts from 1, since step 0 is reserved for the starting points
+        for ( size_t step = 1; step < totalSteps; step++ )
+        {
+//#         pragma unroll
+            for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+                Accum[i].x = Accum[i].y = Accum[i].z = zero;
+
+            for ( size_t point = 0; point < p; point++ )
+            {
+                // Add partial vectors to the field vector
+                // temp += CoreFunctor(charges[point], prevPoint);  // (electroPartFieldFLOP + 3) FLOPs
+                pointCharge<__m128> charge;
+                charge.magnitude = _mm_load_ps ( ( float* ) &pCharges[point] );
+
+                charge.position.x = _mm_shuffle_ps ( charge.magnitude, charge.magnitude, _MM_SHUFFLE ( 0,0,0,0 ) );
+                charge.position.y = _mm_shuffle_ps ( charge.magnitude, charge.magnitude, _MM_SHUFFLE ( 1,1,1,1 ) );
+                charge.position.z = _mm_shuffle_ps ( charge.magnitude, charge.magnitude, _MM_SHUFFLE ( 2,2,2,2 ) );
+                charge.magnitude = _mm_shuffle_ps ( charge.magnitude, charge.magnitude, _MM_SHUFFLE ( 3,3,3,3 ) );
+
+                /* temp += electroPartField(charges[point], prevPoint);
+                 *
+                 */
+                Accum[0] += electro::PartField ( charge, prevPoint[0], elec_k );
+
+#               if (LINES_PARRALELISM > 1)
+                Accum[1] += electro::PartField ( charge, prevPoint[1], elec_k );
+#               endif
+#               if (LINES_PARRALELISM == 3)
+#               error LINES_PARRALELISM Should not be set to 3, as the alignment mask may fail to function properly
+#               endif
+#               if (LINES_PARRALELISM > 3)
+                Accum[2] += electro::PartField ( charge, prevPoint[2], elec_k );
+                Accum[3] += electro::PartField ( charge, prevPoint[3], elec_k );
+#               endif
+#               if (LINES_PARRALELISM > 4)
+#               error Too many lines per iteration
+#               endif
+
+            }
+
+            /*
+             * T k = vec3LenSq(temp);//5 FLOPs
+             * k = vec3Len( vec3Cross(temp - prevVec, prevVec) )/(k*sqrt(k));// 25FLOPs (3 vec sub + 9 vec cross + 10 setLen + 1 div + 1 mul + 1 sqrt)
+             * pLines[step*n + line] = (prevPoint + vec3SetInvLen(temp, (k+1)*resolution)); // Total: 15 FLOP (Add = 3 FLOP, setLen = 10 FLOP, add-mul = 2FLOP)
+             * prevVec = temp;
+             */
+//#         pragma unroll
+            for ( size_t i = 0; i < LINES_PARRALELISM; i++ )
+            {
+                // T k = vec3LenSq(temp);
+                __m128 k = vec3LenSq ( Accum[i] );
+                // k = vec3Len( vec3Cross(temp - prevVec, prevVec) ) / (k*sqrt(k));
+                k = vec3Len ( vec3Cross ( Accum[i] - prevAccum[i], prevAccum[i] ) ) / ( k*sqrt ( k ) );
+                // (prevPoint += vec3SetInvLen(temp, (k+1)*resolution))
+                prevPoint[i] += vec3SetInvLen ( Accum[i], ( k+curvAdjust ) *res );
+
+                size_t base = ( nLines * step + ( i*SIMD_WIDTH ) + line );
+                _mm_stream_ps(&pLines.x[base], prevPoint[i].x);
+                _mm_stream_ps(&pLines.y[base], prevPoint[i].y);
+                _mm_stream_ps(&pLines.z[base], prevPoint[i].z);
+            }
+        }
+        // update progress
+#pragma omp atomic
+        perfData.progress += perStep;
+    }
+    // take ending measurement
+    QueryHPCTimer ( &end );
+    // Compute performance and time
+    perfData.time = ( double ) ( end - start ) / freq;
+    perfData.performance = ( n * ( ( totalSteps-1 ) * ( p* ( CoreFunctorFLOP + 3 ) + 13 ) ) / perfData.time ) / 1E9; // Convert from FLOPS to GFLOPS
+    return 0;
+}
+
+#endif//SSW
+
 template<>
 int CalcField_CPU<float> ( Vector3<Array<float> >& fieldLines, Array<pointCharge<float> >& pointCharges,
                            const size_t n, float resolution, perfPacket& perfData, bool useCurvature )
