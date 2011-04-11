@@ -142,14 +142,14 @@ void FieldRender::Start()
 	if(VBOsupported)
 	{
 		// Copy the charges to a VBO
-		glGenBuffersARB(1, &chargesVBO);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, chargesVBO);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, GLdata.charges->GetSizeBytes(), GLdata.charges->GetDataPointer(), GL_STATIC_DRAW_ARB );
+		glGenBuffers(1, &chargesVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, chargesVBO);
+		glBufferData(GL_ARRAY_BUFFER, GLdata.charges->GetSizeBytes(), GLdata.charges->GetDataPointer(), GL_STATIC_DRAW );
 
 		// Copy the colors to a VBO
-		glGenBuffersARB(1, &colorVBO);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, colorVBO);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, lineLen * sizeof(Vector3<float>), colors, GL_STATIC_DRAW_ARB );
+		glGenBuffers(1, &colorVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+		glBufferData(GL_ARRAY_BUFFER, lineLen * sizeof(Vector3<float>), colors, GL_STATIC_DRAW );
 
 
 		// Create VBO index array
@@ -158,7 +158,7 @@ void FieldRender::Start()
 		linesVBOs = new GLuint[nrLinesVBO];
 		tempBuf = new Vector3<float>[lineLen];
 		// Create the 
-		__glewGenBuffersARB((GLsizei)nrLinesVBO, linesVBOs);
+		glGenBuffers((GLsizei)nrLinesVBO, linesVBOs);
 		// can replace __glew* with gl*
 		// Copy all the field lines to the GPU in separate arrays
 		// Since the field lines comes arranged in lines by steps, the memory arrangement will be n0_0 n1_0 n2_0 n3_0 n4_0... n0_1 n1_1 n2_1 n3_1 n4_1
@@ -174,13 +174,13 @@ void FieldRender::Start()
 				tempBuf[cpy] = (*GLdata.lines)[cpy*elements + i*lineSkip];//temp[cpy*elements];
 			}
 			// Now that the data for ni is copied in linear memory, bind it and copy it to a VBO
-			::__glewBindBufferARB(GL_ARRAY_BUFFER_ARB, linesVBOs[i]);
-			::__glewBufferDataARB(GL_ARRAY_BUFFER_ARB,
+			glBindBuffer(GL_ARRAY_BUFFER, linesVBOs[i]);
+			glBufferData(GL_ARRAY_BUFFER,
 				GLdata.lines->GetElemSize()*lineLen,
-				tempBuf, GL_STATIC_DRAW_ARB );
+				tempBuf, GL_STATIC_DRAW );
 		}
 		// Unbind the buffers from any specific VBO
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		// Clean up temporary resources
 		delete[] tempBuf;
 		// We also don't need the color buffer on the client
@@ -416,24 +416,24 @@ void FieldRender::fieldDisplay()
 
 	// Draw Charges
 	glColor3f(0.0, 0.0, 1.0);
-	glBindBufferARB( GL_ARRAY_BUFFER_ARB, chargesVBO);
+	glBindBuffer( GL_ARRAY_BUFFER, chargesVBO);
 	glVertexPointer(3 , GL_FLOAT, (GLint)GLdata.charges->GetElemSize(),0);
 	glDrawArrays(GL_POINTS, 0, (GLint)GLdata.charges->GetSize());
 
 
 	// Draw field lines
 	glEnableClientState(GL_COLOR_ARRAY);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, colorVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
 	glColorPointer(3, GL_FLOAT, 0, 0);
 	glColor3f(1.0, 0.0, 0.0);
 	for(size_t i = 0; i < RenderData::bufferedLines; i++)
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, linesVBOs[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, linesVBOs[i]);
 		glVertexPointer(3 , GL_FLOAT, 0, 0);
 		glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)GLdata.lineLen);
 	}
 	glDisableClientState(GL_COLOR_ARRAY);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 
 	// Draw infobar in top-right corner
