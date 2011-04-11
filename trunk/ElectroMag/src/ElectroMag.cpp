@@ -329,7 +329,7 @@ int main ( int argc, char* argv[] )
         // Before: FieldDisp.SetPerfGFLOP(GPUperf.performance);
         FieldRenderer::FieldRenderCommData PerfMessage;
         PerfMessage.messageType = FieldRenderer::SendingPerfPointer;
-        PerfMessage.commData = ( void* ) &GPUperf.performance;
+        PerfMessage.commData = ( void* ) GPUenable?(&GPUperf.performance):(&CPUperf.performance);
         FieldDisplay->SendMessage ( &PerfMessage );
 
         // Get ready to quit flag
