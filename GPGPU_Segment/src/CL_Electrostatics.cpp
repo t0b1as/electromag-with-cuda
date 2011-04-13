@@ -251,13 +251,6 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 */
 
 
-#define CUDA_SAFE_CALL(call) errCode = call;\
-if(errCode != CUDA_SUCCESS)\
-{\
-errlog<<" Failed at "<<__FILE__<<" line "<<__LINE__<<" in function "<<__FUNCTION__<<" with code: "<<errCode<<std::endl;\
-return errCode;\
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief
 ///
