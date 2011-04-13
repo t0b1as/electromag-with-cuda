@@ -58,7 +58,7 @@ Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
 #include <dlfcn.h>
 #if defined(__APPLE__) || defined(__MACOSX)
 static char __EmGraphLibNameLocal[] = "libEMagGraphics.dylib";
-static char __EmGraphLibName[] = "/usr/local/cuda/lib/libEMagGraphics.dylib";
+static char __EmGraphLibName[] = "/usr/local/lib/libEMagGraphics.dylib";
 #else
 static char __EmGraphLibNameLocal[] = "./libEMagGraphics.so";
 static char __EmGraphLibName[] = "libEMagGraphics.so";
