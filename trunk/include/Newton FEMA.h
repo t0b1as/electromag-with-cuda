@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef _NEWTON_FEMA_H
+#define _NEWTON_FEMA_H
 
 // "Force Equals Mass times Acceleration"
+
+#endif//_NEWTON_FEMA_H

@@ -15,7 +15,8 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef _HPC_TIMING_H
+#define _HPC_TIMING_H
 
 #if defined(_WIN32) || defined(_WIN64)
 #include<windows.h>
@@ -59,3 +60,5 @@ inline void QueryHPCFrequency(long long *freq)
 #endif
 
 #undef PLATFORM_FOUND
+
+#endif//_HPC_TIMING_H
