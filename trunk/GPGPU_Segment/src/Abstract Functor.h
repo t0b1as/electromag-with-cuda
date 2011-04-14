@@ -25,8 +25,9 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 #ifndef _ABSTRACT_FUNCTOR_H
 #define _ABSTRACT_FUNCTOR_H
-#include "Data Structures.h"
-#include "X-Compat/Threading.h"
+#include <mutex>
+#include <Data Structures.h>
+
 
 //////////////////////////////////////////////////////////////////////////////////
 ///\brief Abstract class for standardizing functor operation
@@ -127,7 +128,7 @@ private:
         size_t functorIndex;            ///< The index of the functor on which to run the calculations
     };
     /// Mutex used for syncronization when remapping failed functors
-    Threads::MutexHandle hRemapMutex;
+    std::mutex hRemapMutex;
 
     size_t * idleDevices;
     size_t * failedFunctors;

@@ -1,25 +1,18 @@
 #include "Abstract Functor.h"
-#include "X-Compat/Threading.h"
 #include <cstdio>
 #include <thread>
 
 AbstractFunctor::AbstractFunctor()
-{
-    // Initialize the mutex
-    Threads::CreateMutex(&this->hRemapMutex);
-}
+{}
 
 AbstractFunctor::~AbstractFunctor()
-{
-    // Tidy up
-    Threads::DestroyMutex(this->hRemapMutex);
-}
+{}
 
 
 unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *aParameters)
 {
     AbstractFunctor *pObject = aParameters->functorClass;
-    Threads::MutexHandle *phMutex = &pObject->hRemapMutex;
+    std::mutex& hMutex = pObject->hRemapMutex;
     size_t functorID = aParameters->functorIndex;
     size_t deviceID = functorID;
     unsigned long retVal;
@@ -33,7 +26,7 @@ unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *aP
         // Check to see whether functor completed without errors
         fail = pObject->FailOnFunctor(functorID);
 
-        Threads::LockMutex(*phMutex);
+        hMutex.lock();
         if (fail)
         {
             // The functor has failed; it needs to be remapped to another device
@@ -68,7 +61,7 @@ unsigned long AbstractFunctor::AsyncFunctor(AbstractFunctor::AsyncParameters *aP
                 reIterate = false;
             }
         }
-        Threads::UnlockMutex(*phMutex);
+        hMutex.unlock();
 
     }
 

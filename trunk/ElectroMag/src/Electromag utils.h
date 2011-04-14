@@ -24,7 +24,6 @@
 #ifndef _ELECTROMAG_UTILS_H
 #define _ELECTROMAG_UTILS_H
 #include <stdlib.h>
-#include <X-Compat/Threading.h>
 #include <thread>
 
 typedef void* ArrayHandle;
@@ -132,7 +131,7 @@ void MonitorProgressConsole ( volatile double * progress )
     {
         while ( *progress < next )
         {
-            Threads::Pause ( 250 );
+            std::this_thread::sleep_for(std::chrono::milliseconds( 250 ));
         }
         std::cout<<".";
         // Flush to make sure progress indicator is displayed immediately
