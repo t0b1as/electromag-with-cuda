@@ -18,7 +18,6 @@
 #include "FrontendGUI.h"
 #include "GL/freeglut.h"
 #include "GL/glutExtra.h"
-#include "X-Compat/Threading.h"
 #include <stdio.h>
 #include <iostream>
 

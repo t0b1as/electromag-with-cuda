@@ -28,7 +28,6 @@
 #include <string.h>
 #include <exception>
 #include <stdlib.h>
-#include "X-Compat/Threading.h"
 #include "X-Compat/HPC Timing.h"
 #include "Data Structures.h"
 #include "Newton FEMA.h"
