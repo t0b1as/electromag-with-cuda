@@ -29,40 +29,11 @@ struct Vector2
     T x, y;
 };
 
-#ifndef __CUDACC__
 template <class T>
 struct Vector3
 {
     T x, y, z;
 };
-#else
-template <class T>
-struct Vector3
-{
-    union
-    {
-        Vector2<T> xy;
-        struct
-        {
-            T x, y;
-        };
-    };
-    T z;
-};
-/* // Warning: the specialization causes GPU kernel execution to terminate with unknown error
-// Explicit structure alignment
-template<>
-struct __align__(8) Vector2<float>
-{
-    float x, y;
-};
-template<>
-struct __align__(16) Vector2<double>
-{
-    double x, y;
-};
-*/
-#endif
 
 template<class T>
 struct Vec3SOA
