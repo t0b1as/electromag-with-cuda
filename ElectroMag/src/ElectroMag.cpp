@@ -24,6 +24,7 @@
 #include "Electromag utils.h"
 #include "Graphics_dynlink.h"
 #include <SOA_utils.hpp>
+#include <thread>
 
 //using namespace std;
 // Use float or double; 16-bit single will generate errors
