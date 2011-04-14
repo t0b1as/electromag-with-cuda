@@ -8,8 +8,6 @@ Copyright Alexandru Gagniuc
 ================================================================================
     gcc-c++ (use other compilers at your own risk)
     OpenMP devel library (libgomp or the omp that comes with your compiler)
-Optional packages for CUDA:
-    CUDA toolkit 2.3 or later
 Optional packages for Graphics display
     glew devel 1.5 or higher
     freeglut devel 2.6.0  or higher
@@ -19,12 +17,17 @@ Optional packages for Graphics display
     : NOTES
 ================================================================================
 
-1) Older versions of gcc
+1) llvm/clang  status:
+clang++ is not yet mature enough to compile electromag without errors.
+If you still wish to give it a try, change the CMAKE_C_COMPILER to clang, and
+CMAKE_CXX_COMPILER to clang++.
+
+2) Older versions of gcc
 I have recieved several reports of compilation issues with gcc 4.1.2.
 gcc 4.4.4 and later should work fine. Earlier versions have known issues about
 some exotic c++ tricks which electromag uses.
 
-2) Earlier versions of CMake
+3) Earlier versions of CMake
 Some distributions package old versions of cmake. You may edit
 CMakeLists.txt to select a lower cmake_minimum_required,
 but your your milage may vary. The best option is to upgrade your cmake.

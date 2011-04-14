@@ -62,7 +62,7 @@ inline Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
 #define electroPartFieldFLOP 15
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief  Operates on the inverse quare vector to give the magnetic field
+///\brief  Operates on the inverse square vector to give the magnetic field
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
@@ -86,30 +86,6 @@ inline Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
                    (lenSq * (T)sqrt(lenSq)) );                      // 3 FLOP (1 sqrt + 2 mul-div)
 }                       // Total: 14 FLOP
 #define electroPartFieldVecFLOP 14
-
-#if defined(__CUDACC__)
-// Yet another CUDA optimization:
-// Square root is performed by raciprocal square root followed by reciprocal, which are two expensive operations
-// Since we divide by the square root of lenSq, it makes insanely more sense to multiply by the reciprocal square root of lenSq
-// since division with lenSq will be executed asa a reciprocal and multiplication, we can multiply by the reciprocal of lenSq
-// NOTE: This might change with future architectures, so keep an eye on the programming guide, and see how Fermi performs
-template <>
-Vector3<float> PartFieldVec(pointCharge<float> charge, Vector3<float> point)
-{
-    Vector3<float> r = vec3(point, charge.position);        // 3 FLOP
-    float lenSq = vec3LenSq(r);                             // 5 FLOP
-    return vec3Mul(r, charge.magnitude *                    // 3 FLOP (vecMul)
-                   rsqrtf(lenSq) / lenSq );                         // 4 FLOP (1 sqrt + 3 mul,div)
-};
-template <>
-Vector3<double> PartFieldVec(pointCharge<double> charge, Vector3<double> point)
-{
-    Vector3<double> r = vec3(point, charge.position);       // 3 FLOP
-    double lenSq = vec3LenSq(r);                            // 5 FLOP
-    return vec3Mul(r, charge.magnitude *                    // 3 FLOP (vecMul)
-                   rsqrt(lenSq) / lenSq );                              // 4 FLOP (1 sqrt + 3 mul,div)
-};
-#endif
 
 }//namespace electro
 

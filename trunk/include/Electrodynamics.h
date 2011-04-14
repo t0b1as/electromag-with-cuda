@@ -43,10 +43,7 @@ struct dynamicPointChargeSOA
     T* charge;
 };
 */
-#ifdef __CUDACC__
-// Alignment not specified yet
-//template __align__(16) dynamicPointCharge<float>
-#endif
+
 
 }//namespace electro
 
