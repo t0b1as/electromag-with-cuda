@@ -20,6 +20,9 @@ cmake_minimum_required(VERSION 2.8)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 
+    #This is needed for #include <thread>
+    set(CMAKE_CXX_FLAGS "-std=c++0x")
+    
     # Set default flags for Release build.
     set(CMAKE_C_FLAGS_RELEASE "-std=c99 -pedantic -Wall -O3 -DNDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
     set(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -pedantic -Wall -O3 -DNDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")

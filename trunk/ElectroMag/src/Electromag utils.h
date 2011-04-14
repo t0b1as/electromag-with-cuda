@@ -24,7 +24,8 @@
 #ifndef _ELECTROMAG_UTILS_H
 #define _ELECTROMAG_UTILS_H
 #include <stdlib.h>
-#include "X-Compat/Threading.h"
+#include <X-Compat/Threading.h>
+#include <thread>
 
 typedef void* ArrayHandle;
 
@@ -144,7 +145,6 @@ void MonitorProgressConsole ( volatile double * progress )
 
 void StartConsoleMonitoring ( volatile double * progress )
 {
-    Threads::ThreadHandle hThread;
-    Threads::CreateNewThread ( ( unsigned long ( * ) ( void* ) ) MonitorProgressConsole, ( void * ) progress, &hThread );
+    new std::thread(MonitorProgressConsole, progress);
 }
 #endif//_ELECTROMAG_UTILS_H

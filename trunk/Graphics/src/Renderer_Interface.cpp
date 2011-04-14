@@ -24,18 +24,16 @@ bool GLRenderer::glutIsInit = false;
 
 void RendererInterface::StartAsync()
 {
-    unsigned long threadID;
     if (!rendererThread)
     {
-        Threads::CreateNewThread((unsigned long (*)(void*))&RendererInterface::StartAsyncThreadFunc, this, &rendererThread, &threadID);
-        Threads::SetThreadName(threadID, "Renderer");
+        rendererThread = new std::thread(RendererInterface::StartAsyncThreadFunc, this);
     }
 }
 
 void RendererInterface::KillAsync()
 {
-    if (rendererThread)
-        Threads::KillThread(rendererThread);
+    //if (rendererThread)
+        //Threads::KillThread(rendererThread);
 }
 
 #include <iostream>

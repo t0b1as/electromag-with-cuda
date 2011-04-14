@@ -1,6 +1,7 @@
 #include "Abstract Functor.h"
 #include "X-Compat/Threading.h"
 #include <cstdio>
+#include <thread>
 
 AbstractFunctor::AbstractFunctor()
 {
@@ -92,7 +93,7 @@ unsigned long AbstractFunctor::Run()
 
     // Alocate resources for calling the async functors
     AbstractFunctor::AsyncParameters *launchParams = new AbstractFunctor::AsyncParameters[nFunctors];
-    Threads::ThreadHandle * handles = new Threads::ThreadHandle[nFunctors];
+    std::thread ** handles = new std::thread*[nFunctors];
     // Allocate and initialize resources that the async functors will use for syncronization
     idleDevices = new size_t[nFunctors];
     failedFunctors = new size_t[nFunctors];
@@ -100,31 +101,27 @@ unsigned long AbstractFunctor::Run()
 
     for (size_t i = 0; i < nFunctors; i++)
     {
-        unsigned long threadID;
-
         launchParams[i].functorClass = this;
         launchParams[i].functorIndex = i;
         launchParams[i].nFunctors = nFunctors;
-        Threads::CreateNewThread((unsigned long (*)(void *))AbstractFunctor::AsyncFunctor, (void*)&launchParams[i], &handles[i], &threadID);
+        handles[i] = new std::thread(AbstractFunctor::AsyncFunctor, &launchParams[i]);
 
         // Set the name for the thread
         char threadName[512];
         snprintf(threadName, 511, "AbstractFunctor Device %lu", (unsigned long)i);
-        Threads::SetThreadName(threadID, threadName);
+        //Threads::SetThreadName(threadID, threadName);
     }
 
     // Create thread for auxiliary functor
-    unsigned long threadID;
     AbstractFunctor::AsyncParameters auxParams = {this, 0, 0};
-    Threads::ThreadHandle hAuxFunctor;
-    Threads::CreateNewThread((unsigned long (*)(void *))AbstractFunctor::AsyncAuxFunctor, &auxParams, &hAuxFunctor, &threadID);
+    std::thread hAuxFunctor(AbstractFunctor::AsyncAuxFunctor, &auxParams);
     // Set the name for the thread
-    Threads::SetThreadName(threadID, "Aux Functor");
+    //Threads::SetThreadName(threadID, "Aux Functor");
 
     // Now wait for all functors to complete
     for (size_t i = 0; i < nFunctors; i++)
     {
-        Threads::WaitForThread(handles[i]);
+        handles[i]->join();
     }
 
     // Release resources used for syncronization
@@ -132,7 +129,7 @@ unsigned long AbstractFunctor::Run()
     delete [] this->failedFunctors;
 
     // Now terminate the auxiliary functor
-    Threads::KillThread(hAuxFunctor);
+    //hAuxFunctor.cancel();
 
     PostRun();
 
