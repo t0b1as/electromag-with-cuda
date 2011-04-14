@@ -18,6 +18,7 @@ along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _ELECTROSTATICFUNCTOR_HPP
 #define _ELECTROSTATICFUNCTOR_HPP
 
+#include <SOA_utils.hpp>
 #include "Abstract Functor.h"
 #include "Electrostatics.h"
 ///\brief Class for hoding all device-agnostic data for electrostatic fields computation
@@ -31,7 +32,7 @@ public:
     struct BindDataParams
     {
         /// Pointer to host array of field lines
-        Array<Vector3<T> > *pFieldLineData;
+        Vector3<Array<T> > *pFieldLineData;
         /// Pointer to host array of point charges
         Array<electro::pointCharge<T> > *pPointChargeData;
         /// Number of field lines contained in pFieldLineData
@@ -61,7 +62,7 @@ protected:
     /// Pointer to packet that stores performance information
     perfPacket *pPerfData;
     /// Pointer to field lines structure
-    Array<Vector3<T> > *pFieldLinesData;
+    Vector3<Array<T> > *pFieldLinesData;
     /// Pointer to static point charges structrue
     Array<electro::pointCharge<T> > *pPointChargeData;
     /// Number of field lines

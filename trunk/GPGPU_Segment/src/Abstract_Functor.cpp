@@ -107,7 +107,7 @@ unsigned long AbstractFunctor::Run()
 
     // Create thread for auxiliary functor
     AbstractFunctor::AsyncParameters auxParams = {this, 0, 0};
-    std::thread hAuxFunctor(AbstractFunctor::AsyncAuxFunctor, &auxParams);
+    std::thread *hAuxFunctor = new std::thread(AbstractFunctor::AsyncAuxFunctor, &auxParams);
     // Set the name for the thread
     //Threads::SetThreadName(threadID, "Aux Functor");
 
@@ -123,6 +123,7 @@ unsigned long AbstractFunctor::Run()
 
     // Now terminate the auxiliary functor
     //hAuxFunctor.cancel();
+    //delete hAuxFunctor;
 
     PostRun();
 

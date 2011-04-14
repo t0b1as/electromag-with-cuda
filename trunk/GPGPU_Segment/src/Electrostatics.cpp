@@ -35,7 +35,7 @@ int CalcField(Array<Vector3<double> >& fieldLines, Array<electro::pointCharge<do
     return -1;
 }
 
-void TestCL(Array<Vector3<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
+void TestCL(Vector3<Array<float> >& fieldLines, Array<electro::pointCharge<float> >& pointCharges,
             size_t n, float resolution,  perfPacket& perfData, bool useCurvature)
 {
     CLElectrosFunctor<float>::BindDataParams dataParams = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
