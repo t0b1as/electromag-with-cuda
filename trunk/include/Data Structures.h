@@ -19,7 +19,8 @@
 
 #ifndef _DATA_STRUCTURES_H
 #define _DATA_STRUCTURES_H
-#include "X-Compat/Memman.h"
+
+#include <malloc.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Defines a n abstract class from which Array templates may derive
