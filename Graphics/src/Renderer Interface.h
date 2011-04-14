@@ -22,8 +22,8 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 
 #ifndef _RENDERER_INTERFACE_H
 #define _RENDERER_INTERFACE_H
+#include <thread>
 #include "Renderer.h"
-#include "X-Compat/Threading.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Renderer interface that defines abstract mechanisms for the Renderer class
@@ -53,7 +53,7 @@ public:
     virtual void SendMessage(Render::RendererCommData * messageData) = 0;
 protected:
     /// A handle to the thread handling the rendering
-    Threads::ThreadHandle rendererThread;
+    std::thread *rendererThread;
     /// Static function that can be used to create a new thread
     static void StartAsyncThreadFunc(RendererInterface* objectToInit);
 };

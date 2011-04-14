@@ -32,29 +32,6 @@
 namespace Threads
 {
 
-typedef HANDLE ThreadHandle;
-// Thread management
-inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *hThread, unsigned long *threadID =0)
-{
-    unsigned long tempID;
-    ThreadHandle temp = CreateThread(0,0, (LPTHREAD_START_ROUTINE)startRoutine, parameters, 0, &tempID);
-    if (hThread) *hThread = temp;
-    if (threadID) *threadID = tempID;
-};
-
-inline unsigned long WaitForThread(ThreadHandle hThread)
-{
-    DWORD exitCode;
-    WaitForSingleObject(hThread, INFINITE);
-    GetExitCodeThread(hThread, &exitCode);
-    return (unsigned long) exitCode;
-};
-inline void KillThread(ThreadHandle hThread)
-{
-    TerminateThread(hThread, NULL);
-};
-
-
 inline void Pause(unsigned int miliseconds)
 {
     Sleep(miliseconds);
@@ -66,41 +43,6 @@ inline void Pause(unsigned int miliseconds)
 /// See How to: Set a Thread Name in Native Code in MSDN
 /// Don't ask how this works. It should show the thread name in the Visual Studio debugger
 ////////////////////////////////////////////////////////////////////////////////////////////////
-#if defined(_MSC_VER) || defined (__INTEL_COMPILER)
-#define MS_VC_EXCEPTION 0x406D1388
-
-#pragma pack(push,8)
-typedef struct tagTHREADNAME_INFO
-{
-    DWORD dwType; // Must be 0x1000.
-    LPCSTR szName; // Pointer to name (in user addr space).
-    DWORD dwThreadID; // Thread ID (-1=caller thread).
-    DWORD dwFlags; // Reserved for future use, must be zero.
-} THREADNAME_INFO;
-#pragma pack(pop)
-
-inline void SetThreadName( DWORD dwThreadID, char* threadName)
-{
-    THREADNAME_INFO info;
-    info.dwType = 0x1000;
-    info.szName = threadName;
-    info.dwThreadID = dwThreadID;
-    info.dwFlags = 0;
-
-    __try
-    {
-        RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
-    }
-    __except(EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-}
-#else
-// For compilers that do not know the __try/__except syntax, such as Cygwin and MinGW
-inline void SetThreadName( DWORD dwThreadID, char* threadName)
-{
-}
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///\brief Mutex Management
@@ -137,39 +79,10 @@ inline void UnlockMutex(MutexHandle hMutex)
 
 namespace Threads
 {
-typedef pthread_t ThreadHandle;
-inline void CreateNewThread(unsigned long (*startRoutine)(void *), void* parameters, ThreadHandle *hThread, unsigned long *threadID =0)
-{
-    ThreadHandle temp;
-    pthread_create(&temp, 0, (void* (*)(void *))startRoutine, parameters);
-    if (hThread) *hThread = temp;
-}
-
-inline unsigned long WaitForThread(ThreadHandle hThread)
-{
-    // pthread_create requires a function returning void*,
-    // but we suplied one returning unsigned long
-    // In this case, the pointer, pExitCode will have the
-    // return value, not the adddress it is pointing to
-    unsigned long* pExitCode;
-    pthread_join(hThread, (void**)&pExitCode);
-    // Again, return the value _of_ the pointer, not the memory pointing to
-    return (unsigned long)pExitCode;
-}
-
-inline void KillThread(ThreadHandle hThread)
-{
-    pthread_cancel(hThread);
-}
 
 inline void Pause(unsigned int miliseconds)
 {
     usleep(miliseconds*1000);
-}
-
-inline void SetThreadName( unsigned long threadID, const char* threadName)
-{
-    // Void function; don't know how to set thread name in linux
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
