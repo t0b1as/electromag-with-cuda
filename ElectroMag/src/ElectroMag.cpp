@@ -49,6 +49,12 @@ SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
 SimulationParams BogoParams = {16, 16, 1, 50, 0, 500};
 enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
 
+
+void TestCL(Vector3<Array<float> >& fieldLines,
+            Array<electro::pointCharge<float> >& pointCharges,
+            size_t n, float resolution,  perfPacket& perfData,
+            bool useCurvature);
+
 // to redirect stdout and stderr to out.txt use:
 //              >out.txt  2>&1
 int main ( int argc, char* argv[] )
@@ -75,6 +81,8 @@ int main ( int argc, char* argv[] )
     bool regressData = false;
     // Precision to use
     bool useCpuDP = false; bool useGpgpuDP = false;
+    // OpenCL devel tests?
+    bool clMode = false;
     // Get command-line options;
     for ( int i = 1; i < argc; i++ )
     {
@@ -112,6 +120,8 @@ int main ( int argc, char* argv[] )
             useCpuDP = true;
         else if ( !strcmp ( argv[i], "--gpuprecision=double" ) )
             useGpgpuDP = true;
+        else if ( !strcmp ( argv[i], "--clmode" ) )
+            clMode = true;
         else
             std::cout<<" Ignoring unknown argument: "<<argv[i]<<std::endl;
     }
@@ -228,7 +238,12 @@ int main ( int argc, char* argv[] )
     double GPUtime = 0, CPUtime = 0;
     QueryHPCFrequency ( &freq );
 
-    //TestCL ( GPUlines, charges, n, 1.0, GPUperf, useCurvature );
+    if(clMode)
+    {
+        StartConsoleMonitoring ( &CPUperf.progress );
+        TestCL ( CPUlines, charges, n, 1.0, CPUperf, useCurvature );
+        return 0;
+    }
     
     FPprecision resolution = 1;
     if ( GPUenable )

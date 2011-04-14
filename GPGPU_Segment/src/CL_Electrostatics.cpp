@@ -169,8 +169,7 @@ void CLElectrosFunctor<T>::BindData (
 )
 {
     struct ElectrostaticFunctor<T>::BindDataParams *params =
-
-( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+    ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
         || params->resolution == 0
