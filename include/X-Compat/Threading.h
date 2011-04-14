@@ -75,14 +75,14 @@ inline void UnlockMutex(MutexHandle hMutex)
 
 #elif defined(__unix__)
 #include <pthread.h>
-#include <unistd.h>
+#include <thread>
 
 namespace Threads
 {
 
 inline void Pause(unsigned int miliseconds)
 {
-    usleep(miliseconds*1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

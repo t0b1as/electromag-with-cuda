@@ -21,16 +21,16 @@ cmake_minimum_required(VERSION 2.8)
 if(CMAKE_COMPILER_IS_GNUCXX)
 
     #This is needed for #include <thread>
-    set(CMAKE_CXX_FLAGS "-std=c++0x")
+    set(CMAKE_CXX_FLAGS "-std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
     
     # Set default flags for Release build.
     set(CMAKE_C_FLAGS_RELEASE "-std=c99 -pedantic -Wall -O3 -DNDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
-    set(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -pedantic -Wall -O3 -DNDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
+    set(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -pedantic -Wall -O3 -DNDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only -D_GLIBCXX_USE_NANOSLEEP")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-s")
 
     # Set default flags for Debug build.
     set(CMAKE_C_FLAGS_DEBUG "-std=c99 -pedantic -Wall -g3 -ggdb3 -DDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
-    set(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -pedantic -Wall -g3 -ggdb3 -DDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only")
+    set(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -pedantic -Wall -g3 -ggdb3 -DDEBUG -mfpmath=sse -msse2 -fopenmp -ffast-math -fno-math-errno -ffinite-math-only -D_GLIBCXX_USE_NANOSLEEP")
 
 endif()
 
