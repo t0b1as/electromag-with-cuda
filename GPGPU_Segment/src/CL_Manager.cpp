@@ -585,8 +585,10 @@ void ClManager::ListAllDevices(std::ostream& out)
                 <<endl;
             out<<"    Compute units (cores): "<<dev->maxComputeUnits<<endl;
             out<<"    Single-precision SIMD width: "
+                <<dev->nativeVectorWidth_float<<", "
                 <<dev->preferredVectorWidth_float<<endl;
             out<<"    Double-precision SIMD width: "
+                <<dev->nativeVectorWidth_double<<", "
                 <<dev->preferredVectorWidth_double<<endl;
         }
         out<<endl;
