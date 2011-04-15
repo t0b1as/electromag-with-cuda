@@ -99,7 +99,7 @@ private:
         perfPacket *pPerfData;              ///< Functor-specific performance information
     };
     /// Contains data for each individual functor
-    Array<FunctorData> functorParamList;
+    Array<FunctorData> m_functorParamList;
 
 
 };

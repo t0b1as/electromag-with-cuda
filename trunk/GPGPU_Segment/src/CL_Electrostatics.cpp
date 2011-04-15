@@ -258,6 +258,12 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 template<class T>
 void CLElectrosFunctor<T>::AllocateResources()
 {
+    if(this->m_dataBound) return;
+    
+    for(size_t dev = 0; dev < m_nDevices; dev++)
+    {
+        FunctorData * data = &m_functorParamList[dev];
+    }
 }
 
 /**=============================================================================

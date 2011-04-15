@@ -9,12 +9,16 @@ ClManager::clPlatformProp *ClManager::platforms;
 
 bool deviceMan::ComputeDeviceManager::deviceScanComplete = false;
 
-// Since classes using ClManager as their device manager are used staically, it is possible that
-// The respective class gets initialized statically before ClManager. We use this to detect such
-// a condition and correct it. This case almost always represents a programming error or
-// compiler bug.
+/*
+ * Since classes using ClManager as their device manager are used staically, it
+ * is possible that the respective class gets initialized statically before
+ * ClManager. We use this to detect such a condition and correct it. This case
+ * almost always represents a programming error or compiler bug.
+ */
 static bool FirstClManagerInitialized = false;
 
+using std::cerr;
+using std::endl;
 deviceMan::ComputeDeviceManager::ComputeDeviceManager()
 {
 }
@@ -24,7 +28,7 @@ ClManager::ClManager()
     // Do a one-time scan for compatible GPUs
     if (!deviceScanComplete) ScanDevices();
     deviceScanComplete = true;
-    
+
     // Mark initialization of first object
     FirstClManagerInitialized = true;
 }
@@ -41,14 +45,14 @@ void ClManager::ScanDevices()
     errCode = clLibLoad();
     if (errCode != CL_SUCCESS)
     {
-        std::cerr<<" Failed to load OpenCL Library"<<std::endl;
+        cerr<<" Failed to load OpenCL Library"<<endl;
         return;
     }
 
     // Query the number of platforms
     errCode = clGetPlatformIDs(0, 0, &nPlatforms);
     if (errCode != CL_SUCCESS)
-        std::cerr<<" Failed to get number of CL platforms with code "<<errCode<<std::endl;
+        cerr<<" Failed to get number of CL platforms with code "<<errCode<<endl;
     if (!nPlatforms) return;
 
     // Temporary storage for the platform IDs
@@ -58,7 +62,7 @@ void ClManager::ScanDevices()
     // Get the IDs of each platform
     errCode = clGetPlatformIDs(nPlatforms, platformIDs, 0);
     if (errCode != CL_SUCCESS)
-        std::cerr<<" Failed to get platform IDs with code "<<errCode<<std::endl;
+        cerr<<" Failed to get platform IDs with code "<<errCode<<endl;
 
     // Now fill the properties of each platform
     for (size_t i = 0; i< nPlatforms; i++)
@@ -75,18 +79,19 @@ void ClManager::ScanDevices()
 
 size_t ClManager::GetNumDevices()
 {
-    if(!FirstClManagerInitialized)
+    if (!FirstClManagerInitialized)
     {
         // Very very very severe error
-        std::cerr<<"FATAL ERROR: Attempted to use ClManager object before being initialized."<<std::endl;
+        cerr<<"FATAL ERROR: Attempted to use ClManager object before being "
+            "initialized."<<endl;
         return 0;
     }
     // Returns the number of all detected CL devices
     // from all detected platforms
-    if(!deviceScanComplete) ScanDevices();
-    
+    if (!deviceScanComplete) ScanDevices();
+
     size_t nDev = 0;
-    for(size_t i = 0; i < nPlatforms; i++)
+    for (size_t i = 0; i < nPlatforms; i++)
     {
         nDev += platforms[i].nDevices;
     }
@@ -358,7 +363,10 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
                     (void*)&this->maxWorkItemDimensions,
                     0);
 
-    // Now that the work dimensions are known, allocate memory for the work item sizes
+    /*
+     * Now that the work dimensions are known, allocate memory for the work item
+     * sizes
+     */
     maxWorkItemSizes = new size_t[maxWorkItemDimensions];
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_MAX_WORK_ITEM_SIZES,
@@ -431,19 +439,19 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
                     sizeof(this->preferredVectorWidth_double),
                     (void*)&this->preferredVectorWidth_double,
                     0);
-    
+
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
                     sizeof(this->preferredVectorWidth_half),
                     (void*)&this->preferredVectorWidth_half,
                     0);
-    
+
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_HOST_UNIFIED_MEMORY,
                     sizeof(this->hostUnifiedMemory),
                     (void*)&this->hostUnifiedMemory,
                     0);
-    
+
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,
                     sizeof(this->nativeVectorWidth_char),
@@ -479,13 +487,13 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
                     sizeof(this->nativeVectorWidth_double),
                     (void*)&this->nativeVectorWidth_double,
                     0);
-    
+
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,
                     sizeof(this->nativeVectorWidth_half),
                     (void*)&this->nativeVectorWidth_half,
                     0);
-    
+
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_OPENCL_C_VERSION,
                     sizeof(this->openCL_C_version),
@@ -566,18 +574,21 @@ void ClManager::ListAllDevices(std::ostream& out)
     for (size_t i = 0; i < nPlatforms; i++)
     {
         clPlatformProp* current = &platforms[i];
-        out<<" Platform: "<<current->name<<std::endl;
-        out<<"  Version: "<<current->version<<std::endl;
-        out<<"  Vendor: "<<current->vendor<<std::endl;
+        out<<" Platform: "<<current->name<<endl;
+        out<<"  Version: "<<current->version<<endl;
+        out<<"  Vendor: "<<current->vendor<<endl;
         for (size_t j = 0; j < current->nDevices; j++)
         {
             clDeviceProp* dev = &current->devices[j];
-            out<<"   Device: "<<dev->name<<std::endl;
-            out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"<<std::endl;
-            out<<"    Compute units (cores): "<<dev->maxComputeUnits<<std::endl;
-            out<<"    Single-precision SIMD width: "<<dev->preferredVectorWidth_float<<std::endl;
-            out<<"    Double-precision SIMD width: "<<dev->preferredVectorWidth_double<<std::endl;
+            out<<"   Device: "<<dev->name<<endl;
+            out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"
+                <<endl;
+            out<<"    Compute units (cores): "<<dev->maxComputeUnits<<endl;
+            out<<"    Single-precision SIMD width: "
+                <<dev->preferredVectorWidth_float<<endl;
+            out<<"    Double-precision SIMD width: "
+                <<dev->preferredVectorWidth_double<<endl;
         }
-        out<<std::endl;
+        out<<endl;
     }
 }
