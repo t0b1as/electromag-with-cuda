@@ -49,11 +49,11 @@ public:
         bool useCurvature;
     };
 protected:
-    /// Number of devices compatible with functor requirements
-    /// This will also equal the number of functors
+    /** Number of devices compatible with functor requirements
+     * This will also equal the number of functors */
     size_t m_nDevices;
-    /// Number of devices ready for execution.
-    /// These devices have already been assigned data to process and have resources allocated
+    /** Number of devices ready for execution. These devices have already been
+     * assigned data to process and have resources allocated */
     size_t m_nReadyForExec;
 
     /// Signals that a dataset has already been assigned to the onject
