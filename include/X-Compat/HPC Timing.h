@@ -56,7 +56,8 @@ inline void QueryHPCFrequency(long long *freq)
 #undef TIMER_FREQUENCY
 
 #else
-#error Compilation platform not found or not supported. Define _WIN32 or __unix__ to select a platform.
+#error Compilation platform not found or not supported. \
+        Define _WIN32 or __unix__ to select a platform.
 #endif
 
 #undef PLATFORM_FOUND

@@ -1,22 +1,18 @@
- 
-#================================================
+#===============================================================================
 # CMake declarations for top-level directory
-#================================================
+#===============================================================================
 project(electromag) 
 
 cmake_minimum_required(VERSION 2.8)
 
-#================================================
+#===============================================================================
 # Set flags for GCC.
 # credit to kicad project
-# Non gcc users sorry. You will have to set the compiler flags manually
-#   However, the code is optimized, and either compiler will produce optimal results
-#   So, just use GCC to avoid headaches
 #
 # NOTE: You will most likely want these flags set for any meaningful performance
-# The code in electromag is optimized to take advantage of SSE, and avoid use of SSE
-# if the extensions are not supported by the runtime CPU
-#================================================
+# The code in electromag is optimized to take advantage of SSE, and avoid use of
+# SSE if the extensions are not supported by the runtime CPU
+#===============================================================================
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -34,15 +30,15 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 endif()
 
-#================================================
+#===============================================================================
 # Include directories used by all targets
-#================================================
+#===============================================================================
 include_directories(include)
 
-#================================================
+#===============================================================================
 # Let CMake look in these directories for nested
 # 'CMakeLists.txt' files to process
-#================================================
+#===============================================================================
 add_subdirectory(ElectroMag)
 add_subdirectory(GPGPU_Segment)
 
@@ -53,9 +49,9 @@ add_dependencies(ElectroMag
 # Path to local CMake modules.
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
-#================================================
+#===============================================================================
 # Find libraries that are needed to build ElectroMag.
-#================================================
+#===============================================================================
 
 find_package(OpenGL 1.6)
 find_package(GLEW 1.5)
@@ -66,6 +62,7 @@ IF(OPENGL_FOUND AND OPENGL_GLU_FOUND AND GLEW_FOUND AND GLUT_FOUND)
     add_dependencies(ElectroMag
                 Graphics)
 ELSE()
-    MESSAGE( WARNING "Not generating graphics portion due to failed dependencies.")
+    MESSAGE( WARNING
+        "Not generating graphics portion due to failed dependencies.")
 ENDIF()
 

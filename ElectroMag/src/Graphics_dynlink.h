@@ -19,7 +19,8 @@
 
 #ifndef _GRAPHICS_DYNLINK_H
 #define	_GRAPHICS_DYNLINK_H
-// We won't need the declaration of Renderer if all we are doing is dynamically link
+// We won't need the declaration of Renderer if all we are doing is
+// dynamically link
 #include "../../Graphics/src/FieldRender.h"
 
 namespace Graphics

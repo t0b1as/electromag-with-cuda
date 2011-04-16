@@ -26,9 +26,13 @@ namespace CPUID
 
 #if defined (__GNUC__)
 #define __cpuid(out, infoType)\
-    asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType));
+    asm("cpuid": \
+    "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]) \
+    : "a" (infoType));
 #define __cpuidex(out, infoType, ecx)\
-    asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType), "c" (ecx));
+    asm("cpuid": \
+    "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): \
+    "a" (infoType), "c" (ecx));
 #endif
 
 void GetCpuidString(CpuidString *stringStruct)
