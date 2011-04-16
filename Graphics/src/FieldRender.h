@@ -35,10 +35,14 @@ struct GLpacket
 
 enum MessageType
 {
-    NoMessage = 0,      ///< Nothing is happening
-    SendingGLData,      ///< *commData contains a GLpacket
-    SendingPerfPointer, ///< *commData contains a double with the GFLOP/s pefomrmance
-    RequestQuitFlag    ///< we should put the address of shouldIQuit in commData
+    /// Nothing is happening
+    NoMessage = 0,
+    /// *commData contains a GLpacket
+    SendingGLData,
+    /// *commData contains a double with the GFLOP/s pefomrmance
+    SendingPerfPointer,
+    /// we should put the address of shouldIQuit in commData
+    RequestQuitFlag
 };
 
 struct FieldRenderCommData: public Render::RendererCommData

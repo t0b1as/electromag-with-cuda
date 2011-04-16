@@ -35,10 +35,9 @@ private:
     double verticalFOV;
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ///\brief Converts the given angle to radians
-    ///
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * \brief Converts the given angle to radians
+     */
     void ConvertToRadian(double &angle, AngleMode mode)
     {
         // Convert angles to radian mode
@@ -68,15 +67,16 @@ public:
     }
     ~Camera() {};
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ///\brief Moves the camera
-    ///
-    /// Translates the postition of the camera, and its center point
-    /// fwd units forward
-    /// rt units to the right side
-    /// up units up
-    /// These values can be negative to enforce movement in the same direction but opposite sense
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * \brief Moves the camera
+     *
+     * Translates the postition of the camera, and its center point \n
+     * fwd units forward \n
+     * rt units to the right side \n
+     * up units up \n
+     * These values can be negative to enforce movement in the same direction
+     * but opposite sense
+     */
     void Move(double fwd, double rt, double up)
     {
         // Front/back motion
@@ -95,10 +95,9 @@ public:
         this->Position += temp;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ///\brief Rotates the camera around its position
-    ///
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * \brief Rotates the camera around its position
+     */
     void Rotate(double horizontal, double vertical, AngleMode mode)
     {
         // Convert angles to radian mode
@@ -110,35 +109,50 @@ public:
                                 side = vec3Unit(vec3Cross(front, this->Up));
 
         // LATERAL ROTATION - around the orthoUp vector
-        // This rotation changes both the side and front vetors, but sincs the side vector is not recorded, it needs not be saved
-        // The rotated front vector is front*cos(angle) + [len(front)*sin(angle)]*unit(side)
+        // This rotation changes both the side and front vectors, but since the
+        // side vector is not recorded, it needs not be saved
+        // The rotated front vector is
+        // front*cos(angle) + [len(front)*sin(angle)]*unit(side)
         double frontLen = vec3Len(front);
         // now compute the rotated front vector using the given formula
         front = front * cos(horizontal) + side * frontLen*sin(horizontal);
 
 
         // VERICAL ROTATION - around the side vector
-        // this rotation affects both the front and orthoUp vectors, so both need to be saved
-        // The rotated front vector will equal front*cos(angle) + [len(front) * sin(angle)] * unit(up)
-        Vector3<double> oldFront = front; // The initial front vector will be needed in the computation of the rotated up vector
-        front = front * cos(vertical) + vec3Unit(this->Up) * frontLen*sin(vertical);
-        // The rotated up vector will equal up*cos(angle) - [len(up)*sin(angle)] * unit(oldFront)
-        // Up = vec3Add(vec3Mul(Up, cos(vertical)), vec3Mul(vec3Unit(oldFront), (-1.0d)*vec3Len(Up)*sin(vertical)));
-        // However, since both the front and up vectors are in the plane of rotation, the new up vector can be calculated by
-        // crossing the front and oldup vectors to get the side vector, and then the side and front vectors can be crossed to
-        // get the new up vector's orientation. Finally, taking the unit vector, gives a unit up vector
-        // This method ensures that the rounding erros of sin and cos will not play a major role after repeated rotations, and
-        // guarantee that the Up vector will stay orthogonal to the front vector
+        // this rotation affects both the front and orthoUp vectors, so both
+        // need to be saved
+        // The rotated front vector will equal
+        // front*cos(angle) + [len(front) * sin(angle)] * unit(up)
+
+        // The initial front vector will be needed in the computation of the
+        // rotated up vector
+        Vector3<double> oldFront = front;
+        front = front * cos(vertical) + vec3Unit(this->Up)
+                * frontLen*sin(vertical);
+        // The rotated up vector will equal
+        // up*cos(angle) - [len(up)*sin(angle)] * unit(oldFront)
+        // Up = vec3Add(vec3Mul(Up, cos(vertical)), vec3Mul(vec3Unit(oldFront),
+        // (-1.0d)*vec3Len(Up)*sin(vertical)));
+        // However, since both the front and up vectors are in the plane of
+        // rotation, the new up vector can be calculated by crossing the front
+        // and oldup vectors to get the side vector, and then the side and front
+        // vectors can be crossed to get the new up vector's orientation.
+        // Finally, taking the unit vector, gives a unit up vector This method
+        // ensures that the rounding erros of sin and cos will not play a major
+        // role after repeated rotations, and guarantee that the Up vector will
+        // stay orthogonal to the front vector
         this->Up = vec3Unit(vec3Cross(vec3Cross(oldFront, this->Up), front));
         // Finally, compute the new position of the camera center point
         this->Center = this->Position + front;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ///\brief Rotates the camera around the center instead of rotating around the position
-    ///
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    void RotateAroundCenter(double horizontal, double vertical, AngleMode mode = Radian)
+    /**
+     * \brief Rotates the camera around the center instead of rotating around
+     * \brief the position
+     */
+    void RotateAroundCenter(double horizontal,
+                            double vertical,
+                            AngleMode mode = Radian)
     {
         // Convert angles to radian mode
         ConvertToRadian(horizontal, mode);
@@ -151,7 +165,8 @@ public:
 
         // HORIZONTAL ROTATION
         // Use side to rotate r horizontally
-        // Since side the rotation happens in a plane orthogonal to r, Up will still be orthogonal to rRot
+        // Since side the rotation happens in a plane orthogonal to r,
+        // Up will still be orthogonal to rRot
         Vector3<double> rRot = vec3RotationOrthoNormal(r, side, horizontal);
 
         // VERTICAL ROTATION
