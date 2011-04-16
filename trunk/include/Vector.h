@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef _VECTOR_H
 #define _VECTOR_H
 
 #include <cmath>
+#include <cstddef>
 
 namespace Vector
 {
@@ -42,9 +42,11 @@ struct Vec3SOA
     T* z;
 };
 
-/*=============================================================================
-C++ style vector functions and operators
-=============================================================================*/
+/** ============================================================================
+ * \brief C++ style vector functions and operators
+ *
+ * @{
+ * ===========================================================================*/
 template <class T>
 inline void operator += (Vector3<T> &rhs, /*const*/ Vector3<T> b)
 {
@@ -76,12 +78,14 @@ inline Vector3<T> operator / (Vector3<T> vec, T scalar)
 {
     return vec3Div(vec, scalar);    // 3 FLOPs
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief C style vector functions
-///
-///@{
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**=============================================================================
+ * @}
+ * ===========================================================================*/
+/** ============================================================================
+ * \brief C style vector functions
+ *
+ * @{
+ * ===========================================================================*/
 
 template<class T>
 inline Vector3<T> vec3(Vector3<T> head, Vector3<T> tail)
@@ -170,20 +174,18 @@ inline T vec3Len(Vector3<T> vec)
     return sqrt(vec3LenSq(vec));                            // 6 FLOPs
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Resturns the dot product of two vectors
-///
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Resturns the dot product of two vectors
+ */
 template <class T>
 inline T vec3Dot(const Vector3<T> A, const Vector3<T> B)
 {
     return (A.x * B.x + A.y * B.y + A.z * B.z);
 }                       // Total: 5 FLOPs
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Returns the cross product of two vectors
-///
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Returns the cross product of two vectors
+ */
 template <class T>
 inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>middle)
 {
@@ -193,40 +195,52 @@ inline Vector3<T> vec3Cross(const Vector3<T> index, const Vector3<T>middle)
     result.z = index.x * middle.y - index.y * middle.x;     // 3 FLOPs
     return result;                          // Total: 9 FLOPs
 }
-////////////////////////////////////////////////////////////////////////////////////////////////
-///@}
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Vector manipulation functions
-///
-///@{
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Vector rotation with orthogonal and normalized direction vector
-///
-/// Returns the rotation of vector 'r' in the direction specified by the vector 'side' \n
-/// NOTE: This assumes that 'side' is unitary and orthogonal to r. Supplying a vector that is
-/// not normalized or orthogonal to r will produce erroneous results
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**=============================================================================
+ * @}
+ * ===========================================================================*/
+/**=============================================================================
+ * \brief Vector manipulation functions
+ *
+ * @{
+ * ===========================================================================*/
+
+/**
+ * \brief Vector rotation with orthogonal and normalized direction vector
+ *
+ * Returns the rotation of vector 'r' in the direction specified by the vector
+ * 'side' \n
+ * NOTE: This assumes that 'side' is unitary and orthogonal to r. Supplying a
+ * vector that is not normalized or orthogonal to r will produce erroneous
+ * results.
+ */
 template <class T>
 inline Vector3<T> vec3RotationOrthoNormal(
-    const Vector3<T> r,     ///< The vector to rotate
-    const Vector3<T> side,  ///< The normalized direction in which to rotate the vector
-    const T angle                   ///< The angle of rotation in radians
+    /// [in] The vector to rotate
+    const Vector3<T> r,
+    /// [in] The normalized direction in which to rotate the vector
+    const Vector3<T> side,
+    /// [in] The angle of rotation in radians
+    const T angle
 )
 {
-    // A vector can be rotated in a plane by using the orthogonal versors r^, and s^
-    // The rotated vector can be computed as <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
+    // A vector can be rotated in a plane by using the orthogonal versors
+    // r^, and s^
+    // The rotated vector can be computed as
+    // <rRot> = |<r>|*sin(a)*s^ + |<r>|*cos(a)*r^
     // Since |<r>| * r^ is <r>, the formula can be simplified to:
     // <rRot> = |<r>|*sin(a)*s^ + <r> *cos(a)
-    Vector3<T> rRot = side * (vec3Len(r) * sin(angle)) + r * cos(angle);    // 15 FLOPs: 6len + (1 sin + 1 mul) + 3 mul + 1 cos + 3 mul
+    Vector3<T> rRot = side * (vec3Len(r) * sin(angle)) + r * cos(angle);
+    // 15 FLOPs: 6len + (1 sin + 1 mul) + 3 mul + 1 cos + 3 mul
     return rRot;                    // Total: 15FLOP
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief returns the inverse square of the vector
-///
-/// Computes the inverse square vector r^ /r^2, or <r>/r^3 (which are mathematically equivalent)
-///     as needed by the Inverse Square Law
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Returns the inverse square of the vector
+ *
+ * Computes the inverse square vector r^ /r^2, or <r>/r^3
+ * (which are mathematically equivalent)
+ * as dictated by the Inverse Square Law
+ */
 template <class T>
 inline Vector3<T> vec3InverseSquare(Vector3<T> r)
 {
@@ -235,11 +249,10 @@ inline Vector3<T> vec3InverseSquare(Vector3<T> r)
     // Total: 10FLOP
 }
 
-// FIXME: not int, size_t
-const int vec3InverseSquareFLOP = 10;
-////////////////////////////////////////////////////////////////////////////////////////////////
-///@}
-////////////////////////////////////////////////////////////////////////////////////////////////
+const size_t vec3InverseSquareFLOP = 10;
+/**=============================================================================
+ * @}
+ * ===========================================================================*/
 }//namespace Vector
 using namespace Vector;
 #endif//_VECTOR_H

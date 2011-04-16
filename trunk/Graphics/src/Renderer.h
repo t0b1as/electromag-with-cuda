@@ -15,13 +15,18 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-// Generic macros for __declspec(dllexport). This modifier is needed if the symbols are to be
-// visible ine the dll file under Windows.
+#ifndef _RENDERER_H
+#define _RENDERER_H
+
+/* Generic macros for __declspec(dllexport).
+ * This modifier is needed if the symbols are to be visible in the dll file
+ * under Windows. */
 #if (defined(_WIN64) || defined (_WIN32)) && defined (EMAG_BUILD)
 #define EMAG_APIENTRY __declspec(dllexport)
-// There is a SendMessage #define in <windows.h>. Very stupid on Microsoft's side
-// If Microsoft were to follow good programming practice, it would be prefixed with something
-// Anyway, we need to fix the problen, so we undefine this idiotic macro
+/* There is a SendMessage #define in <windows.h>. Very stupid on Microsoft's
+ * side. If Microsoft were to follow good programming practice, it would be
+ * prefixed with something. Anyway, we need to fix the problem, so we undefine
+ * this idiotic macro */
 #ifdef SendMessage
 #undef SendMessage
 #endif
@@ -30,13 +35,11 @@
 #else
 #define EMAG_APIENTRY
 #endif
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\defgroup GRAPHICS Graphics module used for data visualization
-///@{
-////////////////////////////////////////////////////////////////////////////////////////////////
+/** ============================================================================
+ * \defgroup GRAPHICS Graphics module used for data visualization
+ * @{
+ * ===========================================================================*/
 
-#ifndef _RENDERER_H
-#define _RENDERER_H
 
 namespace Render
 {
@@ -64,8 +67,9 @@ protected:
     virtual void AsyncStartFunc() = 0;
 };
 }
-#endif //_RENDERER_H
-////////////////////////////////////////////////////////////////////////////////////////////////
-///@}
-////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** ============================================================================
+ * @}
+ * ===========================================================================*/
+
+#endif //_RENDERER_H

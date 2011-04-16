@@ -15,21 +15,20 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 #ifndef _DATA_STRUCTURES_H
 #define _DATA_STRUCTURES_H
 
 #include <malloc.h>
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief Defines a n abstract class from which Array templates may derive
-///
-/// In order to allow arrays of different types to be passed in a manner agnostic
-/// of the type of data contained by the array, we need to derive all array templates
-/// from an abstract class. This way, we can rely on the virtual function pointer
-/// to call the appropriate function, regardless of the type of data.
-////////////////////////////////////////////////////////////////////////////////////////////////
+/** ============================================================================
+ * \brief Defines an abstract class from which Array templates may derive
+ *
+ * In order to allow arrays of different types to be passed in a manner agnostic
+ * of the type of data contained by the array, we need to derive all array
+ * templates from an abstract class. This way, we can rely on the virtual
+ * function pointer to call the appropriate function, regardless of the type of
+ * data.
+ * ===========================================================================*/
 class AbstractArray
 {
     /// Returns the size in bytes of one element
@@ -122,7 +121,8 @@ int Array<T>::Alloc(size_t size)
     if (!itsSize)
     {
         //itsAllocation = itsData = new T[size];
-        // Since we use free() in the destructor instead of delete[], it is safer to use malloc() here
+        // Since we use free() in the destructor instead of delete[],
+        // it is safer to use malloc() here
         itsAllocation = itsData = (T*)malloc(size * sizeof(T) );//new T[size];
         if (itsAllocation != 0)
         {
@@ -135,7 +135,7 @@ int Array<T>::Alloc(size_t size)
 }
 
 /// Warning::: may cause memory leaks if used improperly.
-/// Only use in cases where the constructor is not called porperly
+/// Only use in cases where the constructor is not called properly
 template<class T>
 int Array<T>::ReAlloc(size_t size)
 {
@@ -148,10 +148,11 @@ int Array<T>::AlignAlloc(size_t size, size_t alignment)
 {
     if (!itsSize)
     {
-        // Allocate just enough more memory than needed to prevent segmentation faults
+        // Allocate just enough more memory than needed
         itsAllocation = (T*)malloc(size*sizeof(T) + alignment - 1);
         // Then align itsData to a multiple of alignment
-        itsData = (T*) ((((size_t)itsAllocation + alignment - 1)/alignment)*alignment);
+        itsData = (T*) ((((size_t)itsAllocation + alignment - 1)/alignment)
+                * alignment);
         if (itsAllocation != 0)
         {
             itsSize = size;

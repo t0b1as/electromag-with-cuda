@@ -63,14 +63,20 @@ private:
 
     void AsyncStartFunc();
 
-    ///\brief Message reciever functor
-    ///
-    /// Overrides SendMessage from renderer, and passes the message to the message parser
+    /**
+     * \brief Message reciever functor
+     *
+     * Overrides SendMessage from renderer, and passes the message to the
+     * message parser
+     */
     void SendMessage(Render::RendererCommData *message);
 
-    ///\brief Message parser functor
-    ///
-    /// Parses external messages recieved by SendMessage(Render::RendererCommData *message)
+    /**
+     * \brief Message parser functor
+     *
+     * Parses external messages recieved by
+     * SendMessage(Render::RendererCommData*message)
+     */
     void SendMessage(FieldRenderer::FieldRenderCommData* message);
 
 public:

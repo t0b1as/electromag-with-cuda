@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ElectroMag is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -68,7 +68,8 @@ unsigned long AbstractFunctor::AsyncFunctor(
         }
         else
         {
-            // the functor has succeded, this device can execute another functor
+            // the functor has succeeded, this device can execute another
+            // functor
             if (pObject->nFailed)
             {
                 // A Failed functor is available for processing
@@ -109,7 +110,7 @@ unsigned long AbstractFunctor::Run()
 
     // Alocate resources for calling the async functors
     AbstractFunctor::AsyncParameters *launchParams =
-            new AbstractFunctor::AsyncParameters[nFunctors];
+        new AbstractFunctor::AsyncParameters[nFunctors];
     std::thread ** handles = new std::thread*[nFunctors];
     // Allocate and initialize resources that the async functors will use for
     // syncronization
@@ -122,7 +123,7 @@ unsigned long AbstractFunctor::Run()
         launchParams[i].functorClass = this;
         launchParams[i].functorIndex = i;
         launchParams[i].nFunctors = nFunctors;
-        handles[i] = 
+        handles[i] =
             new std::thread(AbstractFunctor::AsyncFunctor, &launchParams[i]);
 
         // Set the name for the thread
@@ -135,7 +136,7 @@ unsigned long AbstractFunctor::Run()
     // Create thread for auxiliary functor
     AbstractFunctor::AsyncParameters auxParams = {this, 0, 0};
     std::thread *hAuxFunctor
-            = new std::thread(AbstractFunctor::AsyncAuxFunctor,&auxParams);
+    = new std::thread(AbstractFunctor::AsyncAuxFunctor,&auxParams);
     // Set the name for the thread
     //Threads::SetThreadName(threadID, "Aux Functor");
 
