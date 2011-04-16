@@ -15,8 +15,6 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 #ifndef _ELECTROSTATICS_H
 #define _ELECTROSTATICS_H
 
@@ -43,11 +41,13 @@ inline Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point, T electroK)
     Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
     T lenSq = vec3LenSq(r);                             // 5 FLOP
     return r * (T)electroK * charge.magnitude / // 3 FLOP (vecMul)
-           (lenSq * (T)sqrt(lenSq));                        // 4 FLOP (1 sqrt + 3 mul,div)
-    // NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide once by their product
-    // Since we have one division and one multiplication, this should be more efficient due to the
-    // Fact that most architectures perform multiplication way faster than division. Also on some
-    // GPU architectures this yields a more precise result.
+           (lenSq * (T)sqrt(lenSq));            // 4 FLOP (1 sqrt + 3 mul,div)
+    // NOTE: instead of dividing by lenSq and then sqrt(lenSq), we only divide
+    // once by their product
+    // Since we have one division and one multiplication, this should be more
+    // efficient due to the fact that most architectures perform multiplication
+    // way faster than division. Also on some GPU architectures this yields a
+    // more precise result.
 }                       // Total: 15 FLOP
 
 template <class T>
@@ -56,15 +56,14 @@ inline Vector3<T> PartField(pointCharge<T> charge, Vector3<T> point)
     Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
     T lenSq = vec3LenSq(r);                             // 5 FLOP
     return vec3Mul(r, (T)electro_k * charge.magnitude / // 3 FLOP (vecMul)
-                   (lenSq * (T)sqrt(lenSq)) );                      // 4 FLOP (1 sqrt + 3 mul,div)
+                   (lenSq * (T)sqrt(lenSq)) );    // 4 FLOP (1 sqrt + 3 mul,div)
 }
 
 #define electroPartFieldFLOP 15
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///\brief  Operates on the inverse square vector to give the magnetic field
-///
-////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief  Operates on the inverse square vector to give the magnetic field
+ */
 template <class T>
 inline Vector3<T> PartFieldOp(
     T qSrc,
@@ -76,14 +75,17 @@ inline Vector3<T> PartFieldOp(
 }
 #define electroPartFieldOpFLOP 5
 
-// Returns the partial field vector without multiplying by electro_k to save one FLOP
+/**
+ * \brief Returns the partial field vector without multiplying by electro_k to
+ * \brief save one FLOP
+ */
 template <class T>
 inline Vector3<T> PartFieldVec(pointCharge<T> charge, Vector3<T> point)
 {
-    Vector3<T> r = vec3(point, charge.position);        // 3 FLOP
-    T lenSq = vec3LenSq(r);                             // 5 FLOP
-    return vec3Mul(r, charge.magnitude /                // 3 FLOP (vecMul)
-                   (lenSq * (T)sqrt(lenSq)) );                      // 3 FLOP (1 sqrt + 2 mul-div)
+    Vector3<T> r = vec3(point, charge.position);  // 3 FLOP
+    T lenSq = vec3LenSq(r);                       // 5 FLOP
+    return vec3Mul(r, charge.magnitude /          // 3 FLOP (vecMul)
+                   (lenSq * (T)sqrt(lenSq)) );    // 3 FLOP (1 sqrt + 2 mul-div)
 }                       // Total: 14 FLOP
 #define electroPartFieldVecFLOP 14
 

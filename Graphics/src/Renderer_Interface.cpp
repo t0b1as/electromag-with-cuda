@@ -18,6 +18,8 @@
 #include "GL/freeglut.h"
 #include "Renderer Interface.h"
 
+using std::thread;
+
 unsigned int GLRenderer::GlRenderers  = 0;
 const unsigned int GLRenderer::maxGlRenderers = 2;
 bool GLRenderer::glutIsInit = false;
@@ -26,7 +28,8 @@ void RendererInterface::StartAsync()
 {
     if (!rendererThread)
     {
-        rendererThread = new std::thread(RendererInterface::StartAsyncThreadFunc, this);
+        rendererThread = new thread(RendererInterface::StartAsyncThreadFunc,
+                                    this);
     }
 }
 

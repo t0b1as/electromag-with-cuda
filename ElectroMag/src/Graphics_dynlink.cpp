@@ -81,9 +81,13 @@ Graphics::ModuleLoadCode LoadEmGraphLib(EM_GRAPH_LIB *pInstance)
     return Graphics::SUCCESS;
 }
 
-#define GET_PROC(name)                                          \
-        name = (__##name)(size_t)dlsym(emGraphLib, #name);                 \
-        if (name == 0) {std::cerr<<dlerror()<<std::endl;return SYMBOL_NOT_FOUND;}
+#define GET_PROC(name) \
+        name = (__##name)(size_t)dlsym(emGraphLib, #name); \
+        if (name == 0) \
+        { \
+            std::cerr<<dlerror()<<std::endl; \
+            return SYMBOL_NOT_FOUND; \
+            }
 
 #endif
 
