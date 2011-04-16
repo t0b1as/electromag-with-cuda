@@ -5,8 +5,6 @@
 set(GRAPHICS_SRCS
     src/FieldRender.cpp
     src/FieldRender_Interface.cpp
-    src/FrontendGUI.cpp
-    src/MainGUI.cpp
     src/Renderer_Interface.cpp
 )
 
