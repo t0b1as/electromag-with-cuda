@@ -58,7 +58,8 @@ struct CpuidFeatures
             // Second ID string
         unsigned BrandIndex     :8;///< Brand Index
         unsigned QwordCFLUSH    :8;///< CLFLUSH cache line size / 8
-        unsigned LogicProcCount :8;///< Maximum number of addressable IDs for logical processors
+        /// Maximum number of addressable IDs for logical processors
+        unsigned LogicProcCount :8;
         unsigned ApicID         :8;///< APIC Physical ID
             // Third ID string
         unsigned SSE3           :1;///< Streaming SIMD Extensions 3 support
@@ -70,7 +71,8 @@ struct CpuidFeatures
         unsigned SMX            :1;///< Safer Mode Extensions
         unsigned EST            :1;///< Enhanced Intel Speed-Step Technology
         unsigned TM2            :1;///< Thermal Monitor 2
-        unsigned SSSE3          :1;///< Supplemental Streaming SIMD Extensions 3 support
+        /// Supplemental Streaming SIMD Extensions 3 support
+        unsigned SSSE3          :1;
         unsigned CNXTID         :1;///< L1 Context ID
         unsigned Reserved31     :1;///< Reserved
         unsigned FMA256         :1;///<
@@ -109,7 +111,8 @@ struct CpuidFeatures
         unsigned CMOV           :1;///< Conditional Move/Compare Instruction
         unsigned PAT            :1;///< Page Attribute Table
         unsigned PSE36          :1;///< 36-bit Page Size Extension
-        unsigned PSN            :1;///< Processor Serial Number present and enabled
+        /// Processor Serial Number present and enabled
+        unsigned PSN            :1;
         unsigned CFLUSH         :1;///< CFLUSH Instruction
         unsigned Reserved42     :1;///< Reserved
         unsigned DS             :1;///< Debug Store

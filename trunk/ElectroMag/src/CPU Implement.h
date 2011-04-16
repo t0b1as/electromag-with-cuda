@@ -15,8 +15,6 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 #ifndef _CPU_IMPLEMENT_H
 #define _CPU_IMPLEMENT_H
 
@@ -25,8 +23,11 @@
 #include "Electrostatics.h"
 
 template<class T>
-int CalcField_CPU(Vector3<Array<T> >& fieldLines, Array<electro::pointCharge<T> >& pointCharges,
-                  const size_t n, T resolution, perfPacket& perfData, bool useCurvature = false);
+int CalcField_CPU(
+    Vector3<Array<T> >& fieldLines,
+    Array<electro::pointCharge<T> >& pointCharges,
+    const size_t n, T resolution, perfPacket& perfData,
+    bool useCurvature = false);
 
 #endif//_CPU_IMPLEMENT_H
 

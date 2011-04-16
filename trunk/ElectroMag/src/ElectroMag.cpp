@@ -39,15 +39,22 @@ struct SimulationParams
     size_t pDynamic;    // Number of dynamic charge elements
     size_t len;         // Number of steps of a field line
 };
-SimulationParams DefaultParams = {128, 128, 1, 1024, 0, 2500};          // Default size for comparison with CPU performance
-SimulationParams EnhancedParams = {256, 112, 1, 2048, 0, 5000};         // Expect to fail on systems with under 3GB
-SimulationParams ExtremeParams = {256, 256, 1, 2048, 0, 5000};          // Expect to fail on systems with under 6GB
-SimulationParams InsaneParams = {512, 512, 1, 2048, 0, 5000};           // Requires minimum 16GB system RAM + host buffers
-SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000}; // Requires minimum 24GB system RAM + host buffers
-SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};            // Should work acceptably on most multi-core CPUs
+// Default size for comparison with CPU performance
+SimulationParams DefaultParams = {128, 128, 1, 1024, 0, 2500};
+// Expect to fail on systems with under 3GB
+SimulationParams EnhancedParams = {256, 112, 1, 2048, 0, 5000};
+// Expect to fail on systems with under 6GB
+SimulationParams ExtremeParams = {256, 256, 1, 2048, 0, 5000};
+// Requires minimum 16GB system RAM + host buffers
+SimulationParams InsaneParams = {512, 512, 1, 2048, 0, 5000};
+// Requires minimum 24GB system RAM + host buffers
+SimulationParams FuckingInsaneParams = {1024, 1024, 1, 5120, 0, 10000};
+// Should work acceptably on most multi-core CPUs
+SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};
 SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
 SimulationParams BogoParams = {16, 16, 1, 50, 0, 500};
-enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,  __insane, __fuckingInsane};
+enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,
+        __insane, __fuckingInsane};
 
 
 void TestCL(Vector3<Array<float> >& fieldLines,
@@ -55,12 +62,15 @@ void TestCL(Vector3<Array<float> >& fieldLines,
             size_t n, float resolution,  perfPacket& perfData,
             bool useCurvature);
 
+using std::endl;
+using std::cout;
+using std::cerr;
 // to redirect stdout and stderr to out.txt use:
 //              >out.txt  2>&1
 int main ( int argc, char* argv[] )
 {
-    std::cout<<" Electromagnetism simulation application"<<std::endl;
-    std::cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<std::endl;
+    cout<<" Electromagnetism simulation application"<<endl;
+    cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<endl;
 
     OpenCL::GlobalClManager.ListAllDevices();
     
@@ -123,7 +133,7 @@ int main ( int argc, char* argv[] )
         else if ( !strcmp ( argv[i], "--clmode" ) )
             clMode = true;
         else
-            std::cout<<" Ignoring unknown argument: "<<argv[i]<<std::endl;
+            cout<<" Ignoring unknown argument: "<<argv[i]<<endl;
     }
 
     Render::Renderer* FieldDisplay = 0;
@@ -134,7 +144,7 @@ int main ( int argc, char* argv[] )
         errCode = Graphics::LoadModule();
         if ( errCode != Graphics::SUCCESS )
         {
-            std::cerr<<" Could not load graphhics module. Rendering disabled"<<std::endl;
+            cerr<<" Could not load graphhics module. Rendering disabled"<<endl;
             display = false;
         }
         else
@@ -154,18 +164,19 @@ int main ( int argc, char* argv[] )
     //freopen("log.bs.txt", "w", stderr);
     std::clog<<" Processor:\t";
     std::clog.write ( cpuString.IDString, sizeof ( cpuString.IDString ) );
-    std::clog<<std::endl;
-    std::clog<<" SSE3:  \t"<<support[cpuInfo.SSE3]<<std::endl;
-    std::clog<<" SSSE3: \t"<<support[cpuInfo.SSSE3]<<std::endl;
-    std::clog<<" SSE4.1:\t"<<support[cpuInfo.SSE41]<<std::endl;
-    std::clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<std::endl;
-    std::clog<<" AVX256:\t"<<support[cpuInfo.AVX]<<std::endl;
+    std::clog<<endl;
+    std::clog<<" SSE3:  \t"<<support[cpuInfo.SSE3]<<endl;
+    std::clog<<" SSSE3: \t"<<support[cpuInfo.SSSE3]<<endl;
+    std::clog<<" SSE4.1:\t"<<support[cpuInfo.SSE41]<<endl;
+    std::clog<<" SSE4.2:\t"<<support[cpuInfo.SSE42]<<endl;
+    std::clog<<" AVX256:\t"<<support[cpuInfo.AVX]<<endl;
 
     // Now that checks are performed, start the Frontend
     //if(visualProgressBar) MainGUI.StartAsync();
 
     GPUenable = false; CPUenable=true;
-    // Statistics show that users are happier when the program outputs fun information abot their toys
+    // Statistics show that users are happier when the program outputs fun
+    // information abot their toys
 
     // Set correct parameter configuration
     switch ( paramLevel )
@@ -196,7 +207,12 @@ int main ( int argc, char* argv[] )
         simConfig = CpuModeParams;
     }
     // Initialze data containers
-    size_t nw = ( int ) simConfig.nx, nh = ( int ) simConfig.ny, nd = ( int ) simConfig.nz,  n = nh * nw * nd, p = ( int ) simConfig.pStatic, len = ( int ) simConfig.len;
+    size_t nw = ( int ) simConfig.nx,
+        nh = ( int ) simConfig.ny,
+        nd = ( int ) simConfig.nz,
+        n = nh * nw * nd,
+        p = ( int ) simConfig.pStatic,
+        len = ( int ) simConfig.len;
     Vector3 <Array<FPprecision> > CPUlines, GPUlines;
     Array<electro::pointCharge<FPprecision> > charges ( p, 256 );
     // Only allocate memory if cpu comparison mode is specified
@@ -220,18 +236,20 @@ int main ( int argc, char* argv[] )
     else if ( CPUenable ) arrMain = &CPUlines;
     else
     {
-        std::cerr<<" Could not allocate sufficient memory. Halting execution."<<std::endl;
+        cerr<<" Could not allocate sufficient memory. Halting execution."<<endl;
         size_t neededRAM = n*len*sizeof ( Vector3<FPprecision> ) /1024/1024;
-        std::cerr<<" "<<neededRAM<<" MB needed for initial allocation"<<std::endl;
+        cerr<<" "<<neededRAM<<" MB needed for initial allocation"<<endl;
         return 666;
     }
 
     // Initialize the starting points
     InitializeFieldLineArray ( *arrMain, n, nw, nh, nd, randfieldinit );
 
-    // If both CPU and GPU modes are initialized, the GPU array will have been initialized
+    // If both CPU and GPU modes are selected, the GPU array will have been
+    // initialized first
     // Copy the same starting values to the CPU array
-    if ( CPUenable && GPUenable ) CopyFieldLineArray ( CPUlines, GPUlines, 0, n );
+    if ( CPUenable && GPUenable )
+        CopyFieldLineArray ( CPUlines, GPUlines, 0, n );
 
     // Run calculations
     long long freq, start, end;
@@ -248,23 +266,28 @@ int main ( int argc, char* argv[] )
     FPprecision resolution = 1;
     if ( GPUenable )
     {
-        std::cout<<" GPU"<<std::endl;
+        cout<<" GPU"<<endl;
     }
     if ( CPUenable )
     {
         StartConsoleMonitoring ( &CPUperf.progress );
         QueryHPCTimer ( &start );
-        CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf, useCurvature );
+        CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf,
+                        useCurvature );
         QueryHPCTimer ( &end );
         CPUperf.progress = 1;
-        std::cout<<" CPU kernel execution time:\t"<<CPUperf.time<<" seconds"<<std::endl;
-        std::cout<<" Effective performance:\t\t"<<CPUperf.performance<<" GFLOP/s"<<std::endl;
+        cout<<" CPU kernel execution time:\t"
+            <<CPUperf.time<<" seconds"<<endl;
+        cout<<" Effective performance:\t\t"
+            <<CPUperf.performance<<" GFLOP/s"<<endl;
         CPUtime = double ( end-start ) /freq;
-        std::cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<std::endl;
+        cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<endl;
         if ( GPUenable )
         {
-            std::cout<<" Effective speedup:\t\t"<<GPUperf.performance/CPUperf.performance<<" x"<<std::endl;
-            std::cout<<" Realistic speedup:\t\t"<<CPUtime/GPUtime<<" x"<<std::endl;
+            cout<<" Effective speedup:\t\t"
+                <<GPUperf.performance/CPUperf.performance<<" x"<<endl;
+            cout<<" Realistic speedup:\t\t"
+                <<CPUtime/GPUtime<<" x"<<endl;
         }
     }
 
@@ -286,7 +309,8 @@ int main ( int argc, char* argv[] )
         // Before: FieldDisp.SetPerfGFLOP(GPUperf.performance);
         FieldRenderer::FieldRenderCommData PerfMessage;
         PerfMessage.messageType = FieldRenderer::SendingPerfPointer;
-        PerfMessage.commData = ( void* ) GPUenable?(&GPUperf.performance):(&CPUperf.performance);
+        PerfMessage.commData = ( void* ) GPUenable ? (&GPUperf.performance) :
+                            (&CPUperf.performance);
         FieldDisplay->SendMessage ( &PerfMessage );
 
         // Get ready to quit flag
@@ -301,38 +325,50 @@ int main ( int argc, char* argv[] )
         }
         catch ( char * errString )
         {
-            std::cerr<<" Could not initialize field rendering"<<std::endl;
-            std::cerr<<errString<<std::endl;
+            cerr<<" Could not initialize field rendering"<<endl;
+            cerr<<errString<<endl;
         }
     }
 
-    // do stuff here; This will generate files non-worthy of FAT32 or non-RAID systems
+    // do stuff here
+    // This will generate files non-worthy of FAT32 or non-RAID systems
     if ( saveData && ( CPUenable || GPUenable ) )
     {
-        std::cout<<" Beginning save procedure"<<std::endl;
+        cout<<" Beginning save procedure"<<endl;
         for ( size_t line = 0; line < n; line++ )
         {
             for ( size_t step = 0; step < len; step++ )
             {
                 int i = step*n + line;
-                if ( CPUenable ) data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl;
-                if ( GPUenable ) data<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl;
+                if ( CPUenable )
+                {
+                    data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x
+                        <<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z
+                        <<endl;
+                }
+                if ( GPUenable )
+                {
+                    data<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
+                    <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z
+                    <<endl;
+                }
             }
             float percent = ( float ) line/n*100;
-            std::cout<<percent<<" %complete"<<std::endl;
+            cout<<percent<<" %complete"<<endl;
         }
-        std::cout<<" Save procedure complete"<<std::endl;
+        cout<<" Save procedure complete"<<endl;
     }
 
     // Save points that are significanlty off for regression analysis
     if ( regressData && CPUenable && GPUenable )
     {
         regress.open ( "regression.txt" );//, ios::app);
-        std::cout<<" Beginning verfication procedure"<<std::endl;
+        cout<<" Beginning verfication procedure"<<endl;
         for ( size_t line = 0; line < n; line++ )
         {
-            // Looks for points that are close to the CPU value, but suddenly jump
-            // off; This ususally exposes GPU kernel syncronization bugs
+            // Looks for points that are close to the CPU value
+            // but suddenly jumps off
+            // This ususally exposes GPU kernel syncronization bugs
             size_t step = 0;
             do
             {
@@ -342,23 +378,41 @@ int main ( int argc, char* argv[] )
                 float offset3D = vec3Len ( vec3 ( CPUlines[i],GPUlines[i] ) );
                 if ( offset3D > 0.1f )
                 {
-                    regress<<" CPUL ["<<line<<"]["<<step-1<<"] x: "<<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "<<CPUlines[iLast].z<<std::endl\
-                    <<" GPUL ["<<line<<"]["<<step-1<<"] x: "<<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y<<" z: "<<GPUlines[iLast].z<<std::endl\
-                    <<" 3D offset: "<<vec3Len ( vec3 ( CPUlines[iLast],GPUlines[iLast] ) ) <<std::endl;
-                    regress<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl\
-                    <<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl\
-                    <<" 3D offset: "<<offset3D<<std::endl<<std::endl;
+                    regress<<" CPUL ["<<line<<"]["<<step-1<<"] x: "
+                        <<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "
+                        <<CPUlines[iLast].z
+                        <<endl
+                        <<" GPUL ["<<line<<"]["<<step-1<<"] x: "
+                        <<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y
+                        <<" z: "<<GPUlines[iLast].z
+                        <<endl
+                        <<" 3D offset: "
+                        <<vec3Len ( vec3 ( CPUlines[iLast],GPUlines[iLast] ) )
+                        <<endl;
+                    regress<<" CPUL ["<<line<<"]["<<step<<"] x: "
+                        <<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "
+                        <<CPUlines[i].z
+                        <<endl
+                        <<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
+                        <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z
+                        <<endl
+                        <<" 3D offset: "<<offset3D
+                        <<endl<<endl;
                     // If a leap is found; skip the current line
                     break;
                 }
             }
             while ( ++step < len );
             // Small anti-boredom indicator
-            if ( ! ( line%256 ) ) std::cout<<" "<< ( double ) line/n*100<<" % complete"<<std::endl;
+            if ( ! ( line%256 ) )
+            {
+                cout<<" "<< ( double ) line/n*100<<" % complete"<<endl;
+            }
         }
-        // When done, close file to prevent system crashes from resulting in incomplete regressions
+        // When done, close file to prevent system crashes from resulting
+        // in incomplete regressions
         regress.close();
-        std::cout<<" Verification complete"<<std::endl;
+        cout<<" Verification complete"<<endl;
     }
 
     while ( debugData )
@@ -369,12 +423,20 @@ int main ( int argc, char* argv[] )
         std::cin.ignore ( 100, '\n' );
         size_t i = step*n + line;
 
-        if ( CPUenable ) std::cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<std::endl;
-        if ( GPUenable ) std::cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x<<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<std::endl;
+        if ( CPUenable )
+        {
+            cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x
+                <<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
+        }
+        if( GPUenable )
+        {
+            cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
+            <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
+        }
         if ( CPUenable && GPUenable )
         {
             float offset3D = vec3Len ( vec3 ( CPUlines[i],GPUlines[i] ) );
-            std::cout<<" 3D offset: "<<offset3D<<std::endl;
+            cout<<" 3D offset: "<<offset3D<<endl;
         }
     }
 
@@ -388,7 +450,7 @@ int main ( int argc, char* argv[] )
         };
         FieldDisplay->KillAsync();
     }
-    // do a DEBUG wait before cleaning resources, so resource usage can be evaluated
+    // do a DEBUG wait before cleaning resources
 #ifdef _DEBUG
     if ( !display ) system ( "pause" );
 #endif

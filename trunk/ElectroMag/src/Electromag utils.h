@@ -15,12 +15,10 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-//////////////////////////////////////////////////////////////////////////////////
-///
-/// Includes utilities to initialize and work on the data
-/// These have no better place at the moment, so are included here
-///
-//////////////////////////////////////////////////////////////////////////////////
+/** ============================================================================
+ * Includes utilities to initialize and work on the data
+ * These have no better place at the moment, so are included here
+ * ===========================================================================*/
 #ifndef _ELECTROMAG_UTILS_H
 #define _ELECTROMAG_UTILS_H
 #include <stdlib.h>
@@ -29,11 +27,14 @@
 typedef void* ArrayHandle;
 
 template<class T>
-void InitializeFieldLineArray ( Vector3<Array<T> > &arrMain,                                ///< Pointer to the array to initialize
-                                const size_t n,                                             ///< Number of field lines in the array
-                                const size_t width, const size_t height, const size_t depth,///< Distribution of array
-                                bool random                                                 ///< Initialize randomly, or in a grid if false
-                              )
+void InitializeFieldLineArray (
+    Vector3<Array<T> > &arrMain,  ///< Pointer to the array to initialize
+    const size_t n,               ///< Number of field lines in the array
+    const size_t width,
+    const size_t height,
+    const size_t depth,           ///< Distribution of array
+    bool random                   ///< Initialize randomly, or in a grid
+    )
 {
     // Initialize field line grid
     if ( random )
@@ -69,10 +70,11 @@ void InitializeFieldLineArray ( Vector3<Array<T> > &arrMain,                    
 }
 
 template<class T1, class T2>
-void CopyFieldLineArray ( Vector3<Array<T1> >& destination, ///< Destination array
-                          Vector3<Array<T2> >& source,          ///< Source array
-                          size_t start,                     ///< Index of first element to copy
-                          size_t elements                       ///< Number of elements to copy
+void CopyFieldLineArray (
+    Vector3<Array<T1> >& destination, ///< Destination array
+    Vector3<Array<T2> >& source,      ///< Source array
+    size_t start,                     ///< Index of first element to copy
+    size_t elements                   ///< Number of elements to copy
                         )
 {
     for ( size_t i = start; i < elements; i++ )
@@ -97,18 +99,23 @@ void InitializePointChargeArray ( Array<electro::pointCharge<T> > &charges,
     // Initialize values
     for ( size_t i = 0; i < lenght ; i++ )
     {
-        charges[i].position.x = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
-        charges[i].position.y = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
-        charges[i].position.z = ( T ) ( rand()- ( T ) RAND_MAX/2 ) /RAND_MAX*10000;//(FPprecision)i + 1;
-        charges[i].magnitude  = ( T ) ( rand()- ( T ) RAND_MAX/10 ) /RAND_MAX; //0.001f;
+        charges[i].position.x = ( T ) ( rand()- ( T ) RAND_MAX/2 )
+                / RAND_MAX*10000;
+        charges[i].position.y = ( T ) ( rand()- ( T ) RAND_MAX/2 )
+                / RAND_MAX*10000;
+        charges[i].position.z = ( T ) ( rand()- ( T ) RAND_MAX/2 )
+                /RAND_MAX*10000;
+        charges[i].magnitude  = ( T ) ( rand()- ( T ) RAND_MAX/10 )
+                / RAND_MAX;
     }
 }
 
 template<class T1, class T2>
-void CopyPointChargeArray ( Array<electro::pointCharge<T1> >& destination,  ///< Destination array
-                            Array<electro::pointCharge<T2> >& source,           ///< Source array
-                            size_t start,                       ///< Index of first element to copy
-                            size_t elements                     ///< Number of elements to copy
+void CopyPointChargeArray (
+    Array<electro::pointCharge<T1> >& destination,  ///< Destination array
+    Array<electro::pointCharge<T2> >& source,       ///< Source array
+    size_t start,                       ///< Index of first element to copy
+    size_t elements                     ///< Number of elements to copy
                           )
 {
     for ( size_t i = start; i < elements; i++ )
@@ -126,7 +133,8 @@ void CopyPointChargeArray ( Array<electro::pointCharge<T1> >& destination,  ///<
 void MonitorProgressConsole ( volatile double * progress )
 {
     const double step = ( double ) 1/60;
-    std::cout<<"[__________________________________________________________]"<<std::endl;
+    std::cout<<"[__________________________________________________________]"
+            <<std::endl;
     for ( double next=step; next < ( 1.0 - 1E-3 ); next += step )
     {
         while ( *progress < next )

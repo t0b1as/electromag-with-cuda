@@ -17,7 +17,9 @@ This file is part of ElectroMag.
 
 #ifndef _SSE_MATH_H
 #define _SSE_MATH_H
-#if (defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER) || defined(__INTEL_COMPILER)
+#if (defined(__GNUC__) && defined(__SSE__)) || \
+        defined (_MSC_VER) || \
+        defined(__INTEL_COMPILER)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \defgroup SSE_MATH SSE math functions and operators
@@ -123,6 +125,6 @@ inline __m128d rsqrt(const __m128d A)
 /// @}
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif //(defined(__GNUC__) && defined(__SSE__)) || defined (_MSC_VER) || defined(__INTEL_COMPILER)
+#endif //(defined(__GNUC__) && defined(__SSE__)) ...
 #endif  /* _SSE_MATH_H */
 
