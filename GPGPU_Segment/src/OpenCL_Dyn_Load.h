@@ -1,20 +1,20 @@
-/***********************************************************************************************
-Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.htm>
+/*
+ * Copyright (C) 2010 - Alexandru Gagniuc - <mr.nuke.me@gmail.com>
  * This file is part of ElectroMag.
-
-    ElectroMag is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    ElectroMag is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
-***********************************************************************************************/
+ *
+ * ElectroMag is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ElectroMag is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef _OPENCL_DYN_LOAD_H
 #define _OPENCL_DYN_LOAD_H
@@ -29,7 +29,7 @@ Copyright (C) 2009-2010 - Alexandru Gagniuc - <http:\\g-tech.homeserver.com\HPC.
 extern "C" {
 #endif
 
-    /******************************************************************************/
+    /**************************************************************************/
 
     typedef struct _cl_platform_id *    cl_platform_id;
     typedef struct _cl_device_id *      cl_device_id;
@@ -41,7 +41,9 @@ extern "C" {
     typedef struct _cl_event *          cl_event;
     typedef struct _cl_sampler *        cl_sampler;
 
-    typedef cl_uint             cl_bool;                     /* WARNING!  Unlike cl_ types in cl_platform.h, cl_bool is not guaranteed to be the same size as the bool in kernels. */
+    /* WARNING!  Unlike cl_ types in cl_platform.h, cl_bool is not guaranteed to
+     *be the same size as the bool in kernels. */
+    typedef cl_uint             cl_bool;
     typedef cl_ulong            cl_bitfield;
     typedef cl_bitfield         cl_device_type;
     typedef cl_uint             cl_platform_info;
@@ -86,7 +88,7 @@ extern "C" {
         size_t                  size;
     } cl_buffer_region;
 
-    /******************************************************************************/
+    /**************************************************************************/
 
     /* Error Codes */
 #define CL_SUCCESS                                  0
@@ -434,7 +436,7 @@ extern "C" {
 #define CL_PROFILING_COMMAND_START                  0x1282
 #define CL_PROFILING_COMMAND_END                    0x1283
 
-    /********************************************************************************************************/
+    /**************************************************************************/
 
 
 
@@ -1066,4 +1068,5 @@ extern "C" {
 
 
 #endif  /* _OPENCL_DYN_LOAD_H */
+
 

@@ -27,7 +27,8 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
 #include <iostream>
 #include "OpenCL_Dyn_Load.h"
 
-// We may later change this to functor-specific, or even device-secific error stream,
+// We may later change this to functor-specific, or even device-secific error
+// stream,
 #define errlog std::cerr
 
 
@@ -40,7 +41,8 @@ template<class T>
 CLElectrosFunctor<T>::~CLElectrosFunctor()
 {
     ReleaseResources();
-    //for ( size_t i = 0; i < this->functorParamList.GetSize(); i++ ) delete functorParamList[i].pPerfData;
+    //for ( size_t i = 0; i < this->functorParamList.GetSize(); i++ )
+    //      delete functorParamList[i].pPerfData;
     //functorParamList.Free();
 }
 
@@ -109,11 +111,13 @@ void CLElectrosFunctor<T>::PartitionData()
      * the block size should also be considered for maximum efficiency
      */
     const size_t segAlign = 256;
-    // Determine the maximum number of parallel segments as the number of GPUs
-    const unsigned int segments = ( unsigned int ) this->m_nDevices;
-    // Determine the number of lines to be processed by each GPU, and aling it to a multiple of segAlign
-    // This prevents empty threads from being created on more than one GPU
-    const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 ) / segAlign ) * segAlign;
+    // Determine the max number of parallel segments as the number of devices
+    const size_t segments = this->m_nDevices;
+    /* Determine the number of lines to be processed by each device, and aling
+     * it to a multiple of segAlign. This prevents empty threads from being
+     * created on more than one device */
+    const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 )
+                        / segAlign ) * segAlign;
     // Create data for performance info
     /*pPerfData->stepTimes.Alloc ( timingSize * segments );
     pPerfData->stepTimes.Memset ( ( T ) 0 );
@@ -129,18 +133,21 @@ void CLElectrosFunctor<T>::PartitionData()
         FunctorData *dataParams = &functorParamList[devID];
         blockXSize = dataParams->blockXSize;
         // Initialize parameter arrays
-        size_t segDataSize = ( remainingLines < segSize ) ? remainingLines : segSize;
+        size_t segDataSize
+            = ( remainingLines < segSize ) ? remainingLines : segSize;
         dataParams->startIndex = this->nLines - remainingLines;
         dataParams->elements = segDataSize;
         dataParams->pPerfData =  new perfPacket; // Deleted in destructor
-        // Constructor is not called automatically, so we need to use ReAlloc (FIXME: possible source of bugs)
+        // Constructor is not called automatically, so we need to use ReAlloc
+        // (FIXME: possible source of bugs)
         dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
         dataParams->pPerfData->stepTimes.Memset ( 0 );
         dataParams->pPerfData->progress = 0;
         dataParams->GPUchargeData.nCharges = nCharges;
         dataParams->GPUfieldData.nSteps = steps;
         //dataParams->GPUfieldData.nLines = segDataSize;
-        dataParams->lastOpErrCode = CUDA_ERROR_NOT_INITIALIZED;// Flag that resources have not yet been allocated
+        // Flag that resources have not yet been allocated
+        dataParams->lastOpErrCode = CUDA_ERROR_NOT_INITIALIZED;
         dataParams->ctxIsUsable = false;
         remainingLines -= segSize;
     }*/
@@ -161,11 +168,12 @@ void CLElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
  * ===========================================================================*/
 template<class T>
 void CLElectrosFunctor<T>::BindData (
-    void *aDataParameters    ///< [in] Pointer to a structure of type BindDataParams
+    /// [in] Pointer to a structure of type BindDataParams
+    void *aDataParameters
 )
 {
     struct ElectrostaticFunctor<T>::BindDataParams *params =
-                    ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+        ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
             || params->resolution == 0
@@ -311,7 +319,8 @@ unsigned long CLElectrosFunctor<T>::AuxFunctor()
  * ===========================================================================*/
 /*
 template<class T>
-CUresult CudaElectrosFunctor<T>::CallKernel ( FunctorData *params, size_t kernelElements )
+CUresult CudaElectrosFunctor<T>::CallKernel ( FunctorData *params,
+                                size_t kernelElements )
 {
 }
 */

@@ -35,16 +35,17 @@ public:
     CLElectrosFunctor();
     ~CLElectrosFunctor();
 
-    //----------------------------------AbstractFunctor overriders------------------------------------//
-    // These functions implement the pure functions specified by AbstractFunctor
-    // They can be called externally, and will attah and detach the device context accordingly
-    // These functions can be considered thread safe if they are not called simultaneously
-    // from different threads
-    // The sequential order is that of AbsrtactFunctor:
-    // BindData()
-    // AllocateResources()
-    // Run() - this calls the main functor
-    // Executing these functions simultaneously or in a different order will cause them to fail
+    /*-------------------------AbstractFunctor overriders-----------------------
+     * These functions implement the pure functions specified by AbstractFunctor
+     * They can be called externally, and will attach and detach the device
+     * context accordingly. These functions cannot be considered thread safe
+     * The sequential order is that of AbstractFunctor:
+     * BindData()
+     * AllocateResources()
+     * Run() - this calls the main functor
+     * Executing these functions simultaneously or in a different order will
+     * cause them to fail
+     */
     void BindData(void *dataParameters);
     void AllocateResources();
     void ReleaseResources();
@@ -74,29 +75,52 @@ private:
     {
     public:
         /// Device context specific data
-        //CUcontext context;                  ///< Context associated with the device
-        Vector3<T*> hostNonpagedData;        ///< Host buffers associated with the context
+        /// Context associated with the device
+        //CUcontext context;
+        /// Host buffers associated with the context
+        Vector3<T*> hostNonpagedData;        
         //CoalescedFieldLineArray<CUdeviceptr>
-        //GPUfieldData;                   ///< Stores information about the GPU field lines allocation including
-        /// number of steps (pre-allocation), and number of lines(post-allocation)
-        /// available on the GPU
-        //PointChargeArray<CUdeviceptr>       ///
-        //GPUchargeData;                  ///< Stores information about the GPU static charges allocation
-        unsigned int blockXSize;            ///< X-size of kernel block, dependent on selected kernel (MT/NON_MT)
-        unsigned int blockDim;              ///< kernel block size, dependent on selected kernel (MT/NON_MT)
-        size_t nKernelSegments;             ///< Number of kernel calls needed to complete the given dataset
-        size_t nBlocksPerSegment;           ///< Number of blocks that can be launched during a kernel call
-        /// This depends on how much device memory was available at allocation time
-        //bool useMT;                         ///< Flags wheter the multithreaded kernel has been selected or not
-        //CUmodule singlestepModule;          ///< Module containing the singlestep kernels
-        //CUmodule multistepModule;           ///< Module containing the multistep kernels
-        //CUfunction singlestepKernel;        ///< Selected singlestep kernel
-        //CUfunction multistepKernel;         ///< Selected multistep kernel
-        CLerror lastOpErrCode;             ///< Keeps track of errors that ocuur on the context current to the functor
+        /// Stores information about the GPU field lines allocation including
+        //GPUfieldData;
+        /// number of steps (pre-allocation), and number of lines
+        /// (post-allocation) available on the GPU
+        //PointChargeArray<CUdeviceptr>
+        /// Stores information about the GPU static charges allocation
+        //GPUchargeData;
+        /// X-size of kernel block, dependent on selected kernel (MT/NON_MT)
+        unsigned int blockXSize;
+        /// kernel block size, dependent on selected kernel (MT/NON_MT)
+        unsigned int blockDim;
+        /// Number of kernel calls needed to complete the given dataset
+        size_t nKernelSegments;
+        /// Number of blocks that can be launched during a kernel call
+        size_t nBlocksPerSegment;
+        /// This depends on how much device memory was available at allocation
+        /// time
+        /// Flags wheter the multithreaded kernel has been selected or not
+        //bool useMT;
+        /// Module containing the singlestep kernels
+        //CUmodule singlestepModule;
+        /// Module containing the multistep kernels
+        //CUmodule multistepModule;
+        /// Selected singlestep kernel
+        //CUfunction singlestepKernel;
+        /// Selected multistep kernel
+        //CUfunction multistepKernel;
+        /// Keeps track of errors that ocuur on the context current to the
+        /// functor
+        CLerror lastOpErrCode;
+        
         /// Functor specific data
-        size_t startIndex;                  ///< The starting index of pFieldLinesData that has been assigned to this functor
-        size_t elements;                    ///< The number of field lines from 'startIndex' that has been assigned to this functor
-        perfPacket *pPerfData;              ///< Functor-specific performance information
+
+        /// The starting index of pFieldLinesData that has been assigned to this
+        /// functor
+        size_t startIndex;
+        /// The number of field lines from 'startIndex' that has been assigned
+        /// to this functor
+        size_t elements;
+        /// Functor-specific performance information
+        perfPacket *pPerfData;
     };
     /// Contains data for each individual functor
     Array<FunctorData> m_functorParamList;
