@@ -34,7 +34,7 @@ class ComputeDeviceManager
 public:
     ComputeDeviceManager();
     virtual ~ComputeDeviceManager() {};
-    
+
     /// Returns the total number of Compute devices detected
     virtual size_t GetNumDevices() = 0;
 protected:

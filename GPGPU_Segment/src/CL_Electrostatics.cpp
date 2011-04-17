@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "CL Electrostatics.hpp"
+#include "CL_Electrostatics.hpp"
 
 CLElectrosFunctor<float> CLtest;
 
@@ -66,7 +66,6 @@ template<class T>
 bool CLElectrosFunctor<T>::Fail()
 {
     return ( m_lastOpErrCode != CL_SUCCESS );
-    return false;
 }
 
 /**=============================================================================
@@ -120,7 +119,7 @@ void CLElectrosFunctor<T>::PartitionData()
                         / segAlign ) * segAlign;
     // Create data for performance info
     /*pPerfData->stepTimes.Alloc ( timingSize * segments );
-    pPerfData->stepTimes.Memset ( ( T ) 0 );
+    pPerfData->stepTimes.Memset ( ( T ) 0 );*/
     // Create arrays
     this->functorParamList.Alloc ( segments );
 
@@ -130,7 +129,7 @@ void CLElectrosFunctor<T>::PartitionData()
     unsigned int blockXSize = 0;
     for ( size_t devID = 0; devID < segments; devID++ )
     {
-        FunctorData *dataParams = &functorParamList[devID];
+        FunctorData *dataParams = &m_functorParamList[devID];
         blockXSize = dataParams->blockXSize;
         // Initialize parameter arrays
         size_t segDataSize
@@ -140,17 +139,17 @@ void CLElectrosFunctor<T>::PartitionData()
         dataParams->pPerfData =  new perfPacket; // Deleted in destructor
         // Constructor is not called automatically, so we need to use ReAlloc
         // (FIXME: possible source of bugs)
-        dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
-        dataParams->pPerfData->stepTimes.Memset ( 0 );
+        //dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
+        //dataParams->pPerfData->stepTimes.Memset ( 0 );
         dataParams->pPerfData->progress = 0;
         dataParams->GPUchargeData.nCharges = nCharges;
         dataParams->GPUfieldData.nSteps = steps;
         //dataParams->GPUfieldData.nLines = segDataSize;
         // Flag that resources have not yet been allocated
-        dataParams->lastOpErrCode = CUDA_ERROR_NOT_INITIALIZED;
+        dataParams->lastOpErrCode = CL_INVALID_CONTEXT;
         dataParams->ctxIsUsable = false;
         remainingLines -= segSize;
-    }*/
+    }
 }
 
 template<class T>
@@ -267,7 +266,7 @@ template<class T>
 void CLElectrosFunctor<T>::AllocateResources()
 {
     if(this->m_dataBound) return;
-    
+
     for(size_t dev = 0; dev < m_nDevices; dev++)
     {
         FunctorData * data = &m_functorParamList[dev];

@@ -20,7 +20,7 @@
 #if !defined(__CYGWIN__) // Stupid, I know, but it's a fact of life
 #include <omp.h>
 #endif
-#include "./../../GPGPU_Segment/src/CL Manager.h"
+#include "./../../GPGPU_Segment/src/CL_Manager.hpp"
 #include "Electromag utils.h"
 #include "Graphics_dynlink.h"
 #include <SOA_utils.hpp>
@@ -65,6 +65,8 @@ void TestCL(Vector3<Array<float> >& fieldLines,
 using std::endl;
 using std::cout;
 using std::cerr;
+using std::this_thread::sleep_for;
+using std::chrono::milliseconds;
 // to redirect stdout and stderr to out.txt use:
 //              >out.txt  2>&1
 int main ( int argc, char* argv[] )
@@ -446,7 +448,7 @@ int main ( int argc, char* argv[] )
     {
         while ( !*shouldIQuit )
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds( 1000 ));
+            sleep_for(milliseconds( 1000 ));
         };
         FieldDisplay->KillAsync();
     }

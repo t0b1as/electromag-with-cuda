@@ -20,7 +20,7 @@
 
 #include "ElectrostaticFunctor.hpp"
 #include "Electrostatics.h"
-#include "CL Manager.h"
+#include "CL_Manager.hpp"
 
 typedef int CLerror;
 
@@ -154,4 +154,5 @@ CLElectrosFunctor<T>::CLElectrosFunctor():
 }
 
 #endif//CL_ELECTROSTATICS_HPP
+
 
