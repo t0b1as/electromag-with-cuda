@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "CL Manager.h"
+#include "CL_Manager.hpp"
 #include <iostream>
 
 using namespace OpenCL;

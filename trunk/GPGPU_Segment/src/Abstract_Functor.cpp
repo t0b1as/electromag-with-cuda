@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Abstract Functor.h"
+#include "Abstract_Functor.hpp"
 #include <cstdio>
 #include <thread>
 

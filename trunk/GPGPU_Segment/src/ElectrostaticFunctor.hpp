@@ -19,7 +19,7 @@
 #define _ELECTROSTATICFUNCTOR_HPP
 
 #include <SOA_utils.hpp>
-#include "Abstract Functor.h"
+#include "Abstract_Functor.hpp"
 #include "Electrostatics.h"
 /**=============================================================================
  * \brief Class for holding all device-agnostic data for electrostatic fields
