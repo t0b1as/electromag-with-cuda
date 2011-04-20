@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ElectroMag is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,7 +30,9 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
 // We may later change this to functor-specific, or even device-secific error
 // stream,
 #define errlog std::cerr
-
+using std::cout;
+using std::endl;
+using namespace OpenCL;
 
 /**=============================================================================
  * \brief Electrostatics functor destructor
@@ -48,18 +50,18 @@ CLElectrosFunctor<T>::~CLElectrosFunctor()
 
 /**=============================================================================
  * \brief Object-global error accessor
- * 
+ *
  * Returns true if a previous operation global to the object has failed.
  * Operations on a specific functor, such as memory allocations, will not cause
  * a global error. Global errors are caused by failures in public members, or
  * members that do not return an error code. Also note that members which return
  * an error code should not be public. Such an error changes the 'lastOpErrCode'
  * member to indicate the error condition.
- * 
+ *
  * Also note that if calling several methods which may both encounter error
  * conditions, this function will only indicate if the last method failed.
  * Therefore, Fail() should be called after every member that is error-prone.
- * 
+ *
  * @return True if the previous global operation returned an error
  * ===========================================================================*/
 template<class T>
@@ -74,11 +76,11 @@ bool CLElectrosFunctor<T>::Fail()
  * Returns true if a previous operation on a specific functor has failed. Errors
  * on functors do not flag a global object error state, and cannot be detected\
  * with Fail().
- * 
+ *
  * Also note that if several operations are perfomed on a functor, an error can
  * only be detected from the last operation, as the error flag is overwritten by
  * each operation.
- * 
+ *
  * @param functorIndex Index of the functor where an error is suspected
  * @return True if the previous operation on functorIndex returned an error
  * ===========================================================================*/
@@ -116,16 +118,16 @@ void CLElectrosFunctor<T>::PartitionData()
      * it to a multiple of segAlign. This prevents empty threads from being
      * created on more than one device */
     const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 )
-                        / segAlign ) * segAlign;
+                             / segAlign ) * segAlign;
     // Create data for performance info
     /*pPerfData->stepTimes.Alloc ( timingSize * segments );
     pPerfData->stepTimes.Memset ( ( T ) 0 );*/
     // Create arrays
-    this->functorParamList.Alloc ( segments );
+    m_functorParamList.Alloc ( segments );
 
-    size_t remainingLines = this->nLines;
-    size_t nCharges = this->pPointChargeData->GetSize();
-    size_t steps = this->pFieldLinesData->GetSize() /this->nLines;
+    size_t remainingLines = this->m_nLines;
+    size_t nCharges = this->m_pPointChargeData->GetSize();
+    size_t steps = this->m_pFieldLinesData->GetSize() /this->m_nLines;
     unsigned int blockXSize = 0;
     for ( size_t devID = 0; devID < segments; devID++ )
     {
@@ -133,8 +135,8 @@ void CLElectrosFunctor<T>::PartitionData()
         blockXSize = dataParams->blockXSize;
         // Initialize parameter arrays
         size_t segDataSize
-            = ( remainingLines < segSize ) ? remainingLines : segSize;
-        dataParams->startIndex = this->nLines - remainingLines;
+        = ( remainingLines < segSize ) ? remainingLines : segSize;
+        dataParams->startIndex = this->m_nLines - remainingLines;
         dataParams->elements = segDataSize;
         dataParams->pPerfData =  new perfPacket; // Deleted in destructor
         // Constructor is not called automatically, so we need to use ReAlloc
@@ -160,7 +162,7 @@ void CLElectrosFunctor<T>::GenerateParameterList ( size_t *nDev )
 
 /**=============================================================================
  * \brief
- * 
+ *
  * Binds the data pointed by dataParams to the objects, then distributes thew
  * workload among several functors
  * @see PartitionData()
@@ -172,17 +174,20 @@ void CLElectrosFunctor<T>::BindData (
 )
 {
     struct ElectrostaticFunctor<T>::BindDataParams *params =
-        ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+                    ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
             || params->resolution == 0
             || params->pFieldLineData == 0
             || params->pPointChargeData == 0
        )
-{
+    {
+        cout<<"Ain't binding data"<<endl;
         this->m_lastOpErrCode = CL_INVALID_VALUE;
         return;
     }
+
+    cout<<"Binding data"<<endl;
 
     this->m_pFieldLinesData = params ->pFieldLineData;
     this->m_pPointChargeData = params ->pPointChargeData;
@@ -252,7 +257,12 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 }
 */
 
-
+const char *testSrc =
+"__kernel void testkern( __global float* dst )                               \n"
+"{                                                                           \n"
+"   dst[get_global_id(0)] = get_global_id(0);                                \n"
+"}                                                                           \n"
+;
 /**=============================================================================
  * \brief
  *
@@ -265,12 +275,67 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 template<class T>
 void CLElectrosFunctor<T>::AllocateResources()
 {
-    if(this->m_dataBound) return;
+    if (!this->m_dataBound)
+    {
+        cout<<"NonononoData"<<endl;
+        return;
+    }
 
-    for(size_t dev = 0; dev < m_nDevices; dev++)
+    for (size_t dev = 0; dev < m_nDevices; dev++)
     {
         FunctorData * data = &m_functorParamList[dev];
     }
+
+    CLerror err;
+
+    ClManager::clPlatformProp *plat = m_DeviceManager.fstGetPlats();
+    uintptr_t props[] =
+        {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0].platformID, 0, 0};
+    cl_context ctx = clCreateContextFromType((cl_context_properties *)props,
+                     CL_DEVICE_TYPE_CPU,
+                     NULL,
+                     NULL,
+                     &err);
+    cout<<"clCreateContextFromType returns: "<<err<<endl;
+
+    size_t cldSize;
+    clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &cldSize);
+    void * devin = malloc(cldSize);
+    clGetContextInfo(ctx, CL_CONTEXT_DEVICES, cldSize, devin, NULL);
+    Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
+    const size_t size = this->m_pFieldLinesData->GetSizeBytes();
+    cout<<"Putting size "<<(size/1024)<<" KB"<<endl
+        <<"    "<<hostArr.x<<endl
+        <<"    "<<hostArr.y<<endl
+        <<"    "<<hostArr.z<<endl;
+    Vector3<cl_mem> arrdata;
+    arrdata.x = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
+    cout<<"clCreateBuffer.x returns: "<<err<<endl;
+    arrdata.y = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
+    cout<<"clCreateBuffer.y returns: "<<err<<endl;
+    arrdata.z = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
+    cout<<"clCreateBuffer.z returns: "<<err<<endl;
+
+    cl_program prog = clCreateProgramWithSource(ctx, 2, &testSrc, NULL, &err);
+    cout<<"clCreateProgramWithSource returns: "<<err<<endl;
+
+    size_t logSize;
+    err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+                                CL_PROGRAM_BUILD_LOG,
+                                0, NULL, &logSize);
+    cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
+    char * log = (char*)malloc(logSize);
+    err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+                                CL_PROGRAM_BUILD_LOG,
+                                logSize, log, 0);
+    cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
+    cout<<"Log:"<<endl<<log<<endl;
+
+
+    cl_kernel kern = clCreateKernel(prog, "testkern", &err);
+    cout<<"clCreateKernel returns: "<<err<<endl;
+
+
 }
 
 /**=============================================================================
@@ -340,7 +405,7 @@ CUresult CudaElectrosFunctor<T>::LoadModules ( size_t deviceID )
 
 /**=============================================================================
  * \brief Unspecialized kernel loading.
- * 
+ *
  * Since kernels for templates that do not have a specialization of LoadKernels
  * this will return an error.
  *
@@ -355,7 +420,7 @@ CUresult CudaElectrosFunctor<T>::LoadKernels ( size_t deviceID )
 
 /**=============================================================================
  * \brief Loads kernels for single precision functors
- * 
+ *
  * @param deviceID Device/functor combination on which to operate
  * @return First error code that is encountered
  * @return CUDA_SUCCESS if no error is encountered

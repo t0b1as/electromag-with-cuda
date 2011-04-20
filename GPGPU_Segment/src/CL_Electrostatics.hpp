@@ -78,7 +78,7 @@ private:
         /// Context associated with the device
         //CUcontext context;
         /// Host buffers associated with the context
-        Vector3<T*> hostNonpagedData;        
+        Vector3<T*> hostNonpagedData;
         //CoalescedFieldLineArray<CUdeviceptr>
         /// Stores information about the GPU field lines allocation including
         //GPUfieldData;
@@ -110,7 +110,7 @@ private:
         /// Keeps track of errors that ocuur on the context current to the
         /// functor
         CLerror lastOpErrCode;
-        
+
         /// Functor specific data
 
         /// The starting index of pFieldLinesData that has been assigned to this

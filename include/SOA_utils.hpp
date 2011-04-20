@@ -73,6 +73,12 @@ struct Vector3< Array <T> >
         return x.GetSize();
     }
 
+    size_t GetSizeBytes()
+    {
+        // All elements have the same size
+        return x.GetSizeBytes();
+    }
+
     size_t GetElemSize()
     {
         // All elements have the same size

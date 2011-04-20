@@ -591,7 +591,7 @@ void ClManager::ListAllDevices(std::ostream& out)
     for (size_t i = 0; i < nPlatforms; i++)
     {
         clPlatformProp* current = &platforms[i];
-        out<<" Platform: "<<current->name<<endl;
+        out<<" Platform: "<<current->name<<" ; ID: "<<current->platformID<<endl;
         out<<"  Version: "<<current->version<<endl;
         out<<"  Vendor: "<<current->vendor<<endl;
         for (size_t j = 0; j < current->nDevices; j++)

@@ -438,7 +438,7 @@ public:
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
         cl_uint preferredVectorWidth_char;
-        
+
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT
          * 
@@ -449,7 +449,7 @@ public:
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
         cl_uint preferredVectorWidth_short;
-        
+
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT
          * 
@@ -460,7 +460,7 @@ public:
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
         cl_uint preferredVectorWidth_int;
-        
+
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG
          * 
@@ -470,7 +470,7 @@ public:
          * If the cl_khr_fp64 extension is not supported,
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
-        
+
         cl_uint preferredVectorWidth_long;
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT
@@ -481,7 +481,7 @@ public:
          * If the cl_khr_fp64 extension is not supported,
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
-        
+
         cl_uint preferredVectorWidth_float;
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE
@@ -493,17 +493,17 @@ public:
          * CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
          */
         cl_uint preferredVectorWidth_double;
-        
+
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF
          */
         cl_uint preferredVectorWidth_half;
-        
+
         /**
          * \brief CL_DEVICE_HOST_UNIFIED_MEMORY
          */
         cl_bool hostUnifiedMemory;
-        
+
         /**
          * Returns the native ISA vector width. The vector width is defined as
          * the number of scalar elements that can be stored in the vector.
@@ -540,7 +540,7 @@ public:
          * \brief CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF
          */
         cl_uint nativeVectorWidth_half;
-        
+
         /**
          * \brief CL_DEVICE_OPENCL_C_VERSION
          * 
@@ -724,7 +724,7 @@ public:
          * \brief Number of devices in the platform
          */
         unsigned int nDevices;
-        
+
         /**
          * \brief List of all devices in the platform
          */
@@ -732,7 +732,7 @@ public:
 
         clPlatformProp();
         ~clPlatformProp();
-        
+
         /**
          * Fills the properties with those of the corresponding platformID, and
          * all its devices
@@ -749,7 +749,7 @@ public:
      * non-compatible ones
      */
     static void ListAllDevices(std::ostream &out = std::cout);
-    
+
     size_t GetNumDevices();
 
 private:
@@ -759,11 +759,13 @@ private:
     static unsigned int nPlatforms;
     /// List of all platforms found on the machine
     static clPlatformProp *platforms;
-    
+
     /// DeviceManager overriders
     ///{@
     void ScanDevices();
-    
+public:
+    clPlatformProp * fstGetPlats(){return platforms;};
+
     ///}@
 };
 

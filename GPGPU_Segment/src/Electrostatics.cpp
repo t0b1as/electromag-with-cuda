@@ -49,9 +49,8 @@ void TestCL(Vector3<Array<float> >& fieldLines,
     CLElectrosFunctor<float>::BindDataParams dataParams
         = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
     CLtest.BindData((void*) &dataParams);
-    
+
     CLtest.Run();
-    
 }
 
 
