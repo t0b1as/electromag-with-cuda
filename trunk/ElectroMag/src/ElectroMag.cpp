@@ -264,7 +264,7 @@ int main ( int argc, char* argv[] )
         TestCL ( CPUlines, charges, n, 1.0, CPUperf, useCurvature );
         return 0;
     }
-    
+
     FPprecision resolution = 1;
     if ( GPUenable )
     {
