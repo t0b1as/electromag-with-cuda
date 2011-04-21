@@ -62,6 +62,9 @@ public:
     class clDeviceProp
     {
     public:
+        clDeviceProp(cl_device_id device);
+        ~clDeviceProp();
+    public:
         /**
          * \brief The OpenCL ID of the platform
          */
@@ -657,8 +660,6 @@ public:
          */
         char driverVersion[256];
 
-        clDeviceProp();
-        ~clDeviceProp();
         /// Fills the properties with those of the corresponding deviceID
         void SetDeviceID(cl_device_id deviceID);
     };
@@ -666,6 +667,13 @@ public:
     /// Keeps track of the properties of a platform and all its devices
     class clPlatformProp
     {
+    public:
+        /**
+         * Fills the properties with those of the corresponding platformID, and
+         * all its devices
+         */
+        clPlatformProp(cl_platform_id platformID);
+        ~clPlatformProp();
     public:
         ///\brief The OpenCL ID of the platform
         cl_platform_id platformID;
@@ -728,17 +736,7 @@ public:
         /**
          * \brief List of all devices in the platform
          */
-        clDeviceProp *devices;
-
-        clPlatformProp();
-        ~clPlatformProp();
-
-        /**
-         * Fills the properties with those of the corresponding platformID, and
-         * all its devices
-         */
-        void SetPlatformID(cl_platform_id platformID);
-
+        clDeviceProp **devices;
     };
 
     ClManager();
@@ -758,13 +756,13 @@ private:
     /// The number of platforms found on the machine
     static unsigned int nPlatforms;
     /// List of all platforms found on the machine
-    static clPlatformProp *platforms;
+    static clPlatformProp **platforms;
 
     /// DeviceManager overriders
     ///{@
     void ScanDevices();
 public:
-    clPlatformProp * fstGetPlats(){return platforms;};
+    clPlatformProp ** fstGetPlats(){return platforms;};
 
     ///}@
 };
