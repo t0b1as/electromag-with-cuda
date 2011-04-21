@@ -25,6 +25,7 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
 
 #include <X-Compat/HPC Timing.h>
 #include <iostream>
+#include <fstream>
 #include "OpenCL_Dyn_Load.h"
 
 // We may later change this to functor-specific, or even device-secific error
@@ -174,14 +175,15 @@ void CLElectrosFunctor<T>::BindData (
 )
 {
     struct ElectrostaticFunctor<T>::BindDataParams *params =
-                    ( struct ElectrostaticFunctor<T>::BindDataParams* ) aDataParameters;
+                    ( struct ElectrostaticFunctor<T>::BindDataParams* )
+                    aDataParameters;
     // Check validity of parameters
     if ( params->nLines == 0
             || params->resolution == 0
             || params->pFieldLineData == 0
             || params->pPointChargeData == 0
        )
-    {
+{
         cout<<"Ain't binding data"<<endl;
         this->m_lastOpErrCode = CL_INVALID_VALUE;
         return;
@@ -256,13 +258,8 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 {
 }
 */
-
-const char *testSrc =
-"__kernel void testkern( __global float* dst )                               \n"
-"{                                                                           \n"
-"   dst[get_global_id(0)] = get_global_id(0);                                \n"
-"}                                                                           \n"
-;
+#define BLOCK_X_MT 8
+#define BLOCK_Y_MT 1
 /**=============================================================================
  * \brief
  *
@@ -288,6 +285,7 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     CLerror err;
 
+    cout<<" Preparing context"<<endl;
     ClManager::clPlatformProp **plat = m_DeviceManager.fstGetPlats();
     uintptr_t props[] =
         {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0]->platformID, 0, 0};
@@ -296,46 +294,176 @@ void CLElectrosFunctor<T>::AllocateResources()
                      NULL,
                      NULL,
                      &err);
-    cout<<"clCreateContextFromType returns: "<<err<<endl;
+    if (err)cout<<"clCreateContextFromType returns: "<<err<<endl;
 
+    cout<<" Gathering context info"<<endl;
     size_t cldSize;
     clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &cldSize);
     void * devin = malloc(cldSize);
     clGetContextInfo(ctx, CL_CONTEXT_DEVICES, cldSize, devin, NULL);
     Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
     const size_t size = this->m_pFieldLinesData->GetSizeBytes();
-    cout<<"Putting size "<<(size/1024)<<" KB"<<endl
-        <<"    "<<hostArr.x<<endl
-        <<"    "<<hostArr.y<<endl
-        <<"    "<<hostArr.z<<endl;
+
+
+    cout<<" Preparing buffers"<<endl;
     Vector3<cl_mem> arrdata;
     arrdata.x = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    cout<<"clCreateBuffer.x returns: "<<err<<endl;
+    if (err)cout<<"clCreateBuffer.x returns: "<<err<<endl;
     arrdata.y = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    cout<<"clCreateBuffer.y returns: "<<err<<endl;
+    if (err)cout<<"clCreateBuffer.y returns: "<<err<<endl;
     arrdata.z = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    cout<<"clCreateBuffer.z returns: "<<err<<endl;
+    if (err)cout<<"clCreateBuffer.z returns: "<<err<<endl;
 
-    cl_program prog = clCreateProgramWithSource(ctx, 2, &testSrc, NULL, &err);
-    cout<<"clCreateProgramWithSource returns: "<<err<<endl;
+
+    cl_mem charges =clCreateBuffer(ctx, CL_MEM_READ_ONLY,
+                                   this->m_pPointChargeData->GetSizeBytes(),
+                                   NULL, &err);
+    if (err)cout<<"clCreateBuffer.q returns: "<<err<<endl;
+
+
+    //==========================================================================
+    cout<<" Preparing kernel source"<<endl;
+    using std::ifstream;
+    ifstream reader("Electrostatics.cl.c", ifstream::in);
+    if (!reader.good())
+        cout<<"Cannot open program source"<<endl;
+    reader.seekg (0, std::ios::end);
+    size_t length = reader.tellg();
+    reader.seekg (0, std::ios::beg);
+    char *source = new char[length];
+    reader.read(source, length);
+    reader.close();
+
+    cl_program prog = clCreateProgramWithSource(ctx, 1, (const char **)&source,
+                      NULL, &err);
+    if (err)cout<<"clCreateProgramWithSource returns: "<<err<<endl;
+
+    err = clBuildProgram(prog, 0, NULL, NULL, NULL, NULL);
+    if (err)cout<<"clBuildProgram returns: "<<err<<endl;
 
     size_t logSize;
     err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
                                 CL_PROGRAM_BUILD_LOG,
                                 0, NULL, &logSize);
-    cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
+    if (err)cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
     char * log = (char*)malloc(logSize);
     err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
                                 CL_PROGRAM_BUILD_LOG,
                                 logSize, log, 0);
-    cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
-    cout<<"Log:"<<endl<<log<<endl;
+    if (err)cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
+    cout<<"Program Build Log:"<<endl<<log<<endl;
 
 
-    cl_kernel kern = clCreateKernel(prog, "testkern", &err);
-    cout<<"clCreateKernel returns: "<<err<<endl;
+    //==========================================================================
+    cout<<" Preparing kernel"<<endl;
+    cl_kernel kern = clCreateKernel(prog, "CalcField_MT_curvature", &err);
+    if (err)cout<<"clCreateKernel returns: "<<err<<endl;
 
+    err = CL_SUCCESS;
+    // __global float *x,
+    err |= clSetKernelArg(kern, 0, sizeof(cl_mem), &arrdata.x);
+    // __global float *y,
+    err |= clSetKernelArg(kern, 1, sizeof(cl_mem), &arrdata.y);
+    // __global float *z,
+    err |= clSetKernelArg(kern, 2, sizeof(cl_mem), &arrdata.z);
+    // __global pointCharge *Charges,
+    err |= clSetKernelArg(kern, 3, sizeof(cl_mem), &charges);
+    // const unsigned int linePitch,
+    unsigned int param = this->m_nLines;
+    err |= clSetKernelArg(kern, 4, sizeof(cl_uint), &param);
+    // const unsigned int p,
+    param = (unsigned int)this->m_pPointChargeData->GetSize();
+    err |= clSetKernelArg(kern, 5, sizeof(cl_uint), &param);
+    // const unsigned int fieldIndex,
+    param = 1;
+    err |= clSetKernelArg(kern, 6, sizeof(cl_uint), &param);
+    // const float resolution
+    err |= clSetKernelArg(kern, 7, sizeof(cl_float), &this->m_resolution);
+    if (err)cout<<"clSetKernelArg cummulates: "<<err<<endl;
 
+    //==========================================================================
+    cout<<" Preparing kernel parameters"<<endl;
+    cl_command_queue queue = clCreateCommandQueue(ctx,
+                             ((cl_device_id*)devin)[0],
+                             0, &err);
+    if (err)cout<<"clCreateCommandQueue returns: "<<err<<endl;
+
+    cl_event eventa, eventb;
+    err = CL_SUCCESS;
+    err |= clEnqueueWriteBuffer(queue, arrdata.x, CL_TRUE, 0, size,
+                                hostArr.x, 0, NULL, &eventa);
+    cout<<"Write 1 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, arrdata.y, CL_TRUE, 0, size,
+                                hostArr.y, 1, &eventa, &eventb);
+    cout<<"Write 2 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, arrdata.z, CL_TRUE, 0, size,
+                                hostArr.z, 1, &eventb, &eventa);
+    cout<<"Write 3 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, charges, CL_TRUE, 0,
+                                this->m_pPointChargeData->GetSizeBytes(),
+                                this->m_pPointChargeData->GetDataPointer(),
+                                1, &eventa, &eventb);
+    cout<<"Write 4 returns: "<<err<<endl;
+    if (err)cout<<"clEnqueueWriteBuffer cummulates: "<<err<<endl;
+
+    //==========================================================================
+    long long freq;
+    QueryHPCFrequency(&freq);
+    //err = clFlush(queue);
+    if (err)cout<<"clFlush returns: "<<err<<endl;
+    cout<<" Executing kernel"<<endl;
+    // BLOCK size
+    size_t local[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
+    cout<<"Local: "<<local[0]<<" "<<local[1]<<" "<<local[2]<<endl;
+    // GRID size
+    size_t global[3] = {(this->m_nLines + BLOCK_X_MT - 1)/BLOCK_X_MT, 1, 1};
+    cout<<"Global: "<<global[0]<<" "<<global[1]<<" "<<global[2]<<endl;
+    size_t delay = 0;
+    long long start;
+    err = clEnqueueTask(queue, kern, 1, &eventb, &eventa);
+    if (err)cout<<"clEnqueueTask returns: "<<err<<endl;
+    QueryHPCTimer(&start);
+    err = clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
+                                 1, &eventa, &eventb);
+    if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
+    err = clEnqueueTask(queue, kern, 1, &eventb, &eventa);
+    long long end;
+    QueryHPCTimer(&end);
+    double time = (double)(end - start)/((double)freq);
+    if (err)cout<<"clEnqueueTask returns: "<<err<<endl;
+    cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
+    delay = 0;
+    //==========================================================================
+    cout<<" Recovering results"<<endl;
+
+    err = CL_SUCCESS;
+    err |= clEnqueueReadBuffer ( queue, arrdata.x, CL_TRUE, 0, size,
+                                 hostArr.x, 1, &eventa, &eventb );
+    cout<<" Read 1 returns: "<<err<<endl;
+    err |= clEnqueueReadBuffer ( queue, arrdata.y, CL_TRUE, 0, size,
+                                 hostArr.y, 1, &eventb, &eventa );
+    cout<<" Read 1 returns: "<<err<<endl;
+    err |= clEnqueueReadBuffer ( queue, arrdata.z, CL_TRUE, 0, size,
+                                 hostArr.z, 1, &eventa, &eventb );
+    cout<<" Read 1 returns: "<<err<<endl;
+    if (err)cout<<"clEnqueueReadBuffer cummulates: "<<err<<endl;
+
+    err = clEnqueueTask(queue, kern, 1, &eventb, NULL);
+    
+    err = clReleaseKernel(kern);
+    if (err)cout<<"clReleaseKernel returns: "<<err<<endl;
+    clReleaseCommandQueue(queue);
+    if (err)cout<<"clReleaseCommandQueue returns: "<<err<<endl;
+    clReleaseContext(ctx);
+    if (err)cout<<"clReleaseContext returns: "<<err<<endl;
+
+    err = CL_SUCCESS;
+    //err |= clReleaseMemObject(arrdata.x);
+    //err |= clReleaseMemObject(arrdata.x);
+    //err |= clReleaseMemObject(arrdata.x);
+    //err |= clReleaseMemObject(charges);
+    if (err)cout<<"clReleaseMemObject cummulates: "<<err<<endl;
+    cout<<" Exiting"<<endl;
 }
 
 /**=============================================================================

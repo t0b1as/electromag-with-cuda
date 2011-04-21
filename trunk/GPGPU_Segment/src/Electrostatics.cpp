@@ -41,6 +41,9 @@ int CalcField(Array<Vector3<double> >& fieldLines,
     return -1;
 }
 
+#include <iostream>
+using std::cout;
+using std::endl;
 void TestCL(Vector3<Array<float> >& fieldLines,
             Array<pointCharge<float> >& pointCharges,
             size_t n, float resolution,  perfPacket& perfData,
@@ -48,9 +51,11 @@ void TestCL(Vector3<Array<float> >& fieldLines,
 {
     CLElectrosFunctor<float>::BindDataParams dataParams
         = {&fieldLines, &pointCharges, n, resolution, perfData, useCurvature};
+    cout<<"TestCL: Binding data"<<endl;
     CLtest.BindData((void*) &dataParams);
-
+    cout<<"TestCL: Starting run"<<endl;
     CLtest.Run();
+    cout<<"TestCL: done"<<endl;
 }
 
 

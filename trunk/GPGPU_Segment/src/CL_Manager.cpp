@@ -382,8 +382,8 @@ ClManager::clDeviceProp::clDeviceProp(cl_device_id devID)
     maxWorkItemSizes = new size_t[maxWorkItemDimensions];
     clGetDeviceInfo(this->deviceID,
                     CL_DEVICE_MAX_WORK_ITEM_SIZES,
-                    sizeof(this->maxWorkItemSizes) * maxWorkItemDimensions,
-                    (void*)&this->maxWorkItemSizes,
+                    sizeof(*this->maxWorkItemSizes) * maxWorkItemDimensions,
+                    (void*)this->maxWorkItemSizes,
                     0);
 
     clGetDeviceInfo(this->deviceID,
@@ -600,6 +600,15 @@ void ClManager::ListAllDevices(std::ostream& out)
             out<<"    Double-precision SIMD width: "
                 <<dev->nativeVectorWidth_double<<", "
                 <<dev->preferredVectorWidth_double<<endl;
+            out<<"    Max work group size: "<<dev->maxWorkGroupSize<<endl;
+            out<<"    Max work item dimensions: "
+                <<dev->maxWorkItemDimensions<<endl;
+            out<<"    Max work item sizes: <";
+            for(size_t i = 0; i < dev->maxWorkItemDimensions; i++)
+            {
+                out<<" "<<dev->maxWorkItemSizes[i];
+            }
+            out<<" >"<<endl;
         }
         out<<endl;
     }

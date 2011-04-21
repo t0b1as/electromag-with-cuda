@@ -102,7 +102,7 @@ unsigned long AbstractFunctor::Run()
     // Allocate needed resources on each device
     AllocateResources();
     if (this->Fail()) return (1<<16);
-
+    
     size_t nFunctors;
     // Create parameters for functors
     GenerateParameterList(&nFunctors);
@@ -134,9 +134,9 @@ unsigned long AbstractFunctor::Run()
     }
 
     // Create thread for auxiliary functor
-    AbstractFunctor::AsyncParameters auxParams = {this, 0, 0};
+    /*AbstractFunctor::AsyncParameters auxParams = {this, 0, 0};
     std::thread *hAuxFunctor
-    = new std::thread(AbstractFunctor::AsyncAuxFunctor,&auxParams);
+    = new std::thread(AbstractFunctor::AsyncAuxFunctor,&auxParams);*/
     // Set the name for the thread
     //Threads::SetThreadName(threadID, "Aux Functor");
 
