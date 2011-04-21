@@ -22,7 +22,7 @@ using namespace OpenCL;
 
 ClManager GlobalClManager;
 unsigned int ClManager::nPlatforms;
-ClManager::clPlatformProp *ClManager::platforms;
+ClManager::clPlatformProp **ClManager::platforms;
 
 bool deviceMan::ComputeDeviceManager::deviceScanComplete = false;
 
@@ -75,7 +75,7 @@ void ClManager::ScanDevices()
     // Temporary storage for the platform IDs
     cl_platform_id *platformIDs = new cl_platform_id[nPlatforms];
     // Allocate resources for each platform
-    platforms = new clPlatformProp[nPlatforms];
+    platforms = new clPlatformProp*[nPlatforms];
     // Get the IDs of each platform
     errCode = clGetPlatformIDs(nPlatforms, platformIDs, 0);
     if (errCode != CL_SUCCESS)
@@ -84,7 +84,7 @@ void ClManager::ScanDevices()
     // Now fill the properties of each platform
     for (size_t i = 0; i< nPlatforms; i++)
     {
-        platforms[i].SetPlatformID(platformIDs[i]);
+        platforms[i] = new clPlatformProp(platformIDs[i]);
     }
 
     // Now that the PlatformIDs are recorded in the clPlatformProp structures
@@ -110,24 +110,19 @@ size_t ClManager::GetNumDevices()
     size_t nDev = 0;
     for (size_t i = 0; i < nPlatforms; i++)
     {
-        nDev += platforms[i].nDevices;
+        nDev += platforms[i]->nDevices;
     }
     return nDev;
 }
 
 
 
-ClManager::clDeviceProp::clDeviceProp()
-{
-
-}
-
 ClManager::clDeviceProp::~clDeviceProp()
 {
-
+    if (maxWorkItemDimensions) delete maxWorkItemSizes;
 }
 
-void ClManager::clPlatformProp::SetPlatformID(cl_platform_id platID)
+ClManager::clPlatformProp::clPlatformProp(cl_platform_id platID)
 {
     this->platformID = platID;
 
@@ -179,11 +174,11 @@ void ClManager::clPlatformProp::SetPlatformID(cl_platform_id platID)
                    deviceIDs,
                    0);
 
-    devices = new clDeviceProp[nDevices];
+    devices = new clDeviceProp*[nDevices];
 
     for (size_t i = 0; i < nDevices; i++)
     {
-        devices[i].SetDeviceID(deviceIDs[i]);
+        devices[i] = new clDeviceProp(deviceIDs[i]);
     }
 
     delete[] deviceIDs;
@@ -191,7 +186,7 @@ void ClManager::clPlatformProp::SetPlatformID(cl_platform_id platID)
 }
 
 
-void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
+ClManager::clDeviceProp::clDeviceProp(cl_device_id devID)
 {
     this->deviceID = devID;
     clGetDeviceInfo(this->deviceID,
@@ -575,14 +570,12 @@ void ClManager::clDeviceProp::SetDeviceID(cl_device_id devID)
 }
 
 
-ClManager::clPlatformProp::clPlatformProp()
-{
-    nDevices = 0;
-    devices = 0;
-}
-
 ClManager::clPlatformProp::~clPlatformProp()
 {
+    for(size_t i = 0; i < nDevices; i++)
+    {
+        delete devices[i];
+    }
     if (nDevices) delete[] devices;
 }
 
@@ -590,13 +583,13 @@ void ClManager::ListAllDevices(std::ostream& out)
 {
     for (size_t i = 0; i < nPlatforms; i++)
     {
-        clPlatformProp* current = &platforms[i];
+        clPlatformProp* current = platforms[i];
         out<<" Platform: "<<current->name<<" ; ID: "<<current->platformID<<endl;
         out<<"  Version: "<<current->version<<endl;
         out<<"  Vendor: "<<current->vendor<<endl;
         for (size_t j = 0; j < current->nDevices; j++)
         {
-            clDeviceProp* dev = &current->devices[j];
+            clDeviceProp* dev = current->devices[j];
             out<<"   Device: "<<dev->name<<endl;
             out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"
                 <<endl;

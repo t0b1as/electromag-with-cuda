@@ -288,9 +288,9 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     CLerror err;
 
-    ClManager::clPlatformProp *plat = m_DeviceManager.fstGetPlats();
+    ClManager::clPlatformProp **plat = m_DeviceManager.fstGetPlats();
     uintptr_t props[] =
-        {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0].platformID, 0, 0};
+        {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0]->platformID, 0, 0};
     cl_context ctx = clCreateContextFromType((cl_context_properties *)props,
                      CL_DEVICE_TYPE_CPU,
                      NULL,
