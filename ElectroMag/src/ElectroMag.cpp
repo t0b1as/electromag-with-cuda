@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ElectroMag is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  *  along with ElectroMag.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -54,7 +54,8 @@ SimulationParams CpuModeParams = {64, 64, 1, 1000, 0, 1000};
 SimulationParams MicroParams = {16, 16, 1, 1000, 0, 1000};
 SimulationParams BogoParams = {16, 16, 1, 50, 0, 500};
 enum ParamLevel {__bogo, __micro, __cpu, __normal, __enhanced, __extreme,
-        __insane, __fuckingInsane};
+                 __insane, __fuckingInsane
+                };
 
 
 void TestCL(Vector3<Array<float> >& fieldLines,
@@ -75,7 +76,7 @@ int main ( int argc, char* argv[] )
     cout<<" Compiled on "<<__DATE__<<" at "<<__TIME__<<endl;
 
     OpenCL::GlobalClManager.ListAllDevices();
-    
+
 
 #ifndef _DEBUG
     //freopen( "file.txt", "w", stderr );
@@ -92,7 +93,8 @@ int main ( int argc, char* argv[] )
     bool debugData = false;
     bool regressData = false;
     // Precision to use
-    bool useCpuDP = false; bool useGpgpuDP = false;
+    bool useCpuDP = false;
+    bool useGpgpuDP = false;
     // OpenCL devel tests?
     bool clMode = false;
     // Get command-line options;
@@ -101,23 +103,38 @@ int main ( int argc, char* argv[] )
         if ( !strcmp ( argv[i], "--cpu" ) )
             CPUenable = true;
         else if ( !strcmp ( argv[i], "--gpudisable" ) )
-            {GPUenable = false; CPUenable = true;}
+        {
+            GPUenable = false;
+            CPUenable = true;
+        }
         else if ( !strcmp ( argv[i], "--save" ) )
             saveData = true;
         else if ( !strcmp ( argv[i], "--nodisp" ) )
             display = false;
         else if ( !strcmp ( argv[i], "--bogo" ) )
-            {if ( paramLevel == __normal ) paramLevel = __bogo;}
+        {
+            if ( paramLevel == __normal ) paramLevel = __bogo;
+        }
         else if ( !strcmp ( argv[i], "--micro" ) )
-            {if ( paramLevel == __normal ) paramLevel = __micro;}
+        {
+            if ( paramLevel == __normal ) paramLevel = __micro;
+        }
         else if ( !strcmp ( argv[i], "--enhanced" ) )
-            {if ( paramLevel < __enhanced ) paramLevel = __enhanced;}
+        {
+            if ( paramLevel < __enhanced ) paramLevel = __enhanced;
+        }
         else if ( !strcmp ( argv[i], "--extreme" ) )
-            {if ( paramLevel < __extreme ) paramLevel = __extreme;}
+        {
+            if ( paramLevel < __extreme ) paramLevel = __extreme;
+        }
         else if ( !strcmp ( argv[i], "--insane" ) )
-            {if ( paramLevel < __insane ) paramLevel = __insane;}
+        {
+            if ( paramLevel < __insane ) paramLevel = __insane;
+        }
         else if ( !strcmp ( argv[i], "--fuckingInsane" ) )
-            {if ( paramLevel < __fuckingInsane ) paramLevel = __fuckingInsane;}
+        {
+            if ( paramLevel < __fuckingInsane ) paramLevel = __fuckingInsane;
+        }
         else if ( !strcmp ( argv[i], "--GUI" ) )
             visualProgressBar = true;
         else if ( !strcmp ( argv[i], "--randseed" ) )
@@ -176,7 +193,8 @@ int main ( int argc, char* argv[] )
     // Now that checks are performed, start the Frontend
     //if(visualProgressBar) MainGUI.StartAsync();
 
-    GPUenable = false; CPUenable=true;
+    GPUenable = false;
+    CPUenable=true;
     // Statistics show that users are happier when the program outputs fun
     // information abot their toys
 
@@ -210,11 +228,11 @@ int main ( int argc, char* argv[] )
     }
     // Initialze data containers
     size_t nw = ( int ) simConfig.nx,
-        nh = ( int ) simConfig.ny,
-        nd = ( int ) simConfig.nz,
-        n = nh * nw * nd,
-        p = ( int ) simConfig.pStatic,
-        len = ( int ) simConfig.len;
+                nh = ( int ) simConfig.ny,
+                     nd = ( int ) simConfig.nz,
+                          n = nh * nw * nd,
+                              p = ( int ) simConfig.pStatic,
+                                  len = ( int ) simConfig.len;
     Vector3 <Array<FPprecision> > CPUlines, GPUlines;
     Array<electro::pointCharge<FPprecision> > charges ( p, 256 );
     // Only allocate memory if cpu comparison mode is specified
@@ -258,38 +276,41 @@ int main ( int argc, char* argv[] )
     double GPUtime = 0, CPUtime = 0;
     QueryHPCFrequency ( &freq );
 
-    if(clMode)
+    if (clMode && CPUenable)
     {
-        StartConsoleMonitoring ( &CPUperf.progress );
+        //StartConsoleMonitoring ( &CPUperf.progress );
         TestCL ( CPUlines, charges, n, 1.0, CPUperf, useCurvature );
-        return 0;
+        CPUperf.progress = 1.0;
     }
+    else
+    {
 
-    FPprecision resolution = 1;
-    if ( GPUenable )
-    {
-        cout<<" GPU"<<endl;
-    }
-    if ( CPUenable )
-    {
-        StartConsoleMonitoring ( &CPUperf.progress );
-        QueryHPCTimer ( &start );
-        CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf,
-                        useCurvature );
-        QueryHPCTimer ( &end );
-        CPUperf.progress = 1;
-        cout<<" CPU kernel execution time:\t"
-            <<CPUperf.time<<" seconds"<<endl;
-        cout<<" Effective performance:\t\t"
-            <<CPUperf.performance<<" GFLOP/s"<<endl;
-        CPUtime = double ( end-start ) /freq;
-        cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<endl;
+        FPprecision resolution = 1;
         if ( GPUenable )
         {
-            cout<<" Effective speedup:\t\t"
-                <<GPUperf.performance/CPUperf.performance<<" x"<<endl;
-            cout<<" Realistic speedup:\t\t"
-                <<CPUtime/GPUtime<<" x"<<endl;
+            cout<<" GPU"<<endl;
+        }
+        if ( CPUenable )
+        {
+            StartConsoleMonitoring ( &CPUperf.progress );
+            QueryHPCTimer ( &start );
+            CalcField_CPU ( CPUlines, charges, n, resolution, CPUperf,
+                            useCurvature );
+            QueryHPCTimer ( &end );
+            CPUperf.progress = 1;
+            cout<<" CPU kernel execution time:\t"
+                <<CPUperf.time<<" seconds"<<endl;
+            cout<<" Effective performance:\t\t"
+                <<CPUperf.performance<<" GFLOP/s"<<endl;
+            CPUtime = double ( end-start ) /freq;
+            cout<<" True kernel execution time:\t"<<CPUtime<<" seconds"<<endl;
+            if ( GPUenable )
+            {
+                cout<<" Effective speedup:\t\t"
+                    <<GPUperf.performance/CPUperf.performance<<" x"<<endl;
+                cout<<" Realistic speedup:\t\t"
+                    <<CPUtime/GPUtime<<" x"<<endl;
+            }
         }
     }
 
@@ -297,6 +318,7 @@ int main ( int argc, char* argv[] )
     volatile bool * shouldIQuit = 0;
     if ( display )
     {
+        cout<<"Initializing display"<<endl;
         GLdata.charges = ( Array<electro::pointCharge<float> >* ) &charges;
         GLdata.lines = ( Vector3<Array<float> >* ) arrMain;
         GLdata.nlines = n;
@@ -312,7 +334,7 @@ int main ( int argc, char* argv[] )
         FieldRenderer::FieldRenderCommData PerfMessage;
         PerfMessage.messageType = FieldRenderer::SendingPerfPointer;
         PerfMessage.commData = ( void* ) GPUenable ? (&GPUperf.performance) :
-                            (&CPUperf.performance);
+                               (&CPUperf.performance);
         FieldDisplay->SendMessage ( &PerfMessage );
 
         // Get ready to quit flag
@@ -323,6 +345,7 @@ int main ( int argc, char* argv[] )
 
         try
         {
+            cout<<" Starting display"<<endl;
             FieldDisplay->StartAsync();
         }
         catch ( char * errString )
@@ -330,6 +353,10 @@ int main ( int argc, char* argv[] )
             cerr<<" Could not initialize field rendering"<<endl;
             cerr<<errString<<endl;
         }
+    }
+    else
+    {
+        cout<<" Skipping display"<<endl;
     }
 
     // do stuff here
@@ -345,8 +372,8 @@ int main ( int argc, char* argv[] )
                 if ( CPUenable )
                 {
                     data<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x
-                        <<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z
-                        <<endl;
+                    <<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z
+                    <<endl;
                 }
                 if ( GPUenable )
                 {
@@ -381,25 +408,25 @@ int main ( int argc, char* argv[] )
                 if ( offset3D > 0.1f )
                 {
                     regress<<" CPUL ["<<line<<"]["<<step-1<<"] x: "
-                        <<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "
-                        <<CPUlines[iLast].z
-                        <<endl
-                        <<" GPUL ["<<line<<"]["<<step-1<<"] x: "
-                        <<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y
-                        <<" z: "<<GPUlines[iLast].z
-                        <<endl
-                        <<" 3D offset: "
-                        <<vec3Len ( vec3 ( CPUlines[iLast],GPUlines[iLast] ) )
-                        <<endl;
+                    <<CPUlines[iLast].x<<" y: "<<CPUlines[iLast].y<<" z: "
+                    <<CPUlines[iLast].z
+                    <<endl
+                    <<" GPUL ["<<line<<"]["<<step-1<<"] x: "
+                    <<GPUlines[iLast].x<<" y: "<<GPUlines[iLast].y
+                    <<" z: "<<GPUlines[iLast].z
+                    <<endl
+                    <<" 3D offset: "
+                    <<vec3Len ( vec3 ( CPUlines[iLast],GPUlines[iLast] ) )
+                    <<endl;
                     regress<<" CPUL ["<<line<<"]["<<step<<"] x: "
-                        <<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "
-                        <<CPUlines[i].z
-                        <<endl
-                        <<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
-                        <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z
-                        <<endl
-                        <<" 3D offset: "<<offset3D
-                        <<endl<<endl;
+                    <<CPUlines[i].x<<" y: "<<CPUlines[i].y<<" z: "
+                    <<CPUlines[i].z
+                    <<endl
+                    <<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
+                    <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z
+                    <<endl
+                    <<" 3D offset: "<<offset3D
+                    <<endl<<endl;
                     // If a leap is found; skip the current line
                     break;
                 }
@@ -430,10 +457,10 @@ int main ( int argc, char* argv[] )
             cout<<" CPUL ["<<line<<"]["<<step<<"] x: "<<CPUlines[i].x
                 <<" y: "<<CPUlines[i].y<<" z: "<<CPUlines[i].z<<endl;
         }
-        if( GPUenable )
+        if ( GPUenable )
         {
             cout<<" GPUL ["<<line<<"]["<<step<<"] x: "<<GPUlines[i].x
-            <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
+                <<" y: "<<GPUlines[i].y<<" z: "<<GPUlines[i].z<<endl;
         }
         if ( CPUenable && GPUenable )
         {

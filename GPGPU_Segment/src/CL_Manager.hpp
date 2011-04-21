@@ -756,7 +756,7 @@ private:
     /// The number of platforms found on the machine
     static unsigned int nPlatforms;
     /// List of all platforms found on the machine
-    static clPlatformProp **platforms;
+    static clPlatformProp *doubleFpConfig*platforms;
 
     /// DeviceManager overriders
     ///{@
