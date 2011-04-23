@@ -144,7 +144,7 @@ __kernel void CalcField_MT_curvature(
     unsigned int ti = get_global_id(0);
     
     // Using a unoin between all needed data types allows massive smem economy
-    kernelData kData;
+    __local kernelData kData;
 
     // base pointers that point to the operational row
     unsigned int base = (fieldIndex - 1) * linePitch;
@@ -242,12 +242,13 @@ __kernel void CalcField_MT_curvature(
             point = vec3Add(temp, vec3SetInvLen(temp, (k+1)*resolution));
             // Since we need to write the results, we can increment the row in
             // the base pointers now
-            unsigned int base = linePitch + ti;
+            base += linePitch;
+            unsigned int i = base + ti;
             // The results must be written back as interleaved xy and separate z
             // coordinates
-            x[base] = point.x;
-            y[base] = point.y;
-            z[base] = point.z;
+            x[i] = point.x;
+            y[i] = point.y;
+            z[i] = point.z;
             kData.smPoint[tx] = point;
 
             prevVec = temp;
@@ -263,6 +264,87 @@ __kernel void CalcField_MT_curvature(
         x[ti] = temp.x;
         y[ti] = temp.y;
         z[ti] = temp.z;
+    }
+}//*/
+
+#define BLOCK_X 8
+
+__kernel void CalcField_curvature(
+    __global float *x,
+    __global float *y,
+    __global float *z,               ///<[in,out] Pointer to z components
+    ///[in] Pointer to the array of structures of point charges
+    __global pointCharge *Charges,
+    ///[in] Row pitch in bytes for the xy components
+    const unsigned int linePitch,
+    ///[in] Number of point charges
+    const unsigned int p,
+    ///[in] The index of the row that needs to be calcculated
+    const unsigned int fIndex,
+    ///[in] The resolution to apply to the inndividual field vectors
+    const float resolution)
+{
+    unsigned int tx = get_local_id(0);
+    unsigned int ti = get_global_id(0);
+    // Shared array to hold the charges
+    __local pointCharge charge[BLOCK_X];
+    unsigned int fieldIndex = fIndex;
+
+    // previous point ,used to calculate current point, and cumulative field
+    // vector
+    Vector3 point, temp;
+    // Number of iterations of main loop
+    unsigned int steps;
+
+    // Load starting point
+    point.x = x[linePitch * (fieldIndex - 1) + ti];
+    point.y = y[linePitch * (fieldIndex - 1) + ti];
+    point.z = z[linePitch * (fieldIndex - 1) + ti];
+
+    for (unsigned int bigStep = 1; bigStep < 2500; bigStep ++)
+    {
+        // Recalculating the number of steps here, allows a while loop to be
+        // used rather than a for loop
+        // This reduces the register usage by one register, allowing a higher
+        // warp occupancy
+        steps = (p + BLOCK_X - 1) / BLOCK_X;
+        // Reset the cummulative field vector
+        temp.x = temp.y = temp.z = 0;
+        do {
+            // It is important to decrement steps independently, and outside the
+            // while condition for the register gain to happen
+            steps--;
+            // Load point charges from global memory
+            // The unused charges must be padded until the next multiple of
+            // BLOCK_X
+            charge[tx] = Charges[steps * BLOCK_X + tx];
+
+            // Wait for all loads to complete
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+
+            // Unrolling the following loop completely saves one register
+            // compared to when doing a partial unroll
+            // While performance-wise there is no benefit in a complete unroll,
+            // the saved register will enable
+            // a higher warp occupancy
+#pragma unroll
+            for (unsigned int i = 0; i < BLOCK_X; i++)
+            {
+                temp = vec3Add(temp, PartField(charge[i], point));
+            }
+            // All threads must reach this point concurrently, otherwise some
+            // smem values may be overridden before all threads finish
+            barrier(CLK_LOCAL_MEM_FENCE);
+        } while (steps);
+        // Finally, add the unit vector of the field divided by the resolution
+        // to the previous point to get the next point
+        point = vec3Add(point, vec3SetInvLen(temp, resolution));
+        
+        x[linePitch * fieldIndex + ti] = point.x;
+        y[linePitch * fieldIndex + ti] = point.y;
+        z[linePitch * fieldIndex + ti] = point.z;
+        fieldIndex ++;
     }
 }//*/
  
