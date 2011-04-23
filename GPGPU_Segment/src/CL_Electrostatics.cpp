@@ -356,7 +356,7 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     //==========================================================================
     cout<<" Preparing kernel"<<endl;
-    cl_kernel kern = clCreateKernel(prog, "CalcField_MT_curvature", &err);
+    cl_kernel kern = clCreateKernel(prog, "CalcField_curvature", &err);
     if (err)cout<<"clCreateKernel returns: "<<err<<endl;
 
     err = CL_SUCCESS;
@@ -388,29 +388,26 @@ void CLElectrosFunctor<T>::AllocateResources()
                              0, &err);
     if (err)cout<<"clCreateCommandQueue returns: "<<err<<endl;
 
-    cl_event eventa, eventb;
     err = CL_SUCCESS;
-    err |= clEnqueueWriteBuffer(queue, arrdata.x, CL_TRUE, 0, size,
-                                hostArr.x, 0, NULL, &eventa);
-    cout<<"Write 1 returns: "<<err<<endl;
-    err |= clEnqueueWriteBuffer(queue, arrdata.y, CL_TRUE, 0, size,
-                                hostArr.y, 1, &eventa, &eventb);
-    cout<<"Write 2 returns: "<<err<<endl;
-    err |= clEnqueueWriteBuffer(queue, arrdata.z, CL_TRUE, 0, size,
-                                hostArr.z, 1, &eventb, &eventa);
-    cout<<"Write 3 returns: "<<err<<endl;
-    err |= clEnqueueWriteBuffer(queue, charges, CL_TRUE, 0,
+    err |= clEnqueueWriteBuffer(queue, arrdata.x, CL_FALSE, 0, size,
+                                hostArr.x, 0, NULL, NULL);
+    if (err)cout<<"Write 1 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, arrdata.y, CL_FALSE, 0, size,
+                                hostArr.y, 0, NULL, NULL);
+    if (err)cout<<"Write 2 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, arrdata.z, CL_FALSE, 0, size,
+                                hostArr.z, 0, NULL, NULL);
+    if (err)cout<<"Write 3 returns: "<<err<<endl;
+    err |= clEnqueueWriteBuffer(queue, charges, CL_FALSE, 0,
                                 this->m_pPointChargeData->GetSizeBytes(),
                                 this->m_pPointChargeData->GetDataPointer(),
-                                1, &eventa, &eventb);
-    cout<<"Write 4 returns: "<<err<<endl;
+                                0, NULL, NULL);
+    if (err)cout<<"Write 4 returns: "<<err<<endl;
     if (err)cout<<"clEnqueueWriteBuffer cummulates: "<<err<<endl;
 
     //==========================================================================
     long long freq;
     QueryHPCFrequency(&freq);
-    //err = clFlush(queue);
-    if (err)cout<<"clFlush returns: "<<err<<endl;
     cout<<" Executing kernel"<<endl;
     // BLOCK size
     size_t local[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
@@ -418,38 +415,38 @@ void CLElectrosFunctor<T>::AllocateResources()
     // GRID size
     size_t global[3] = {(this->m_nLines + BLOCK_X_MT - 1)/BLOCK_X_MT, 1, 1};
     cout<<"Global: "<<global[0]<<" "<<global[1]<<" "<<global[2]<<endl;
-    size_t delay = 0;
+
+    // Finish memory copies before starting the kernel
+    clFinish(queue);
     long long start;
-    err = clEnqueueTask(queue, kern, 1, &eventb, &eventa);
-    if (err)cout<<"clEnqueueTask returns: "<<err<<endl;
     QueryHPCTimer(&start);
     err = clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
-                                 1, &eventa, &eventb);
+                                 0, NULL, NULL);
     if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
-    err = clEnqueueTask(queue, kern, 1, &eventb, &eventa);
+    // Let kernel finish before continuing
+    clFinish(queue);
     long long end;
     QueryHPCTimer(&end);
     double time = (double)(end - start)/((double)freq);
     if (err)cout<<"clEnqueueTask returns: "<<err<<endl;
     cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
-    delay = 0;
     //==========================================================================
     cout<<" Recovering results"<<endl;
 
     err = CL_SUCCESS;
-    err |= clEnqueueReadBuffer ( queue, arrdata.x, CL_TRUE, 0, size,
-                                 hostArr.x, 1, &eventa, &eventb );
-    cout<<" Read 1 returns: "<<err<<endl;
-    err |= clEnqueueReadBuffer ( queue, arrdata.y, CL_TRUE, 0, size,
-                                 hostArr.y, 1, &eventb, &eventa );
-    cout<<" Read 1 returns: "<<err<<endl;
-    err |= clEnqueueReadBuffer ( queue, arrdata.z, CL_TRUE, 0, size,
-                                 hostArr.z, 1, &eventa, &eventb );
-    cout<<" Read 1 returns: "<<err<<endl;
+    err |= clEnqueueReadBuffer ( queue, arrdata.x, CL_FALSE, 0, size,
+                                 hostArr.x, 0, NULL, NULL );
+    if (err)cout<<" Read 1 returns: "<<err<<endl;
+    err |= clEnqueueReadBuffer ( queue, arrdata.y, CL_FALSE, 0, size,
+                                 hostArr.y, 0, NULL, NULL );
+    if (err)cout<<" Read 1 returns: "<<err<<endl;
+    err |= clEnqueueReadBuffer ( queue, arrdata.z, CL_FALSE, 0, size,
+                                 hostArr.z, 0, NULL, NULL );
+    if (err)cout<<" Read 1 returns: "<<err<<endl;
     if (err)cout<<"clEnqueueReadBuffer cummulates: "<<err<<endl;
 
-    err = clEnqueueTask(queue, kern, 1, &eventb, NULL);
-    
+    clFinish(queue);
+
     err = clReleaseKernel(kern);
     if (err)cout<<"clReleaseKernel returns: "<<err<<endl;
     clReleaseCommandQueue(queue);
