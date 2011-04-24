@@ -96,12 +96,11 @@ inline Vector3 PartField(pointCharge charge, Vector3 point)
 {
     Vector3 r = vec3(point, charge.position);        // 3 FLOP
     float lenSq = vec3LenSq(r);                             // 5 FLOP
-    return vec3Mul(r, (float)electro_k * charge.magnitude / // 3 FLOP (vecMul)
-                   (lenSq * sqrt(lenSq)) );    // 4 FLOP (1 sqrt + 3 mul,div)
+    return vec3Mul(r, (float)electro_k * charge.magnitude  // 3 FLOP (vecMul)
+                   * rsqrt(lenSq) / lenSq );    // 4 FLOP (1 sqrt + 3 mul,div)
 }
 
-#define BLOCK_X_MT 8
-#define BLOCK_Y_MT 1
+// BLOCK_X_MT and BLOCK_Y_MT defined externally
 #define BLOCK_DIM_MT (BLOCK_X_MT * BLOCK_Y_MT)
 
 // This union allows a kernel to use the same shared memory for three different
@@ -267,7 +266,8 @@ __kernel void CalcField_MT_curvature(
     }
 }//*/
 
-#define BLOCK_X 8
+// BLOCK_X is defined externally
+#define LOCAL_X get_local_size(0)
 
 __kernel void CalcField_curvature(
     __global float *x,
@@ -282,12 +282,17 @@ __kernel void CalcField_curvature(
     ///[in] The index of the row that needs to be calcculated
     const unsigned int fIndex,
     ///[in] The resolution to apply to the inndividual field vectors
-    const float resolution)
+    const float resolution
+    ///
+    // const unsigned int biggies,
+    ///
+    //__local pointCharge smCharge[]
+    )
 {
     unsigned int tx = get_local_id(0);
     unsigned int ti = get_global_id(0);
     // Shared array to hold the charges
-    __local pointCharge charge[BLOCK_X];
+    __local pointCharge smCharge[BLOCK_X];
     unsigned int fieldIndex = fIndex;
 
     // previous point ,used to calculate current point, and cumulative field
@@ -301,13 +306,13 @@ __kernel void CalcField_curvature(
     point.y = y[linePitch * (fieldIndex - 1) + ti];
     point.z = z[linePitch * (fieldIndex - 1) + ti];
 
-    for (unsigned int bigStep = 1; bigStep < 2500; bigStep ++)
+    for (unsigned int bigStep = 0; bigStep < KERNEL_STEPS - 1; bigStep ++)
     {
         // Recalculating the number of steps here, allows a while loop to be
         // used rather than a for loop
         // This reduces the register usage by one register, allowing a higher
         // warp occupancy
-        steps = (p + BLOCK_X - 1) / BLOCK_X;
+        steps = (p + LOCAL_X - 1) / LOCAL_X;
         // Reset the cummulative field vector
         temp.x = temp.y = temp.z = 0;
         do {
@@ -317,7 +322,7 @@ __kernel void CalcField_curvature(
             // Load point charges from global memory
             // The unused charges must be padded until the next multiple of
             // BLOCK_X
-            charge[tx] = Charges[steps * BLOCK_X + tx];
+            smCharge[tx] = Charges[steps * LOCAL_X + tx];
 
             // Wait for all loads to complete
             barrier(CLK_LOCAL_MEM_FENCE);
@@ -331,7 +336,7 @@ __kernel void CalcField_curvature(
 #pragma unroll
             for (unsigned int i = 0; i < BLOCK_X; i++)
             {
-                temp = vec3Add(temp, PartField(charge[i], point));
+                temp = vec3Add(temp, PartField(smCharge[i], point));
             }
             // All threads must reach this point concurrently, otherwise some
             // smem values may be overridden before all threads finish
@@ -347,4 +352,3 @@ __kernel void CalcField_curvature(
         fieldIndex ++;
     }
 }//*/
- 

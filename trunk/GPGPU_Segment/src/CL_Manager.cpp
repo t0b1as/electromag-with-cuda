@@ -594,6 +594,7 @@ void ClManager::ListAllDevices(std::ostream& out)
             out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"
                 <<endl;
             out<<"    Compute units (cores): "<<dev->maxComputeUnits<<endl;
+            out<<"    Max clock frequency: "<<dev->maxClockFrequency<<endl;
             out<<"    Single-precision SIMD width: "
                 <<dev->nativeVectorWidth_float<<", "
                 <<dev->preferredVectorWidth_float<<endl;

@@ -27,11 +27,20 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
 #include <iostream>
 #include <fstream>
 #include "OpenCL_Dyn_Load.h"
+#include "Electrostatics.h"
 
+#define CL_ASSERT(err, message) \
+    if(err != CL_SUCCESS) \
+    { \
+        cerr<<message<<endl \
+            <<"  CL error: "<<err<<endl; \
+        return; \
+    }
 // We may later change this to functor-specific, or even device-secific error
 // stream,
 #define errlog std::cerr
 using std::cout;
+using std::cerr;
 using std::endl;
 using namespace OpenCL;
 
@@ -258,8 +267,10 @@ CUresult CudaElectrosFunctor<T>::ReleaseGpuResources ( size_t deviceID )
 {
 }
 */
-#define BLOCK_X_MT 8
-#define BLOCK_Y_MT 1
+#include <cstdio>
+#define BLOCK_X 128
+#define BLOCK_X_MT 32
+#define BLOCK_Y_MT 8
 /**=============================================================================
  * \brief
  *
@@ -285,18 +296,16 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     CLerror err;
 
-    cout<<" Preparing context"<<endl;
     ClManager::clPlatformProp **plat = m_DeviceManager.fstGetPlats();
     uintptr_t props[] =
         {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0]->platformID, 0, 0};
     cl_context ctx = clCreateContextFromType((cl_context_properties *)props,
-                     CL_DEVICE_TYPE_CPU,
+                     CL_DEVICE_TYPE_GPU,
                      NULL,
                      NULL,
                      &err);
     if (err)cout<<"clCreateContextFromType returns: "<<err<<endl;
 
-    cout<<" Gathering context info"<<endl;
     size_t cldSize;
     clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &cldSize);
     void * devin = malloc(cldSize);
@@ -308,25 +317,28 @@ void CLElectrosFunctor<T>::AllocateResources()
     cout<<" Preparing buffers"<<endl;
     Vector3<cl_mem> arrdata;
     arrdata.x = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    if (err)cout<<"clCreateBuffer.x returns: "<<err<<endl;
+    CL_ASSERT(err, "clCreateBuffer.x failed ");
     arrdata.y = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    if (err)cout<<"clCreateBuffer.y returns: "<<err<<endl;
+    CL_ASSERT(err, "clCreateBuffer.y failed ");
     arrdata.z = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    if (err)cout<<"clCreateBuffer.z returns: "<<err<<endl;
+    CL_ASSERT(err, "clCreateBuffer.z failed ");
 
 
     cl_mem charges =clCreateBuffer(ctx, CL_MEM_READ_ONLY,
                                    this->m_pPointChargeData->GetSizeBytes(),
                                    NULL, &err);
-    if (err)cout<<"clCreateBuffer.q returns: "<<err<<endl;
+    CL_ASSERT(err, "clCreateBuffer.q failed ");
 
 
     //==========================================================================
-    cout<<" Preparing kernel source"<<endl;
+    cout<<" Reading kernel source"<<endl;
     using std::ifstream;
     ifstream reader("Electrostatics.cl.c", ifstream::in);
     if (!reader.good())
+    {
         cout<<"Cannot open program source"<<endl;
+        return;
+    }
     reader.seekg (0, std::ios::end);
     size_t length = reader.tellg();
     reader.seekg (0, std::ios::beg);
@@ -334,30 +346,76 @@ void CLElectrosFunctor<T>::AllocateResources()
     reader.read(source, length);
     reader.close();
 
-    cl_program prog = clCreateProgramWithSource(ctx, 1, (const char **)&source,
+    /*
+     * Different devices require different work group sizes to operate
+     * optimally. The amount of __local memory on some kernels depends on these
+     * work-group sizes. This causes a problem as explained below:
+     * There are two ways to use group-local memory
+     * 1) Allocate it as a parameter with clSetKernelArg()
+     * 2) Declare it as a constant __local array within the cl kernel
+     * Option (1) has the advantage of flexibility, but the extra indexing
+     * overhead is a performance killer (20-25% easily lost on nvidia GPUs)
+     * Option (2) has the advantage that the compiler knows the arrays are of
+     * constant size, and is free to do extreme optimizations.
+     * Of course, then both host and kernel have to agree on the size of the
+     * work group.
+     * We abuse the fact that the source code is compiled at runtime, decide
+     * those sizes in the host code, then #define them in the kernel code,
+     * before it is compiled.
+     */
+
+    // BLOCK size
+    size_t local[3] = {BLOCK_X, 1, 1};
+    size_t local_MT[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
+    // GRID size
+    size_t global[3] = {((this->m_nLines + BLOCK_X - 1)/BLOCK_X)
+                        * BLOCK_X, 1, 1
+                       };
+    cout<<"Local   : "<<local[0]<<" "<<local[1]<<" "<<local[2]<<endl;
+    cout<<"Local_MT: "<<local_MT[0]<<" "<<local_MT[1]<<" "<<local_MT[2]<<endl;
+    cout<<"Global  : "<<global[0]<<" "<<global[1]<<" "<<global[2]<<endl;
+
+    char defines[1024];
+    const size_t kernelSteps = this->m_pFieldLinesData->GetSize()
+            / this->m_nLines;
+    snprintf(defines, sizeof(defines),
+             "#define BLOCK_X %u\n"
+             "#define BLOCK_X_MT %u\n"
+             "#define BLOCK_Y_MT %u\n"
+             "#define KERNEL_STEPS %u\n",
+             (unsigned int) local[0],
+             (unsigned int) local_MT[0], (unsigned int)local_MT[1],
+             (unsigned int) kernelSteps
+            );
+
+    cout<<" Calc'ed kern steps "<<kernelSteps<<endl;
+    char *srcs[2] = {defines, source};
+    cl_program prog = clCreateProgramWithSource(ctx, 2, (const char**) srcs,
                       NULL, &err);
     if (err)cout<<"clCreateProgramWithSource returns: "<<err<<endl;
 
-    err = clBuildProgram(prog, 0, NULL, NULL, NULL, NULL);
+    char options[] = "-cl-fast-relaxed-math";
+    err = clBuildProgram(prog, 0, NULL, options, NULL, NULL);
     if (err)cout<<"clBuildProgram returns: "<<err<<endl;
 
     size_t logSize;
-    err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+    clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
                                 CL_PROGRAM_BUILD_LOG,
                                 0, NULL, &logSize);
-    if (err)cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
     char * log = (char*)malloc(logSize);
-    err = clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+    clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
                                 CL_PROGRAM_BUILD_LOG,
                                 logSize, log, 0);
-    if (err)cout<<"clGetProgramBuildInfo returns: "<<err<<endl;
     cout<<"Program Build Log:"<<endl<<log<<endl;
+    CL_ASSERT(err, "clBuildProgram failed");
+    
 
 
     //==========================================================================
     cout<<" Preparing kernel"<<endl;
     cl_kernel kern = clCreateKernel(prog, "CalcField_curvature", &err);
     if (err)cout<<"clCreateKernel returns: "<<err<<endl;
+    CL_ASSERT(err, "clCreateKernel");
 
     err = CL_SUCCESS;
     // __global float *x,
@@ -369,20 +427,27 @@ void CLElectrosFunctor<T>::AllocateResources()
     // __global pointCharge *Charges,
     err |= clSetKernelArg(kern, 3, sizeof(cl_mem), &charges);
     // const unsigned int linePitch,
-    unsigned int param = this->m_nLines;
-    err |= clSetKernelArg(kern, 4, sizeof(cl_uint), &param);
+    cl_uint param = this->m_nLines;
+    err |= clSetKernelArg(kern, 4, sizeof(param), &param);
     // const unsigned int p,
-    param = (unsigned int)this->m_pPointChargeData->GetSize();
-    err |= clSetKernelArg(kern, 5, sizeof(cl_uint), &param);
+    param = (cl_uint)this->m_pPointChargeData->GetSize();
+    err |= clSetKernelArg(kern, 5, sizeof(param), &param);
     // const unsigned int fieldIndex,
     param = 1;
-    err |= clSetKernelArg(kern, 6, sizeof(cl_uint), &param);
+    err |= clSetKernelArg(kern, 6, sizeof(param), &param);
+
     // const float resolution
-    err |= clSetKernelArg(kern, 7, sizeof(cl_float), &this->m_resolution);
+    err |= clSetKernelArg(kern, 7, sizeof(T), &this->m_resolution);
+    // const unsigned int biggies,
+    //param = this->m_pPointChargeData->GetSize() / this->m_nLines;
+    //err |= clSetKernelArg(kern, 8, sizeof(cl_uint), &param);
+    // __local pointCharge * smCharges
+    //err |= clSetKernelArg(kern, 8,
+    //                      sizeof(electro::pointCharge<float>) * local[0],
+    //                      NULL);
     if (err)cout<<"clSetKernelArg cummulates: "<<err<<endl;
 
     //==========================================================================
-    cout<<" Preparing kernel parameters"<<endl;
     cl_command_queue queue = clCreateCommandQueue(ctx,
                              ((cl_device_id*)devin)[0],
                              0, &err);
@@ -409,26 +474,24 @@ void CLElectrosFunctor<T>::AllocateResources()
     long long freq;
     QueryHPCFrequency(&freq);
     cout<<" Executing kernel"<<endl;
-    // BLOCK size
-    size_t local[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
-    cout<<"Local: "<<local[0]<<" "<<local[1]<<" "<<local[2]<<endl;
-    // GRID size
-    size_t global[3] = {(this->m_nLines + BLOCK_X_MT - 1)/BLOCK_X_MT, 1, 1};
-    cout<<"Global: "<<global[0]<<" "<<global[1]<<" "<<global[2]<<endl;
+
 
     // Finish memory copies before starting the kernel
-    clFinish(queue);
+    CL_ASSERT(clFinish(queue), "Pre-kernel sync");
     long long start;
     QueryHPCTimer(&start);
-    err = clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
-                                 0, NULL, NULL);
+    err |= clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
+                                      0, NULL, NULL);
     if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
     // Let kernel finish before continuing
-    clFinish(queue);
+    CL_ASSERT(clFinish(queue), "Post-kernel sync");
     long long end;
     QueryHPCTimer(&end);
     double time = (double)(end - start)/((double)freq);
-    if (err)cout<<"clEnqueueTask returns: "<<err<<endl;
+    this->m_pPerfData->time = ( double ) ( end - start ) / freq;
+    this->m_pPerfData->performance = ( this->m_nLines * ( ( 2500-1 )
+            * ( this->m_pPointChargeData->GetSize()
+            * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
     cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
     //==========================================================================
     cout<<" Recovering results"<<endl;
@@ -460,7 +523,6 @@ void CLElectrosFunctor<T>::AllocateResources()
     //err |= clReleaseMemObject(arrdata.x);
     //err |= clReleaseMemObject(charges);
     if (err)cout<<"clReleaseMemObject cummulates: "<<err<<endl;
-    cout<<" Exiting"<<endl;
 }
 
 /**=============================================================================
