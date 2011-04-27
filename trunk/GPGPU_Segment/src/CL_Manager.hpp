@@ -20,6 +20,7 @@
 
 #include "OpenCL_Dyn_Load.h"
 #include <iostream>
+#include <vector>
 
 /**=============================================================================
  * \defgroup DEVICE_MANAGERS Device Managers
@@ -53,6 +54,7 @@ protected:
 
 namespace OpenCL
 {
+using std::vector;
 
 class ClManager: public deviceMan::ComputeDeviceManager
 {
@@ -729,14 +731,9 @@ public:
         char extensions[1024];
 
         /**
-         * \brief Number of devices in the platform
-         */
-        unsigned int nDevices;
-
-        /**
          * \brief List of all devices in the platform
          */
-        clDeviceProp **devices;
+        vector<clDeviceProp*> devices;
     };
 
     ClManager();
@@ -753,16 +750,17 @@ public:
 private:
 
     //--------------------------Global Context tracking-----------------------//
-    /// The number of platforms found on the machine
-    static unsigned int nPlatforms;
     /// List of all platforms found on the machine
-    static clPlatformProp **platforms;
+    // It seems that due to a bug in GCC, a static std::vector may fall ou of s
+    // scope. Just use a pointer for the time being, allocate it with new, and
+    // it won't ever fall out of scope
+    static vector<clPlatformProp*> *platforms;
 
     /// DeviceManager overriders
     ///{@
     void ScanDevices();
 public:
-    clPlatformProp ** fstGetPlats(){return platforms;};
+    vector<clPlatformProp*>& fstGetPlats(){return *platforms;};
 
     ///}@
 };
