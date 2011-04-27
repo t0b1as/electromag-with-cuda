@@ -21,8 +21,7 @@
 using namespace OpenCL;
 
 ClManager GlobalClManager;
-unsigned int ClManager::nPlatforms;
-ClManager::clPlatformProp **ClManager::platforms;
+vector<ClManager::clPlatformProp*> *ClManager::platforms = NULL;
 
 bool deviceMan::ComputeDeviceManager::deviceScanComplete = false;
 
@@ -56,7 +55,15 @@ ClManager::~ClManager()
 
 void ClManager::ScanDevices()
 {
-    nPlatforms = 0;
+    if(platforms == NULL)
+        platforms = new std::vector<clPlatformProp*>();
+    if(platforms->size())
+    {
+        for(size_t i = 0; i < platforms->size(); i++)
+            delete (*platforms)[i];
+        platforms->clear();
+    }
+    
     cl_int errCode = CL_SUCCESS;
     // Load the driver
     errCode = clLibLoad();
@@ -67,31 +74,28 @@ void ClManager::ScanDevices()
     }
 
     // Query the number of platforms
-    errCode = clGetPlatformIDs(0, 0, &nPlatforms);
+    cl_uint nPlat;
+    errCode = clGetPlatformIDs(0, 0, &nPlat);
     if (errCode != CL_SUCCESS)
         cerr<<" Failed to get number of CL platforms with code "<<errCode<<endl;
-    if (!nPlatforms) return;
+    if (!nPlat) return;
 
     // Temporary storage for the platform IDs
-    cl_platform_id *platformIDs = new cl_platform_id[nPlatforms];
-    // Allocate resources for each platform
-    platforms = new clPlatformProp*[nPlatforms];
+    cl_platform_id *platformIDs = new cl_platform_id[nPlat];
     // Get the IDs of each platform
-    errCode = clGetPlatformIDs(nPlatforms, platformIDs, 0);
+    errCode = clGetPlatformIDs(nPlat, platformIDs, 0);
     if (errCode != CL_SUCCESS)
         cerr<<" Failed to get platform IDs with code "<<errCode<<endl;
 
     // Now fill the properties of each platform
-    for (size_t i = 0; i< nPlatforms; i++)
+    for (size_t i = 0; i< nPlat; i++)
     {
-        platforms[i] = new clPlatformProp(platformIDs[i]);
+        platforms->push_back(new clPlatformProp(platformIDs[i]));
     }
 
     // Now that the PlatformIDs are recorded in the clPlatformProp structures
     // they are no longer needed separately
     delete[] platformIDs;
-
-
 }
 
 size_t ClManager::GetNumDevices()
@@ -108,9 +112,9 @@ size_t ClManager::GetNumDevices()
     if (!deviceScanComplete) ScanDevices();
 
     size_t nDev = 0;
-    for (size_t i = 0; i < nPlatforms; i++)
+    for (size_t i = 0; i < platforms->size(); i++)
     {
-        nDev += platforms[i]->nDevices;
+        nDev += (*platforms)[i]->devices.size();
     }
     return nDev;
 }
@@ -160,27 +164,26 @@ ClManager::clPlatformProp::clPlatformProp(cl_platform_id platID)
 
     // Now get device details for this platform
     // Query the number of devices
+    cl_uint nDev;
     clGetDeviceIDs(this->platformID,
                    CL_DEVICE_TYPE_ALL,
                    0,
                    0,
-                   &nDevices);
+                   &nDev);
 
     //Temporary storage for device IDs
-    cl_device_id *deviceIDs = new cl_device_id[nDevices];
+    cl_device_id *deviceIDs = new cl_device_id[nDev];
     clGetDeviceIDs(this->platformID,
                    CL_DEVICE_TYPE_ALL,
-                   nDevices,
+                   nDev,
                    deviceIDs,
                    0);
 
-    devices = new clDeviceProp*[nDevices];
 
-    for (size_t i = 0; i < nDevices; i++)
+    for (size_t i = 0; i < nDev; i++)
     {
-        devices[i] = new clDeviceProp(deviceIDs[i]);
+        devices.push_back(new clDeviceProp(deviceIDs[i]));
     }
-
     delete[] deviceIDs;
 
 }
@@ -572,24 +575,23 @@ ClManager::clDeviceProp::clDeviceProp(cl_device_id devID)
 
 ClManager::clPlatformProp::~clPlatformProp()
 {
-    for(size_t i = 0; i < nDevices; i++)
-    {
+    for(size_t i = 0; i < devices.size(); i++)
         delete devices[i];
-    }
-    if (nDevices) delete[] devices;
+    devices.clear();
 }
 
 void ClManager::ListAllDevices(std::ostream& out)
 {
-    for (size_t i = 0; i < nPlatforms; i++)
+    out<<"OpenCL platforms/devices:"<<endl;
+    for (size_t i = 0; i < platforms->size(); i++)
     {
-        clPlatformProp* current = platforms[i];
+        clPlatformProp *current = (*platforms)[i];
         out<<" Platform: "<<current->name<<" ; ID: "<<current->platformID<<endl;
         out<<"  Version: "<<current->version<<endl;
         out<<"  Vendor: "<<current->vendor<<endl;
-        for (size_t j = 0; j < current->nDevices; j++)
+        for (size_t j = 0; j < current->devices.size(); j++)
         {
-            clDeviceProp* dev = current->devices[j];
+            clDeviceProp *dev = current->devices[j];
             out<<"   Device: "<<dev->name<<endl;
             out<<"    Global memory: "<<dev->globalMemSize/1024/1024<<" MB"
                 <<endl;

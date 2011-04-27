@@ -1,12 +1,13 @@
+
 typedef struct Vector3_st
 {
-    float x, y, z;
+    Tprec x, y, z;
 }Vector3;
 
 typedef struct pointCharge_st
 {
     Vector3 position;
-    float magnitude;
+    Tprec magnitude;
 }pointCharge;
 
 inline Vector3 vec3(Vector3 head, Vector3 tail)
@@ -33,7 +34,7 @@ inline Vector3 vec3Sub(Vector3 A, Vector3 B)
     return result;  // 3 FLOPs
 }
 
-inline Vector3 vec3Mul(Vector3 vec, float scalar)
+inline Vector3 vec3Mul(Vector3 vec, Tprec scalar)
 {
     Vector3 result;
     result.x = vec.x*scalar;
@@ -42,7 +43,7 @@ inline Vector3 vec3Mul(Vector3 vec, float scalar)
     return result;  // 3 FLOPs
 }
 
-inline Vector3 vec3Div(Vector3 vec, float scalar)
+inline Vector3 vec3Div(Vector3 vec, Tprec scalar)
 {
     Vector3 result;
     result.x = vec.x/scalar;
@@ -51,32 +52,32 @@ inline Vector3 vec3Div(Vector3 vec, float scalar)
     return result;  // 3 FLOPs
 }
 
-inline float vec3LenSq(Vector3 vec)
+inline Tprec vec3LenSq(Vector3 vec)
 {
     return (vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);       // 5 FLOPs
 }
 
-inline float vec3Len(Vector3 vec)
+inline Tprec vec3Len(Vector3 vec)
 {
     return sqrt(vec3LenSq(vec));                            // 6 FLOPs
 }
 
 inline Vector3 vec3Unit(Vector3 vec)
 {
-    float len = vec3Len(vec);                                   // 6 FLOPs
+    Tprec len = vec3Len(vec);                                   // 6 FLOPs
     Vector3 result = {vec.x/len, vec.y/len, vec.z/len};  // 3 FLOPs
     return result;                                      // Total: 9 FLOPs
 }
 
-inline Vector3 vec3SetInvLen(Vector3 vec, float scalarInvLen)
+inline Vector3 vec3SetInvLen(Vector3 vec, Tprec scalarInvLen)
 {
-    float len = vec3Len(vec);                                       // 6 FLOPs
+    Tprec len = vec3Len(vec);                                       // 6 FLOPs
     scalarInvLen *= len;                                        // 1 FLOP
     return vec3Div(vec, scalarInvLen);                          // 3 FLOPs
     // Total: 10 FLOPs
 }
 
-inline float vec3Dot(const Vector3 A, const Vector3 B)
+inline Tprec vec3Dot(const Vector3 A, const Vector3 B)
 {
     return (A.x * B.x + A.y * B.y + A.z * B.z);
 }                       // Total: 5 FLOPs
@@ -95,8 +96,8 @@ inline Vector3 vec3Cross(const Vector3 index, const Vector3 middle)
 inline Vector3 PartField(pointCharge charge, Vector3 point)
 {
     Vector3 r = vec3(point, charge.position);        // 3 FLOP
-    float lenSq = vec3LenSq(r);                             // 5 FLOP
-    return vec3Mul(r, (float)electro_k * charge.magnitude  // 3 FLOP (vecMul)
+    Tprec lenSq = vec3LenSq(r);                             // 5 FLOP
+    return vec3Mul(r, (Tprec)electro_k * charge.magnitude  // 3 FLOP (vecMul)
                    * rsqrt(lenSq) / lenSq );    // 4 FLOP (1 sqrt + 3 mul,div)
 }
 
@@ -123,9 +124,9 @@ typedef union kernelData_u
 // Computes the step lenght based on curvature
 // Stores field vector information in the first step
 __kernel void CalcField_MT_curvature(
-    __global float *x,
-    __global float *y,
-    __global float *z,               ///<[in,out] Pointer to z components
+    __global Tprec *x,
+    __global Tprec *y,
+    __global Tprec *z,               ///<[in,out] Pointer to z components
     ///[in] Pointer to the array of structures of point charges
     __global pointCharge *Charges,
     ///[in] Row pitch in bytes for the xy components
@@ -135,7 +136,7 @@ __kernel void CalcField_MT_curvature(
     ///[in] The index of the row that needs to be calcculated
     const unsigned int fieldIndex,
     ///[in] The resolution to apply to the inndividual field vectors
-    const float resolution
+    const Tprec resolution
 )
 {
     unsigned int tx = get_local_id(0);
@@ -231,8 +232,9 @@ __kernel void CalcField_MT_curvature(
                 temp = vec3Add(temp, kData.smTemp[tx][i] );
             }
             // Calculate curvature
-            float k = vec3LenSq(temp);//5 FLOPs
-            k = vec3Len( vec3Cross(vec3Sub(temp, prevVec), prevVec) )/(k*sqrt(k));
+            Tprec k = vec3LenSq(temp);//5 FLOPs
+            k = vec3Len( vec3Cross(vec3Sub(temp, prevVec), prevVec) )
+                    /(k*sqrt(k));
             // Finally, add the unit vector of the field divided by the
             // resolution to the previous point to get the next point.
             // We increment the curvature by one to prevent a zero curvature
@@ -270,9 +272,9 @@ __kernel void CalcField_MT_curvature(
 #define LOCAL_X get_local_size(0)
 
 __kernel void CalcField_curvature(
-    __global float *x,
-    __global float *y,
-    __global float *z,               ///<[in,out] Pointer to z components
+    __global Tprec *x,
+    __global Tprec *y,
+    __global Tprec *z,               ///<[in,out] Pointer to z components
     ///[in] Pointer to the array of structures of point charges
     __global pointCharge *Charges,
     ///[in] Row pitch in bytes for the xy components
@@ -282,7 +284,7 @@ __kernel void CalcField_curvature(
     ///[in] The index of the row that needs to be calcculated
     const unsigned int fIndex,
     ///[in] The resolution to apply to the inndividual field vectors
-    const float resolution
+    const Tprec resolution
     ///
     // const unsigned int biggies,
     ///

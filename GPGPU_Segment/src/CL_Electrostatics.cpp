@@ -33,12 +33,11 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
     if(err != CL_SUCCESS) \
     { \
         cerr<<message<<endl \
+            <<"  In file "<<__FILE__<<" line: "<<__LINE__<<endl \
             <<"  CL error: "<<err<<endl; \
         return; \
     }
-// We may later change this to functor-specific, or even device-secific error
-// stream,
-#define errlog std::cerr
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -296,15 +295,17 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     CLerror err;
 
-    ClManager::clPlatformProp **plat = m_DeviceManager.fstGetPlats();
+    vector<ClManager::clPlatformProp*> plat = m_DeviceManager.fstGetPlats();
+    cl_platform_id platID = plat[0]->platformID;
     uintptr_t props[] =
-        {CL_CONTEXT_PLATFORM, (uintptr_t)plat[0]->platformID, 0, 0};
-    cl_context ctx = clCreateContextFromType((cl_context_properties *)props,
-                     CL_DEVICE_TYPE_GPU,
-                     NULL,
-                     NULL,
-                     &err);
-    if (err)cout<<"clCreateContextFromType returns: "<<err<<endl;
+        {CL_CONTEXT_PLATFORM, (uintptr_t)platID, 0, 0};
+    cl_context ctx = clCreateContextFromType(
+                         (cl_context_properties *)props,
+                         CL_DEVICE_TYPE_GPU,
+                         NULL,
+                         NULL,
+                         &err);
+    CL_ASSERT(err, "clCreateContextFromType failed");
 
     size_t cldSize;
     clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &cldSize);
@@ -377,12 +378,13 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     char defines[1024];
     const size_t kernelSteps = this->m_pFieldLinesData->GetSize()
-            / this->m_nLines;
+                               / this->m_nLines;
     snprintf(defines, sizeof(defines),
              "#define BLOCK_X %u\n"
              "#define BLOCK_X_MT %u\n"
              "#define BLOCK_Y_MT %u\n"
-             "#define KERNEL_STEPS %u\n",
+             "#define KERNEL_STEPS %u\n"
+             "#define Tprec float\n",
              (unsigned int) local[0],
              (unsigned int) local_MT[0], (unsigned int)local_MT[1],
              (unsigned int) kernelSteps
@@ -400,15 +402,15 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     size_t logSize;
     clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
-                                CL_PROGRAM_BUILD_LOG,
-                                0, NULL, &logSize);
+                          CL_PROGRAM_BUILD_LOG,
+                          0, NULL, &logSize);
     char * log = (char*)malloc(logSize);
     clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
-                                CL_PROGRAM_BUILD_LOG,
-                                logSize, log, 0);
+                          CL_PROGRAM_BUILD_LOG,
+                          logSize, log, 0);
     cout<<"Program Build Log:"<<endl<<log<<endl;
     CL_ASSERT(err, "clBuildProgram failed");
-    
+
 
 
     //==========================================================================
@@ -481,7 +483,7 @@ void CLElectrosFunctor<T>::AllocateResources()
     long long start;
     QueryHPCTimer(&start);
     err |= clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
-                                      0, NULL, NULL);
+                                  0, NULL, NULL);
     if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
     // Let kernel finish before continuing
     CL_ASSERT(clFinish(queue), "Post-kernel sync");
@@ -490,8 +492,8 @@ void CLElectrosFunctor<T>::AllocateResources()
     double time = (double)(end - start)/((double)freq);
     this->m_pPerfData->time = ( double ) ( end - start ) / freq;
     this->m_pPerfData->performance = ( this->m_nLines * ( ( 2500-1 )
-            * ( this->m_pPointChargeData->GetSize()
-            * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
+                                       * ( this->m_pPointChargeData->GetSize()
+                                           * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
     cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
     //==========================================================================
     cout<<" Recovering results"<<endl;
