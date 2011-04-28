@@ -316,6 +316,7 @@ void CLElectrosFunctor<T>::AllocateResources()
     CLerror err;
 
     PerfTimer timer;
+    perfPacket &profiler = *this->m_pPerfData;
     timer.start();
     for (size_t iDev = 0; iDev < m_nDevices; iDev++)
     {
@@ -348,8 +349,8 @@ void CLElectrosFunctor<T>::AllocateResources()
                                    NULL, &err);
         CL_ASSERT(err, "clCreateBuffer.q failed ");
     }
-    this->m_pPerfData->stepTimes.push_back(TimingInfo("Resource allocation",
-                                          timer.tick()));
+    profiler.add(TimingInfo("Resource allocation",
+                            timer.tick()));
 
     
     
@@ -369,6 +370,7 @@ void CLElectrosFunctor<T>::AllocateResources()
 
 
     //==========================================================================
+    timer.tick();
     cout<<" Reading kernel source"<<endl;
     using std::ifstream;
     ifstream reader("Electrostatics.cl.c", ifstream::in);
@@ -447,6 +449,8 @@ void CLElectrosFunctor<T>::AllocateResources()
                           logSize, log, 0);
     cout<<"Program Build Log:"<<endl<<log<<endl;
     CL_ASSERT(err, "clBuildProgram failed");
+    profiler.add(TimingInfo("Program compilation",
+                            timer.tick()));
 
 
 
@@ -492,6 +496,7 @@ void CLElectrosFunctor<T>::AllocateResources()
                              0, &err);
     if (err)cout<<"clCreateCommandQueue returns: "<<err<<endl;
 
+    timer.tick();
     err = CL_SUCCESS;
     err |= clEnqueueWriteBuffer(queue, arrdata.x, CL_FALSE, 0, size,
                                 hostArr.x, 0, NULL, NULL);
@@ -502,21 +507,26 @@ void CLElectrosFunctor<T>::AllocateResources()
     err |= clEnqueueWriteBuffer(queue, arrdata.z, CL_FALSE, 0, size,
                                 hostArr.z, 0, NULL, NULL);
     if (err)cout<<"Write 3 returns: "<<err<<endl;
-    err |= clEnqueueWriteBuffer(queue, charges, CL_FALSE, 0,
-                                this->m_pPointChargeData->GetSizeBytes(),
+    const size_t qSize = this->m_pPointChargeData->GetSizeBytes();
+    err |= clEnqueueWriteBuffer(queue, charges, CL_FALSE, 0, qSize,
                                 this->m_pPointChargeData->GetDataPointer(),
                                 0, NULL, NULL);
     if (err)cout<<"Write 4 returns: "<<err<<endl;
     if (err)cout<<"clEnqueueWriteBuffer cummulates: "<<err<<endl;
+    
+    // Finish memory copies before starting the kernel
+    CL_ASSERT(clFinish(queue), "Pre-kernel sync");
+    
+    profiler.add(TimingInfo("Host to device transfer",
+                            timer.tick(),
+                            3*size + qSize
+                           ));
 
     //==========================================================================
     long long freq;
     QueryHPCFrequency(&freq);
     cout<<" Executing kernel"<<endl;
-
-
-    // Finish memory copies before starting the kernel
-    CL_ASSERT(clFinish(queue), "Pre-kernel sync");
+    
     long long start;
     QueryHPCTimer(&start);
     err |= clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
@@ -535,6 +545,7 @@ void CLElectrosFunctor<T>::AllocateResources()
     //==========================================================================
     cout<<" Recovering results"<<endl;
 
+    timer.tick();
     err = CL_SUCCESS;
     err |= clEnqueueReadBuffer ( queue, arrdata.x, CL_FALSE, 0, size,
                                  hostArr.x, 0, NULL, NULL );
@@ -548,6 +559,11 @@ void CLElectrosFunctor<T>::AllocateResources()
     if (err)cout<<"clEnqueueReadBuffer cummulates: "<<err<<endl;
 
     clFinish(queue);
+    
+    profiler.add(TimingInfo("Device to host transfer",
+                            timer.tick(),
+                            3 * size
+                           ));
 
     err = clReleaseKernel(kern);
     if (err)cout<<"clReleaseKernel returns: "<<err<<endl;
