@@ -281,6 +281,12 @@ int main ( int argc, char* argv[] )
         //StartConsoleMonitoring ( &CPUperf.progress );
         TestCL ( CPUlines, charges, n, 1.0, CPUperf, useCurvature );
         CPUperf.progress = 1.0;
+        for(size_t i = 0; i < CPUperf.stepTimes.size(); i++)
+        {
+            TimingInfo profiler = CPUperf.stepTimes[i];
+            cout<<profiler.message<<": "<<profiler.time<<endl;
+            
+        }
     }
     else
     {

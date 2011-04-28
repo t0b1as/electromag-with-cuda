@@ -315,13 +315,15 @@ void CLElectrosFunctor<T>::AllocateResources()
     
     CLerror err;
 
+    PerfTimer timer;
+    timer.start();
     for (size_t iDev = 0; iDev < m_nDevices; iDev++)
     {
         FunctorData &data = m_functors[iDev];
         ClManager::clDeviceProp *dev = data.device;
         cl_context_properties props[] =
-        {CL_CONTEXT_PLATFORM, (cl_context_properties)&dev->platform, 0, 0};
-        data.context = clCreateContext( (cl_context_properties *)props,
+        {CL_CONTEXT_PLATFORM, (cl_context_properties)dev->platform, 0, 0};
+        data.context = clCreateContext( props,
                                         1,
                                         &dev->deviceID,
                                         NULL,
@@ -346,6 +348,8 @@ void CLElectrosFunctor<T>::AllocateResources()
                                    NULL, &err);
         CL_ASSERT(err, "clCreateBuffer.q failed ");
     }
+    this->m_pPerfData->stepTimes.push_back(TimingInfo("Resource allocation",
+                                          timer.tick()));
 
     
     

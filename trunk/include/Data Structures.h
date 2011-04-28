@@ -192,13 +192,26 @@ void Array<T>::Memset(T value)
     Memset(0, itsSize, value);
 }
 
+#include <vector>
+#include <string>
+class TimingInfo
+{
+public:
+    double time;
+    std::string message;
+    
+    TimingInfo(const char* msg, const double time) :
+    time(time),
+    message(msg)
+    {};
+};
 
 struct perfPacket
 {
     // Performance in FLOP/s and the actual execution time
     double performance, time;
     // Used for tracking the execution times of individual steps
-    Array<double> stepTimes;
+    std::vector<TimingInfo> stepTimes;
     // Used to keep track of the total completed processing
     // 0 signales nothing done, 1.0 signals full completeion
     double volatile progress;
