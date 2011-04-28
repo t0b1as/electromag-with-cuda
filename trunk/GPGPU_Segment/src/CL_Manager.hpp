@@ -431,7 +431,7 @@ public:
          * 
          * The platform associated with this device.
          */
-        char platform[256];
+        cl_platform_id platform;
 
         /**
          * \brief CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR

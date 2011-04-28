@@ -74,12 +74,14 @@ private:
     class FunctorData
     {
     public:
-        /// Device context specific data
+        /// ID of the device this functor is intended to run on
+        OpenCL::ClManager::clDeviceProp *device;
         /// Context associated with the device
-        //CUcontext context;
-        /// Host buffers associated with the context
-        Vector3<T*> hostNonpagedData;
-        //CoalescedFieldLineArray<CUdeviceptr>
+        cl_context context;
+        /// Device buffer for the field line
+        Vector3<cl_mem> devFieldMem; 
+        /// Device buffer for point charges
+        cl_mem chargeMem;
         /// Stores information about the GPU field lines allocation including
         //GPUfieldData;
         /// number of steps (pre-allocation), and number of lines
@@ -91,8 +93,8 @@ private:
         unsigned int blockXSize;
         /// kernel block size, dependent on selected kernel (MT/NON_MT)
         unsigned int blockDim;
-        /// Number of kernel calls needed to complete the given dataset
-        size_t nKernelSegments;
+        /// Number of lines to be processed by this device
+        size_t widthGlobX;
         /// Number of blocks that can be launched during a kernel call
         size_t nBlocksPerSegment;
         /// This depends on how much device memory was available at allocation
@@ -121,9 +123,10 @@ private:
         size_t elements;
         /// Functor-specific performance information
         perfPacket *pPerfData;
+        //FunctorData() {};
     };
     /// Contains data for each individual functor
-    Array<FunctorData> m_functorParamList;
+    std::vector<FunctorData> m_functors;
 
 
 };

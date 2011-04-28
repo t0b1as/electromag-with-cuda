@@ -108,58 +108,83 @@ template<class T>
 void CLElectrosFunctor<T>::PartitionData()
 {
     // Get the number of available compute devices
+    // TODO: We are using the first available platform. There should be a better
+    // mechanism, which allows selecting the platform
+    vector<ClManager::clPlatformProp*> &plat =
+        m_DeviceManager.fstGetPlats();
+    vector<ClManager::clDeviceProp*> &devs=plat[0]->devices;
     if (!m_nDevices)
     {
-        m_nDevices = m_DeviceManager.GetNumDevices();
+        // TODO: signal an error
+        if (!plat.size()) return;
+        m_nDevices = devs.size();
     }
     // Multiple of alignment for the number of threads
     /*
-     * FIXME: aligning to a preset alignment size does not take into
-     * consideration devices with non-power of 2 multiprocessors. This can
-     * generate empty threads, and may not be efficient. Alignment size should
-     * take the number of multiprocessors into consideration at the very least
-     * the block size should also be considered for maximum efficiency
+     * The multiplicity of the number of threads in a compute unit
+     * FIXME: The multiplicity should reflect the actual hardware conditions.
+     * For example, an nvidia device will need a multiplicity of 32 just to
+     * fully utilize the hardware, but some newer nvidia devices need 6 work
+     * groups, each with at least 32 work-iems, meaning a minimum multiplivity
+     * of 192. Since there is no way to gather this information from OpenCL, we
+     * just assume a constant multiplicity of 256
      */
-    const size_t segAlign = 256;
-    // Determine the max number of parallel segments as the number of devices
-    const size_t segments = this->m_nDevices;
-    /* Determine the number of lines to be processed by each device, and aling
-     * it to a multiple of segAlign. This prevents empty threads from being
-     * created on more than one device */
-    const size_t segSize = ( ( ( this->nLines / segments ) + segAlign - 1 )
-                             / segAlign ) * segAlign;
+    const size_t unitAlign = 256;
+        
+    // Find the total number of available compute units
+    size_t computeUnits = 0;
+    for (size_t i = 0; i < devs.size(); i++)
+    {
+        computeUnits += devs[i]->maxComputeUnits;
+    }
+    // TODO: signal an error
+    if (!computeUnits) return;
+
+
+
     // Create data for performance info
     /*pPerfData->stepTimes.Alloc ( timingSize * segments );
     pPerfData->stepTimes.Memset ( ( T ) 0 );*/
     // Create arrays
-    m_functorParamList.Alloc ( segments );
+
 
     size_t remainingLines = this->m_nLines;
-    size_t nCharges = this->m_pPointChargeData->GetSize();
-    size_t steps = this->m_pFieldLinesData->GetSize() /this->m_nLines;
-    unsigned int blockXSize = 0;
-    for ( size_t devID = 0; devID < segments; devID++ )
+    //size_t nCharges = this->m_pPointChargeData->GetSize();
+    //size_t steps = this->m_pFieldLinesData->GetSize() /this->m_nLines;
+    for ( size_t i = 0; i < m_nDevices; i++ )
     {
-        FunctorData *dataParams = &m_functorParamList[devID];
-        blockXSize = dataParams->blockXSize;
+        FunctorData dataParams;
+        ClManager::clDeviceProp *dev = devs[i];
+        
+        const double proportion = dev->maxComputeUnits / computeUnits;
+        size_t devAlign = dev->maxComputeUnits * unitAlign;
+        size_t devWidth = (size_t)(this->m_nLines * proportion);
+        /* Determine the number of lines to be processed by each device, and
+         * align it to a multiple of segAlign. This prevents empty threads from
+         * being created on more than one device */
+        devWidth = ((devWidth + devAlign -1) / devAlign) * devAlign;
+        // Sanity check
+        if(devWidth > remainingLines) devWidth = remainingLines;
         // Initialize parameter arrays
-        size_t segDataSize
-        = ( remainingLines < segSize ) ? remainingLines : segSize;
-        dataParams->startIndex = this->m_nLines - remainingLines;
-        dataParams->elements = segDataSize;
-        dataParams->pPerfData =  new perfPacket; // Deleted in destructor
+        dataParams.startIndex = this->m_nLines - remainingLines;
+        dataParams.elements = devWidth;
+        dataParams.pPerfData =  new perfPacket; // Deleted in destructor
+        // Ready for next
+        remainingLines -= devWidth;
+        
         // Constructor is not called automatically, so we need to use ReAlloc
         // (FIXME: possible source of bugs)
         //dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
         //dataParams->pPerfData->stepTimes.Memset ( 0 );
-        dataParams->pPerfData->progress = 0;
-        dataParams->GPUchargeData.nCharges = nCharges;
-        dataParams->GPUfieldData.nSteps = steps;
+        //dataParams->pPerfData->progress = 0;
+        //dataParams->GPUchargeData.nCharges = nCharges;
+        //dataParams->GPUfieldData.nSteps = steps;
         //dataParams->GPUfieldData.nLines = segDataSize;
         // Flag that resources have not yet been allocated
-        dataParams->lastOpErrCode = CL_INVALID_CONTEXT;
-        dataParams->ctxIsUsable = false;
-        remainingLines -= segSize;
+        dataParams.lastOpErrCode = CL_INVALID_CONTEXT;
+        dataParams.device = dev;
+        //dataParams->ctxIsUsable = false;
+        m_functors.push_back(dataParams);
     }
 }
 
@@ -189,8 +214,7 @@ void CLElectrosFunctor<T>::BindData (
     if ( params->nLines == 0
             || params->resolution == 0
             || params->pFieldLineData == 0
-            || params->pPointChargeData == 0
-       )
+            || params->pPointChargeData == 0)
 {
         cout<<"Ain't binding data"<<endl;
         this->m_lastOpErrCode = CL_INVALID_VALUE;
@@ -212,6 +236,7 @@ void CLElectrosFunctor<T>::BindData (
 
     m_lastOpErrCode = CL_SUCCESS;
     this->m_dataBound = true;
+    PartitionData();
 
 }
 
@@ -287,48 +312,56 @@ void CLElectrosFunctor<T>::AllocateResources()
         cout<<"NonononoData"<<endl;
         return;
     }
-
-    for (size_t dev = 0; dev < m_nDevices; dev++)
-    {
-        FunctorData * data = &m_functorParamList[dev];
-    }
-
+    
     CLerror err;
 
-    vector<ClManager::clPlatformProp*> plat = m_DeviceManager.fstGetPlats();
-    cl_platform_id platID = plat[0]->platformID;
-    uintptr_t props[] =
-        {CL_CONTEXT_PLATFORM, (uintptr_t)platID, 0, 0};
-    cl_context ctx = clCreateContextFromType(
-                         (cl_context_properties *)props,
-                         CL_DEVICE_TYPE_GPU,
-                         NULL,
-                         NULL,
-                         &err);
-    CL_ASSERT(err, "clCreateContextFromType failed");
+    for (size_t iDev = 0; iDev < m_nDevices; iDev++)
+    {
+        FunctorData &data = m_functors[iDev];
+        ClManager::clDeviceProp *dev = data.device;
+        cl_context_properties props[] =
+        {CL_CONTEXT_PLATFORM, (cl_context_properties)&dev->platform, 0, 0};
+        data.context = clCreateContext( (cl_context_properties *)props,
+                                        1,
+                                        &dev->deviceID,
+                                        NULL,
+                                        NULL,
+                                        &err);
+        CL_ASSERT(err, "Could not create context");
+        
+        //FIXME: size is wrong; does not acocunt for multiple devices
+        const size_t size = this->m_pFieldLinesData->GetSizeBytes();
+        
+        data.devFieldMem.x = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
+                                            size, NULL, &err);
+        CL_ASSERT(err, "clCreateBuffer.x failed ");
+        data.devFieldMem.y = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
+                                            size, NULL, &err);
+        CL_ASSERT(err, "clCreateBuffer.y failed ");
+        data.devFieldMem.z = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
+                                            size, NULL, &err);
+        CL_ASSERT(err, "clCreateBuffer.z failed ");
+        data.chargeMem = clCreateBuffer(data.context, CL_MEM_READ_ONLY,
+                                   this->m_pPointChargeData->GetSizeBytes(),
+                                   NULL, &err);
+        CL_ASSERT(err, "clCreateBuffer.q failed ");
+    }
 
-    size_t cldSize;
-    clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &cldSize);
-    void * devin = malloc(cldSize);
-    clGetContextInfo(ctx, CL_CONTEXT_DEVICES, cldSize, devin, NULL);
+    
+    
+    cl_context ctx = m_functors[0].context;
+
+    cl_device_id devin = m_functors[0].device->deviceID;
     Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
     const size_t size = this->m_pFieldLinesData->GetSizeBytes();
 
 
     cout<<" Preparing buffers"<<endl;
-    Vector3<cl_mem> arrdata;
-    arrdata.x = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    CL_ASSERT(err, "clCreateBuffer.x failed ");
-    arrdata.y = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    CL_ASSERT(err, "clCreateBuffer.y failed ");
-    arrdata.z = clCreateBuffer(ctx, CL_MEM_READ_WRITE, size, NULL, &err);
-    CL_ASSERT(err, "clCreateBuffer.z failed ");
+    Vector3<cl_mem> arrdata = m_functors[0].devFieldMem;
+    
 
 
-    cl_mem charges =clCreateBuffer(ctx, CL_MEM_READ_ONLY,
-                                   this->m_pPointChargeData->GetSizeBytes(),
-                                   NULL, &err);
-    CL_ASSERT(err, "clCreateBuffer.q failed ");
+    cl_mem charges = m_functors[0].chargeMem;
 
 
     //==========================================================================
@@ -401,11 +434,11 @@ void CLElectrosFunctor<T>::AllocateResources()
     if (err)cout<<"clBuildProgram returns: "<<err<<endl;
 
     size_t logSize;
-    clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+    clGetProgramBuildInfo(prog, devin,
                           CL_PROGRAM_BUILD_LOG,
                           0, NULL, &logSize);
     char * log = (char*)malloc(logSize);
-    clGetProgramBuildInfo(prog, ((cl_device_id*)devin)[0],
+    clGetProgramBuildInfo(prog, devin,
                           CL_PROGRAM_BUILD_LOG,
                           logSize, log, 0);
     cout<<"Program Build Log:"<<endl<<log<<endl;
@@ -451,7 +484,7 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     //==========================================================================
     cl_command_queue queue = clCreateCommandQueue(ctx,
-                             ((cl_device_id*)devin)[0],
+                             devin,
                              0, &err);
     if (err)cout<<"clCreateCommandQueue returns: "<<err<<endl;
 
@@ -491,9 +524,9 @@ void CLElectrosFunctor<T>::AllocateResources()
     QueryHPCTimer(&end);
     double time = (double)(end - start)/((double)freq);
     this->m_pPerfData->time = ( double ) ( end - start ) / freq;
-    this->m_pPerfData->performance = ( this->m_nLines * ( ( 2500-1 )
-                                       * ( this->m_pPointChargeData->GetSize()
-                                           * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
+    this->m_pPerfData->performance =
+        ( this->m_nLines * ( ( 2500-1 ) * ( this->m_pPointChargeData->GetSize()
+        * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
     cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
     //==========================================================================
     cout<<" Recovering results"<<endl;
@@ -633,4 +666,6 @@ CUresult CudaElectrosFunctor<double>::LoadKernels ( size_t deviceID )
 {
 }
 */
+
+
 
