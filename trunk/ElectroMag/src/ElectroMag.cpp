@@ -285,6 +285,8 @@ int main ( int argc, char* argv[] )
         {
             TimingInfo profiler = CPUperf.stepTimes[i];
             cout<<profiler.message<<": "<<profiler.time<<endl;
+            if(profiler.bandwidth == 0.0) continue;
+            cout<<"  Bandwidth: "<<profiler.bandwidth<<" MB/s"<<endl;
             
         }
     }

@@ -197,17 +197,30 @@ void Array<T>::Memset(T value)
 class TimingInfo
 {
 public:
+    /// Time in seconds
     double time;
+    /// Message describing what the step represents
     std::string message;
+    /// If a data transfer is involved, this represents the bandwidth in MB/s
+    double bandwidth;
     
     TimingInfo(const char* msg, const double time) :
     time(time),
-    message(msg)
+    message(msg),
+    bandwidth(0)
     {};
+    
+    TimingInfo(const char* msg, const double time, size_t dataSize) :
+    time(time),
+    message(msg)
+    {
+        bandwidth = (((double)dataSize)/time)/(1024*1024);
+    };
 };
 
-struct perfPacket
+class perfPacket
 {
+public:
     // Performance in FLOP/s and the actual execution time
     double performance, time;
     // Used for tracking the execution times of individual steps
@@ -215,6 +228,11 @@ struct perfPacket
     // Used to keep track of the total completed processing
     // 0 signales nothing done, 1.0 signals full completeion
     double volatile progress;
+    
+    void add(TimingInfo profile)
+    {
+        stepTimes.push_back(profile);
+    }
 };
 
 #endif//_DATA_STRUCTURES_H
