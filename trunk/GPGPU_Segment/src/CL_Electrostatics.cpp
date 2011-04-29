@@ -37,6 +37,15 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
             <<"  CL error: "<<err<<endl; \
         return; \
     }
+    
+#define CL_ASSERTE(err, message) \
+    if(err != CL_SUCCESS) \
+    { \
+        cerr<<message<<endl \
+            <<"  In file "<<__FILE__<<" line: "<<__LINE__<<endl \
+            <<"  CL error: "<<err<<endl; \
+        return err; \
+    }
 
 using std::cout;
 using std::cerr;
@@ -150,7 +159,7 @@ void CLElectrosFunctor<T>::PartitionData()
 
     size_t remainingLines = this->m_nLines;
     //size_t nCharges = this->m_pPointChargeData->GetSize();
-    //size_t steps = this->m_pFieldLinesData->GetSize() /this->m_nLines;
+    const size_t steps = this->m_pFieldLinesData->GetSize() / this->m_nLines;
     for ( size_t i = 0; i < m_nDevices; i++ )
     {
         FunctorData dataParams;
@@ -168,14 +177,11 @@ void CLElectrosFunctor<T>::PartitionData()
         // Initialize parameter arrays
         dataParams.startIndex = this->m_nLines - remainingLines;
         dataParams.elements = devWidth;
+        dataParams.steps = steps;
         dataParams.pPerfData =  new perfPacket; // Deleted in destructor
         // Ready for next
         remainingLines -= devWidth;
         
-        // Constructor is not called automatically, so we need to use ReAlloc
-        // (FIXME: possible source of bugs)
-        //dataParams->pPerfData->stepTimes.ReAlloc ( timingSize );
-        //dataParams->pPerfData->stepTimes.Memset ( 0 );
         //dataParams->pPerfData->progress = 0;
         //dataParams->GPUchargeData.nCharges = nCharges;
         //dataParams->GPUfieldData.nSteps = steps;
@@ -232,11 +238,10 @@ void CLElectrosFunctor<T>::BindData (
 
     // Partitioning of data is necessary before resource allocation
     // since resource allocation depends on the way data is partitioned
-    //PartitionData();
+    PartitionData();
 
     m_lastOpErrCode = CL_SUCCESS;
     this->m_dataBound = true;
-    PartitionData();
 
 }
 
@@ -315,26 +320,23 @@ void CLElectrosFunctor<T>::AllocateResources()
     
     CLerror err;
 
-    PerfTimer timer;
+    PerfTimer timer, devTimer;;
     perfPacket &profiler = *this->m_pPerfData;
     timer.start();
     for (size_t iDev = 0; iDev < m_nDevices; iDev++)
     {
+        devTimer.start();
         FunctorData &data = m_functors[iDev];
+        
         ClManager::clDeviceProp *dev = data.device;
         cl_context_properties props[] =
         {CL_CONTEXT_PLATFORM, (cl_context_properties)dev->platform, 0, 0};
-        data.context = clCreateContext( props,
-                                        1,
-                                        &dev->deviceID,
-                                        NULL,
-                                        NULL,
-                                        &err);
+        data.context = clCreateContext( props, 1, &dev->deviceID,
+                                        NULL, NULL, &err);
         CL_ASSERT(err, "Could not create context");
         
-        //FIXME: size is wrong; does not acocunt for multiple devices
-        const size_t size = this->m_pFieldLinesData->GetSizeBytes();
-        
+        // Size of each buffer
+        const size_t size = sizeof(T) * data.elements * data.steps;
         data.devFieldMem.x = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
                                             size, NULL, &err);
         CL_ASSERT(err, "clCreateBuffer.x failed ");
@@ -348,23 +350,70 @@ void CLElectrosFunctor<T>::AllocateResources()
                                    this->m_pPointChargeData->GetSizeBytes(),
                                    NULL, &err);
         CL_ASSERT(err, "clCreateBuffer.q failed ");
+
+        data.pPerfData->add(TimingInfo("Resource allocation on device",
+                                       devTimer.tick()));
+        devTimer.stop();
     }
-    profiler.add(TimingInfo("Resource allocation",
-                            timer.tick()));
+    profiler.add(TimingInfo("Resource allocation", timer.tick()));
 
     
-    
+}
+
+/**=============================================================================
+ * \brief Releases all resources used by the functors
+ *
+ * Releases all host buffers and device memory, then destroys any device
+ * contexts. If an error is encountered, execution is not interrupted, and the
+ * global error flag is set to the last error that was encountered.
+ * ===========================================================================*/
+template<class T>
+void CLElectrosFunctor<T>::ReleaseResources()
+{
+    for (size_t iDev = 0; iDev < m_nDevices; iDev++)
+    {
+        FunctorData &data = m_functors[iDev];
+        CLerror err = CL_SUCCESS;
+        //err = clReleaseKernel(kern);
+        //if (err)cout<<"clReleaseKernel returns: "<<err<<endl;
+        //clReleaseCommandQueue(queue);
+        //if (err)cout<<"clReleaseCommandQueue returns: "<<err<<endl;
+        clReleaseContext(data.context);
+        if (err)cout<<"clReleaseContext returns: "<<err<<endl;
+
+        err = CL_SUCCESS;
+        //err |= clReleaseMemObject(arrdata.x);
+        //err |= clReleaseMemObject(arrdata.x);
+        //err |= clReleaseMemObject(arrdata.x);
+        //err |= clReleaseMemObject(charges);
+        if (err)cout<<"clReleaseMemObject cummulates: "<<err<<endl;
+    }
+}
+
+/**=============================================================================
+ * \brief Main functor
+ *
+ * @return First error code that is encountered
+ * @return CL_SUCCESS if no error is encountered
+ * ===========================================================================*/
+template<class T>
+unsigned long CLElectrosFunctor<T>::MainFunctor (
+    size_t functorIndex,    ///< Functor whose data to process
+    size_t deviceIndex      ///< Device on which to process data
+)
+{
+    perfPacket &profiler = *this->m_pPerfData;
+    PerfTimer timer;
+    timer.start();
+    CLerror err;
     cl_context ctx = m_functors[0].context;
 
     cl_device_id devin = m_functors[0].device->deviceID;
     Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
-    const size_t size = this->m_pFieldLinesData->GetSizeBytes();
-
+    const size_t size = this->m_pFieldLinesData->GetSize() * sizeof(T);
 
     cout<<" Preparing buffers"<<endl;
     Vector3<cl_mem> arrdata = m_functors[0].devFieldMem;
-    
-
 
     cl_mem charges = m_functors[0].chargeMem;
 
@@ -377,7 +426,7 @@ void CLElectrosFunctor<T>::AllocateResources()
     if (!reader.good())
     {
         cout<<"Cannot open program source"<<endl;
-        return;
+        return -1;
     }
     reader.seekg (0, std::ios::end);
     size_t length = reader.tellg();
@@ -448,9 +497,8 @@ void CLElectrosFunctor<T>::AllocateResources()
                           CL_PROGRAM_BUILD_LOG,
                           logSize, log, 0);
     cout<<"Program Build Log:"<<endl<<log<<endl;
-    CL_ASSERT(err, "clBuildProgram failed");
-    profiler.add(TimingInfo("Program compilation",
-                            timer.tick()));
+    CL_ASSERTE(err, "clBuildProgram failed");
+    profiler.add(TimingInfo("Program compilation", timer.tick()));
 
 
 
@@ -458,7 +506,7 @@ void CLElectrosFunctor<T>::AllocateResources()
     cout<<" Preparing kernel"<<endl;
     cl_kernel kern = clCreateKernel(prog, "CalcField_curvature", &err);
     if (err)cout<<"clCreateKernel returns: "<<err<<endl;
-    CL_ASSERT(err, "clCreateKernel");
+    CL_ASSERTE(err, "clCreateKernel");
 
     err = CL_SUCCESS;
     // __global float *x,
@@ -512,15 +560,13 @@ void CLElectrosFunctor<T>::AllocateResources()
                                 this->m_pPointChargeData->GetDataPointer(),
                                 0, NULL, NULL);
     if (err)cout<<"Write 4 returns: "<<err<<endl;
-    if (err)cout<<"clEnqueueWriteBuffer cummulates: "<<err<<endl;
+    CL_ASSERTE(err, "Sending data to device failed");
     
     // Finish memory copies before starting the kernel
-    CL_ASSERT(clFinish(queue), "Pre-kernel sync");
+    CL_ASSERTE(clFinish(queue), "Pre-kernel sync");
     
-    profiler.add(TimingInfo("Host to device transfer",
-                            timer.tick(),
-                            3*size + qSize
-                           ));
+    profiler.add(TimingInfo("Host to device transfer", timer.tick(),
+                            3*size + qSize ));
 
     //==========================================================================
     long long freq;
@@ -533,7 +579,7 @@ void CLElectrosFunctor<T>::AllocateResources()
                                   0, NULL, NULL);
     if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
     // Let kernel finish before continuing
-    CL_ASSERT(clFinish(queue), "Post-kernel sync");
+    CL_ASSERTE(clFinish(queue), "Post-kernel sync");
     long long end;
     QueryHPCTimer(&end);
     double time = (double)(end - start)/((double)freq);
@@ -560,51 +606,10 @@ void CLElectrosFunctor<T>::AllocateResources()
 
     clFinish(queue);
     
-    profiler.add(TimingInfo("Device to host transfer",
-                            timer.tick(),
-                            3 * size
-                           ));
+    profiler.add(TimingInfo("Device to host transfer", timer.tick(),
+                            3 * size));
 
-    err = clReleaseKernel(kern);
-    if (err)cout<<"clReleaseKernel returns: "<<err<<endl;
-    clReleaseCommandQueue(queue);
-    if (err)cout<<"clReleaseCommandQueue returns: "<<err<<endl;
-    clReleaseContext(ctx);
-    if (err)cout<<"clReleaseContext returns: "<<err<<endl;
-
-    err = CL_SUCCESS;
-    //err |= clReleaseMemObject(arrdata.x);
-    //err |= clReleaseMemObject(arrdata.x);
-    //err |= clReleaseMemObject(arrdata.x);
-    //err |= clReleaseMemObject(charges);
-    if (err)cout<<"clReleaseMemObject cummulates: "<<err<<endl;
-}
-
-/**=============================================================================
- * \brief Releases all resources used by the functors
- *
- * Releases all host buffers and device memory, then destroys any device
- * contexts. If an error is encountered, execution is not interrupted, and the
- * global error flag is set to the last error that was encountered.
- * ===========================================================================*/
-template<class T>
-void CLElectrosFunctor<T>::ReleaseResources()
-{
-}
-
-/**=============================================================================
- * \brief Main functor
- *
- * @return First error code that is encountered
- * @return CL_SUCCESS if no error is encountered
- * ===========================================================================*/
-template<class T>
-unsigned long CLElectrosFunctor<T>::MainFunctor (
-    size_t functorIndex,    ///< Functor whose data to process
-    size_t deviceIndex      ///< Device on which to process data
-)
-{
-    return 0;
+    
 }
 
 /**=============================================================================
@@ -686,6 +691,7 @@ CUresult CudaElectrosFunctor<double>::LoadKernels ( size_t deviceID )
 {
 }
 */
+
 
 
 
