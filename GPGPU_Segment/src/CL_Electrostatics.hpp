@@ -121,6 +121,8 @@ private:
         /// The number of field lines from 'startIndex' that has been assigned
         /// to this functor
         size_t elements;
+        /// Number of steps
+        size_t steps;
         /// Functor-specific performance information
         perfPacket *pPerfData;
         //FunctorData() {};
