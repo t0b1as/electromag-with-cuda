@@ -123,13 +123,20 @@ private:
         size_t elements;
         /// Number of steps
         size_t steps;
+        /// Global and local work-sizes
+        size_t global[3], local[3];
+        /// The OpenCL kernel
+        cl_kernel kernel;
+        /// the command queue used for execution
+        cl_command_queue queue;
         /// Functor-specific performance information
-        perfPacket *pPerfData;
+        perfPacket perfData;
         //FunctorData() {};
     };
     /// Contains data for each individual functor
     std::vector<FunctorData> m_functors;
 
+    CLerror LoadKernels ( size_t deviceID );
 
 };
 ///@}
