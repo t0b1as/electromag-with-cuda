@@ -29,13 +29,13 @@ OpenCL::ClManager CLElectrosFunctor<T>::m_DeviceManager;
 #include "OpenCL_Dyn_Load.h"
 #include "Electrostatics.h"
 
-#define CL_ASSERT(err, message) \
+#define CL_ASSERTC(err, message) \
     if(err != CL_SUCCESS) \
     { \
         cerr<<message<<endl \
             <<"  In file "<<__FILE__<<" line: "<<__LINE__<<endl \
             <<"  CL error: "<<err<<endl; \
-        return; \
+        continue; \
     }
     
 #define CL_ASSERTE(err, message) \
@@ -61,9 +61,6 @@ template<class T>
 CLElectrosFunctor<T>::~CLElectrosFunctor()
 {
     ReleaseResources();
-    //for ( size_t i = 0; i < this->functorParamList.GetSize(); i++ )
-    //      delete functorParamList[i].pPerfData;
-    //functorParamList.Free();
 }
 
 /**=============================================================================
@@ -149,14 +146,6 @@ void CLElectrosFunctor<T>::PartitionData()
     // TODO: signal an error
     if (!computeUnits) return;
 
-
-
-    // Create data for performance info
-    /*pPerfData->stepTimes.Alloc ( timingSize * segments );
-    pPerfData->stepTimes.Memset ( ( T ) 0 );*/
-    // Create arrays
-
-
     size_t remainingLines = this->m_nLines;
     //size_t nCharges = this->m_pPointChargeData->GetSize();
     const size_t steps = this->m_pFieldLinesData->GetSize() / this->m_nLines;
@@ -178,14 +167,10 @@ void CLElectrosFunctor<T>::PartitionData()
         dataParams.startIndex = this->m_nLines - remainingLines;
         dataParams.elements = devWidth;
         dataParams.steps = steps;
-        dataParams.pPerfData =  new perfPacket; // Deleted in destructor
         // Ready for next
         remainingLines -= devWidth;
         
         //dataParams->pPerfData->progress = 0;
-        //dataParams->GPUchargeData.nCharges = nCharges;
-        //dataParams->GPUfieldData.nSteps = steps;
-        //dataParams->GPUfieldData.nLines = segDataSize;
         // Flag that resources have not yet been allocated
         dataParams.lastOpErrCode = CL_INVALID_CONTEXT;
         dataParams.device = dev;
@@ -256,6 +241,14 @@ void CLElectrosFunctor<T>::BindData (
 template<class T>
 void CLElectrosFunctor<T>::PostRun()
 {
+    for(size_t i = 0; i < m_functors.size(); i++)
+    {
+        perfPacket &devTiming = m_functors[i].perfData;
+        for(size_t j = 0; j < devTiming.stepTimes.size(); j++)
+        {
+            this->m_pPerfData->add(devTiming.stepTimes[j]);
+        }
+    }
 }
 
 /**=============================================================================
@@ -333,26 +326,27 @@ void CLElectrosFunctor<T>::AllocateResources()
         {CL_CONTEXT_PLATFORM, (cl_context_properties)dev->platform, 0, 0};
         data.context = clCreateContext( props, 1, &dev->deviceID,
                                         NULL, NULL, &err);
-        CL_ASSERT(err, "Could not create context");
+        CL_ASSERTC(err, "Could not create context");
         
         // Size of each buffer
         const size_t size = sizeof(T) * data.elements * data.steps;
         data.devFieldMem.x = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
                                             size, NULL, &err);
-        CL_ASSERT(err, "clCreateBuffer.x failed ");
+        CL_ASSERTC(err, "clCreateBuffer.x failed ");
         data.devFieldMem.y = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
                                             size, NULL, &err);
-        CL_ASSERT(err, "clCreateBuffer.y failed ");
+        CL_ASSERTC(err, "clCreateBuffer.y failed ");
         data.devFieldMem.z = clCreateBuffer(data.context, CL_MEM_READ_WRITE,
                                             size, NULL, &err);
-        CL_ASSERT(err, "clCreateBuffer.z failed ");
+        CL_ASSERTC(err, "clCreateBuffer.z failed ");
         data.chargeMem = clCreateBuffer(data.context, CL_MEM_READ_ONLY,
                                    this->m_pPointChargeData->GetSizeBytes(),
                                    NULL, &err);
-        CL_ASSERT(err, "clCreateBuffer.q failed ");
+        CL_ASSERTC(err, "clCreateBuffer.q failed ");
 
-        data.pPerfData->add(TimingInfo("Resource allocation on device",
+        data.perfData.add(TimingInfo("Resource allocation on device",
                                        devTimer.tick()));
+        LoadKernels(iDev);
         devTimer.stop();
     }
     profiler.add(TimingInfo("Resource allocation", timer.tick()));
@@ -402,158 +396,64 @@ unsigned long CLElectrosFunctor<T>::MainFunctor (
     size_t deviceIndex      ///< Device on which to process data
 )
 {
-    perfPacket &profiler = *this->m_pPerfData;
+    if(functorIndex != deviceIndex)
+        cerr<<"WARNING: Different functor and device"<<endl;
     PerfTimer timer;
+    FunctorData &funData = m_functors[functorIndex];
+    FunctorData &devData = m_functors[deviceIndex];
+    perfPacket &profiler = devData.perfData;
     timer.start();
     CLerror err;
-    cl_context ctx = m_functors[0].context;
-
-    cl_device_id devin = m_functors[0].device->deviceID;
-    Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
-    const size_t size = this->m_pFieldLinesData->GetSize() * sizeof(T);
-
+    cl_context ctx = devData.context;
+       
     cout<<" Preparing buffers"<<endl;
-    Vector3<cl_mem> arrdata = m_functors[0].devFieldMem;
-
-    cl_mem charges = m_functors[0].chargeMem;
-
-
-    //==========================================================================
-    timer.tick();
-    cout<<" Reading kernel source"<<endl;
-    using std::ifstream;
-    ifstream reader("Electrostatics.cl.c", ifstream::in);
-    if (!reader.good())
-    {
-        cout<<"Cannot open program source"<<endl;
-        return -1;
-    }
-    reader.seekg (0, std::ios::end);
-    size_t length = reader.tellg();
-    reader.seekg (0, std::ios::beg);
-    char *source = new char[length];
-    reader.read(source, length);
-    reader.close();
-
-    /*
-     * Different devices require different work group sizes to operate
-     * optimally. The amount of __local memory on some kernels depends on these
-     * work-group sizes. This causes a problem as explained below:
-     * There are two ways to use group-local memory
-     * 1) Allocate it as a parameter with clSetKernelArg()
-     * 2) Declare it as a constant __local array within the cl kernel
-     * Option (1) has the advantage of flexibility, but the extra indexing
-     * overhead is a performance killer (20-25% easily lost on nvidia GPUs)
-     * Option (2) has the advantage that the compiler knows the arrays are of
-     * constant size, and is free to do extreme optimizations.
-     * Of course, then both host and kernel have to agree on the size of the
-     * work group.
-     * We abuse the fact that the source code is compiled at runtime, decide
-     * those sizes in the host code, then #define them in the kernel code,
-     * before it is compiled.
-     */
-
-    // BLOCK size
-    size_t local[3] = {BLOCK_X, 1, 1};
-    size_t local_MT[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
-    // GRID size
-    size_t global[3] = {((this->m_nLines + BLOCK_X - 1)/BLOCK_X)
-                        * BLOCK_X, 1, 1
-                       };
-    cout<<"Local   : "<<local[0]<<" "<<local[1]<<" "<<local[2]<<endl;
-    cout<<"Local_MT: "<<local_MT[0]<<" "<<local_MT[1]<<" "<<local_MT[2]<<endl;
-    cout<<"Global  : "<<global[0]<<" "<<global[1]<<" "<<global[2]<<endl;
-
-    char defines[1024];
-    const size_t kernelSteps = this->m_pFieldLinesData->GetSize()
-                               / this->m_nLines;
-    snprintf(defines, sizeof(defines),
-             "#define BLOCK_X %u\n"
-             "#define BLOCK_X_MT %u\n"
-             "#define BLOCK_Y_MT %u\n"
-             "#define KERNEL_STEPS %u\n"
-             "#define Tprec float\n",
-             (unsigned int) local[0],
-             (unsigned int) local_MT[0], (unsigned int)local_MT[1],
-             (unsigned int) kernelSteps
-            );
-
-    cout<<" Calc'ed kern steps "<<kernelSteps<<endl;
-    char *srcs[2] = {defines, source};
-    cl_program prog = clCreateProgramWithSource(ctx, 2, (const char**) srcs,
-                      NULL, &err);
-    if (err)cout<<"clCreateProgramWithSource returns: "<<err<<endl;
-
-    char options[] = "-cl-fast-relaxed-math";
-    err = clBuildProgram(prog, 0, NULL, options, NULL, NULL);
-    if (err)cout<<"clBuildProgram returns: "<<err<<endl;
-
-    size_t logSize;
-    clGetProgramBuildInfo(prog, devin,
-                          CL_PROGRAM_BUILD_LOG,
-                          0, NULL, &logSize);
-    char * log = (char*)malloc(logSize);
-    clGetProgramBuildInfo(prog, devin,
-                          CL_PROGRAM_BUILD_LOG,
-                          logSize, log, 0);
-    cout<<"Program Build Log:"<<endl<<log<<endl;
-    CL_ASSERTE(err, "clBuildProgram failed");
-    profiler.add(TimingInfo("Program compilation", timer.tick()));
-
-
-
-    //==========================================================================
-    cout<<" Preparing kernel"<<endl;
-    cl_kernel kern = clCreateKernel(prog, "CalcField_curvature", &err);
-    if (err)cout<<"clCreateKernel returns: "<<err<<endl;
-    CL_ASSERTE(err, "clCreateKernel");
-
+    Vector3<cl_mem> &arrdata = devData.devFieldMem;
+    cl_mem &charges = devData.chargeMem;    
+    cl_kernel &kernel = devData.kernel;
+    
     err = CL_SUCCESS;
     // __global float *x,
-    err |= clSetKernelArg(kern, 0, sizeof(cl_mem), &arrdata.x);
+    err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &arrdata.x);
     // __global float *y,
-    err |= clSetKernelArg(kern, 1, sizeof(cl_mem), &arrdata.y);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &arrdata.y);
     // __global float *z,
-    err |= clSetKernelArg(kern, 2, sizeof(cl_mem), &arrdata.z);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &arrdata.z);
     // __global pointCharge *Charges,
-    err |= clSetKernelArg(kern, 3, sizeof(cl_mem), &charges);
+    err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &charges);
     // const unsigned int linePitch,
     cl_uint param = this->m_nLines;
-    err |= clSetKernelArg(kern, 4, sizeof(param), &param);
+    err |= clSetKernelArg(kernel, 4, sizeof(param), &param);
     // const unsigned int p,
     param = (cl_uint)this->m_pPointChargeData->GetSize();
-    err |= clSetKernelArg(kern, 5, sizeof(param), &param);
+    err |= clSetKernelArg(kernel, 5, sizeof(param), &param);
     // const unsigned int fieldIndex,
     param = 1;
-    err |= clSetKernelArg(kern, 6, sizeof(param), &param);
+    err |= clSetKernelArg(kernel, 6, sizeof(param), &param);
 
     // const float resolution
-    err |= clSetKernelArg(kern, 7, sizeof(T), &this->m_resolution);
-    // const unsigned int biggies,
-    //param = this->m_pPointChargeData->GetSize() / this->m_nLines;
-    //err |= clSetKernelArg(kern, 8, sizeof(cl_uint), &param);
-    // __local pointCharge * smCharges
-    //err |= clSetKernelArg(kern, 8,
-    //                      sizeof(electro::pointCharge<float>) * local[0],
-    //                      NULL);
+    err |= clSetKernelArg(kernel, 7, sizeof(T), &this->m_resolution);
     if (err)cout<<"clSetKernelArg cummulates: "<<err<<endl;
 
     //==========================================================================
     cl_command_queue queue = clCreateCommandQueue(ctx,
-                             devin,
+                             devData.device->deviceID,
                              0, &err);
     if (err)cout<<"clCreateCommandQueue returns: "<<err<<endl;
 
     timer.tick();
+    Vector3<T*> hostArr = this->m_pFieldLinesData->GetDataPointers();
+    const size_t start = funData.startIndex;
+    const size_t size = funData.elements * sizeof(T) * funData.steps;
+
     err = CL_SUCCESS;
     err |= clEnqueueWriteBuffer(queue, arrdata.x, CL_FALSE, 0, size,
-                                hostArr.x, 0, NULL, NULL);
+                                &hostArr.x[start], 0, NULL, NULL);
     if (err)cout<<"Write 1 returns: "<<err<<endl;
     err |= clEnqueueWriteBuffer(queue, arrdata.y, CL_FALSE, 0, size,
-                                hostArr.y, 0, NULL, NULL);
+                                &hostArr.y[start], 0, NULL, NULL);
     if (err)cout<<"Write 2 returns: "<<err<<endl;
     err |= clEnqueueWriteBuffer(queue, arrdata.z, CL_FALSE, 0, size,
-                                hostArr.z, 0, NULL, NULL);
+                                &hostArr.z[start], 0, NULL, NULL);
     if (err)cout<<"Write 3 returns: "<<err<<endl;
     const size_t qSize = this->m_pPointChargeData->GetSizeBytes();
     err |= clEnqueueWriteBuffer(queue, charges, CL_FALSE, 0, qSize,
@@ -569,25 +469,23 @@ unsigned long CLElectrosFunctor<T>::MainFunctor (
                             3*size + qSize ));
 
     //==========================================================================
-    long long freq;
-    QueryHPCFrequency(&freq);
+
     cout<<" Executing kernel"<<endl;
-    
-    long long start;
-    QueryHPCTimer(&start);
-    err |= clEnqueueNDRangeKernel(queue, kern, 3, NULL, global, local,
+
+    timer.tick();
+    err |= clEnqueueNDRangeKernel(queue, kernel, 3, NULL,
+                                  funData.global, funData.local,
                                   0, NULL, NULL);
     if (err)cout<<"clEnqueueNDRangeKernel returns: "<<err<<endl;
     // Let kernel finish before continuing
     CL_ASSERTE(clFinish(queue), "Post-kernel sync");
-    long long end;
-    QueryHPCTimer(&end);
-    double time = (double)(end - start)/((double)freq);
-    this->m_pPerfData->time = ( double ) ( end - start ) / freq;
+    double time = timer.tick();
+    this->m_pPerfData->time = time;
     this->m_pPerfData->performance =
         ( this->m_nLines * ( ( 2500-1 ) * ( this->m_pPointChargeData->GetSize()
         * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
-    cout<<"Kernel exec time: "<<time<<" seconds"<<endl;
+    profiler.add(TimingInfo("Kernel execution time", time,
+                            3 * size));
     //==========================================================================
     cout<<" Recovering results"<<endl;
 
@@ -598,18 +496,17 @@ unsigned long CLElectrosFunctor<T>::MainFunctor (
     if (err)cout<<" Read 1 returns: "<<err<<endl;
     err |= clEnqueueReadBuffer ( queue, arrdata.y, CL_FALSE, 0, size,
                                  hostArr.y, 0, NULL, NULL );
-    if (err)cout<<" Read 1 returns: "<<err<<endl;
+    if (err)cout<<" Read 2 returns: "<<err<<endl;
     err |= clEnqueueReadBuffer ( queue, arrdata.z, CL_FALSE, 0, size,
                                  hostArr.z, 0, NULL, NULL );
-    if (err)cout<<" Read 1 returns: "<<err<<endl;
+    if (err)cout<<" Read 3 returns: "<<err<<endl;
     if (err)cout<<"clEnqueueReadBuffer cummulates: "<<err<<endl;
 
     clFinish(queue);
     
     profiler.add(TimingInfo("Device to host transfer", timer.tick(),
                             3 * size));
-
-    
+    return CL_SUCCESS;    
 }
 
 /**=============================================================================
@@ -656,14 +553,14 @@ CUresult CudaElectrosFunctor<T>::LoadModules ( size_t deviceID )
  * Since kernels for templates that do not have a specialization of LoadKernels
  * this will return an error.
  *
- * @return CUDA_ERROR_INVALID_IMAGE signaling that the kernel does not exist
+ * @return CL_BUILD_PROGRAM_FAILURE signaling that the kernel does not exist
  * ===========================================================================*/
-/*template<class T>
-CUresult CudaElectrosFunctor<T>::LoadKernels ( size_t deviceID )
+template<class T>
+CLerror CLElectrosFunctor<T>::LoadKernels ( size_t deviceID )
 {
-    return CUDA_ERROR_INVALID_IMAGE;
+    return CL_BUILD_PROGRAM_FAILURE;
 }
-*/
+
 
 /**=============================================================================
  * \brief Loads kernels for single precision functors
@@ -672,12 +569,106 @@ CUresult CudaElectrosFunctor<T>::LoadKernels ( size_t deviceID )
  * @return First error code that is encountered
  * @return CUDA_SUCCESS if no error is encountered
  * ===========================================================================*/
-/*
 template<>
-CUresult CudaElectrosFunctor<float>::LoadKernels ( size_t deviceID )
+CLerror CLElectrosFunctor<float>::LoadKernels ( size_t deviceID )
 {
+    PerfTimer timer;
+    timer.start();
+    FunctorData &data = m_functors[deviceID];
+    
+    cout<<" Reading kernel source"<<endl;
+    using std::ifstream;
+    ifstream reader("Electrostatics.cl.c", ifstream::in);
+    if (!reader.good())
+    {
+        cout<<"Cannot open program source"<<endl;
+        return -1;
+    }
+    reader.seekg (0, std::ios::end);
+    size_t length = reader.tellg();
+    reader.seekg (0, std::ios::beg);
+    char *source = new char[length];
+    reader.read(source, length);
+    reader.close();
+
+    /*
+     * Different devices require different work group sizes to operate
+     * optimally. The amount of __local memory on some kernels depends on these
+     * work-group sizes. This causes a problem as explained below:
+     * There are two ways to use group-local memory
+     * 1) Allocate it as a parameter with clSetKernelArg()
+     * 2) Declare it as a constant __local array within the cl kernel
+     * Option (1) has the advantage of flexibility, but the extra indexing
+     * overhead is a performance killer (20-25% easily lost on nvidia GPUs)
+     * Option (2) has the advantage that the compiler knows the arrays are of
+     * constant size, and is free to do extreme optimizations.
+     * Of course, then both host and kernel have to agree on the size of the
+     * work group.
+     * We abuse the fact that the source code is compiled at runtime, decide
+     * those sizes in the host code, then #define them in the kernel code,
+     * before it is compiled.
+     */
+
+    // BLOCK size
+    data.local = {BLOCK_X, 1, 1};
+    size_t local_MT[3] = {BLOCK_X_MT, BLOCK_Y_MT, 1};
+    // GRID size
+    data.global = {((this->m_nLines + BLOCK_X - 1)/BLOCK_X)
+                        * BLOCK_X, 1, 1
+                       };
+    cout<<"Local   : "<<data.local[0]<<" "<<data.local[1]<<" "
+            <<data.local[2]<<endl;
+    cout<<"Local_MT: "<<local_MT[0]<<" "<<local_MT[1]<<" "<<local_MT[2]<<endl;
+    cout<<"Global  : "<<data.global[0]<<" "<<data.global[1]<<" "
+            <<data.global[2]<<endl;
+
+    char defines[1024];
+    const size_t kernelSteps = this->m_pFieldLinesData->GetSize()
+                               / this->m_nLines;
+    snprintf(defines, sizeof(defines),
+             "#define BLOCK_X %u\n"
+             "#define BLOCK_X_MT %u\n"
+             "#define BLOCK_Y_MT %u\n"
+             "#define KERNEL_STEPS %u\n"
+             "#define Tprec float\n",
+             (unsigned int) data.local[0],
+             (unsigned int) local_MT[0], (unsigned int)local_MT[1],
+             (unsigned int) kernelSteps
+            );
+
+    cout<<" Calc'ed kern steps "<<kernelSteps<<endl;
+    char *srcs[2] = {defines, source};
+    CLerror err;
+    cl_program prog = clCreateProgramWithSource(data.context, 2,
+                                                (const char**) srcs,
+                                                NULL, &err);
+    if (err)cout<<"clCreateProgramWithSource returns: "<<err<<endl;
+
+    char options[] = "-cl-fast-relaxed-math";
+    err = clBuildProgram(prog, 0, NULL, options, NULL, NULL);
+    if (err)cout<<"clBuildProgram returns: "<<err<<endl;
+
+    size_t logSize;
+    clGetProgramBuildInfo(prog, data.device->deviceID,
+                          CL_PROGRAM_BUILD_LOG,
+                          0, NULL, &logSize);
+    char * log = (char*)malloc(logSize);
+    clGetProgramBuildInfo(prog, data.device->deviceID,
+                          CL_PROGRAM_BUILD_LOG,
+                          logSize, log, 0);
+    cout<<"Program Build Log:"<<endl<<log<<endl;
+    CL_ASSERTE(err, "clBuildProgram failed");
+    data.perfData.add(TimingInfo("Program compilation", timer.tick()));
+
+
+
+    //==========================================================================
+    cout<<" Preparing kernel"<<endl;
+    data.kernel = clCreateKernel(prog, "CalcField_curvature", &err);
+    CL_ASSERTE(err, "clCreateKernel");
+    return CL_SUCCESS;
 }
-*/
+
 /**=============================================================================
  * \brief Loads kernels for double precision functors
  *

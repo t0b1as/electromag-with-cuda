@@ -229,7 +229,7 @@ public:
     // 0 signales nothing done, 1.0 signals full completeion
     double volatile progress;
     
-    void add(TimingInfo profile)
+    void add(const TimingInfo &profile)
     {
         stepTimes.push_back(profile);
     }
