@@ -174,6 +174,9 @@ void CLElectrosFunctor<T>::PartitionData()
         // Flag that resources have not yet been allocated
         dataParams.lastOpErrCode = CL_INVALID_CONTEXT;
         dataParams.device = dev;
+        // We use this for calculating the local/global work sizes, and morphing
+        // the kernel code to operate with optimal vector widths
+        dataParams.vecWidth = FindVectorWidth(*dev);
         //dataParams->ctxIsUsable = false;
         m_functors.push_back(dataParams);
     }
@@ -431,7 +434,8 @@ unsigned long CLElectrosFunctor<T>::MainFunctor (
     err |= clSetKernelArg(kernel, 6, sizeof(param), &param);
 
     // const float resolution
-    err |= clSetKernelArg(kernel, 7, sizeof(T), &this->m_resolution);
+    T res = this->m_resolution;
+    err |= clSetKernelArg(kernel, 7, sizeof(res), &res);
     if (err)cout<<"clSetKernelArg cummulates: "<<err<<endl;
 
     //==========================================================================
@@ -484,8 +488,7 @@ unsigned long CLElectrosFunctor<T>::MainFunctor (
     this->m_pPerfData->performance =
         ( this->m_nLines * ( ( 2500-1 ) * ( this->m_pPointChargeData->GetSize()
         * ( electroPartFieldFLOP + 3 ) + 13 ) ) / time ) / 1E9;
-    profiler.add(TimingInfo("Kernel execution time", time,
-                            3 * size));
+    profiler.add(TimingInfo("Kernel execution time", time));
     //==========================================================================
     cout<<" Recovering results"<<endl;
 
@@ -533,44 +536,14 @@ CUresult CudaElectrosFunctor<T>::CallKernel ( FunctorData *params,
 }
 */
 /**=============================================================================
- * \brief Loads the modules containing the kernel
+ * \brief Loads and compile kernels
  *
  * @param deviceID Device/functor combination on which to operate
  * @return First error code that is encountered
  * @return CL_SUCCESS if no error is encountered
  * ===========================================================================*/
-/*
-template<class T>
-CUresult CudaElectrosFunctor<T>::LoadModules ( size_t deviceID )
-{
-}
-*/
-
-
-/**=============================================================================
- * \brief Unspecialized kernel loading.
- *
- * Since kernels for templates that do not have a specialization of LoadKernels
- * this will return an error.
- *
- * @return CL_BUILD_PROGRAM_FAILURE signaling that the kernel does not exist
- * ===========================================================================*/
 template<class T>
 CLerror CLElectrosFunctor<T>::LoadKernels ( size_t deviceID )
-{
-    return CL_BUILD_PROGRAM_FAILURE;
-}
-
-
-/**=============================================================================
- * \brief Loads kernels for single precision functors
- *
- * @param deviceID Device/functor combination on which to operate
- * @return First error code that is encountered
- * @return CUDA_SUCCESS if no error is encountered
- * ===========================================================================*/
-template<>
-CLerror CLElectrosFunctor<float>::LoadKernels ( size_t deviceID )
 {
     PerfTimer timer;
     timer.start();
@@ -616,6 +589,7 @@ CLerror CLElectrosFunctor<float>::LoadKernels ( size_t deviceID )
     data.global = {((this->m_nLines + BLOCK_X - 1)/BLOCK_X)
                         * BLOCK_X, 1, 1
                        };
+    data.global[0] /= data.vecWidth; data.local[0] /= data.vecWidth;
     cout<<"Local   : "<<data.local[0]<<" "<<data.local[1]<<" "
             <<data.local[2]<<endl;
     cout<<"Local_MT: "<<local_MT[0]<<" "<<local_MT[1]<<" "<<local_MT[2]<<endl;
@@ -630,10 +604,13 @@ CLerror CLElectrosFunctor<float>::LoadKernels ( size_t deviceID )
              "#define BLOCK_X_MT %u\n"
              "#define BLOCK_Y_MT %u\n"
              "#define KERNEL_STEPS %u\n"
-             "#define Tprec float\n",
+             "#define Tprec %s\n"
+             "#define Tvec %s\n",
              (unsigned int) data.local[0],
              (unsigned int) local_MT[0], (unsigned int)local_MT[1],
-             (unsigned int) kernelSteps
+             (unsigned int) kernelSteps,
+             FindPrecType(),
+             FindVecType(data.vecWidth)
             );
 
     cout<<" Calc'ed kern steps "<<kernelSteps<<endl;
@@ -670,19 +647,124 @@ CLerror CLElectrosFunctor<float>::LoadKernels ( size_t deviceID )
 }
 
 /**=============================================================================
- * \brief Loads kernels for double precision functors
+ * \brief Unspecialized vector width
  *
- * @param deviceID Device/functor combination on which to operate
- * @return First error code that is encountered
- * @return CUDA_SUCCESS if no error is encountered
+ * @param dev clDeviceProp to query
+ * @return 1
  * ===========================================================================*/
-/*
-template<>
-CUresult CudaElectrosFunctor<double>::LoadKernels ( size_t deviceID )
+template<class T>
+size_t CLElectrosFunctor<T>::FindVectorWidth(
+    OpenCL::ClManager::clDeviceProp &dev)
 {
+    return 1;
 }
-*/
 
+/**=============================================================================
+ * \brief Float vector width
+ *
+ * @param dev clDeviceProp to query
+ * @return CL_PREFFERED_VECTOR_WIDTH_FLOAT of given device
+ * ===========================================================================*/
+template<>
+size_t CLElectrosFunctor<float>::FindVectorWidth(
+    OpenCL::ClManager::clDeviceProp &dev)
+{
+    return dev.preferredVectorWidth_float;
+}
+/**=============================================================================
+ * \brief Double vector width
+ *
+ * @param dev clDeviceProp to query
+ * @return CL_PREFFERED_VECTOR_WIDTH_DOUBLE of given device, or 1 if it is 0
+ * ===========================================================================*/
+template<>
+size_t CLElectrosFunctor<double>::FindVectorWidth(
+    OpenCL::ClManager::clDeviceProp &dev)
+{
+    size_t width = dev.preferredVectorWidth_double;
+    if(!width) width = 1;
+    return width;
+}
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <class T>
+const char* CLElectrosFunctor<T>::FindPrecType()
+{
+    return "";
+}
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <>
+const char* CLElectrosFunctor<float>::FindPrecType()
+{
+    return "float";
+}
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <>
+const char* CLElectrosFunctor<double>::FindPrecType()
+{
+    return "double";
+}
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <class T>
+const char* CLElectrosFunctor<T>::FindVecType(size_t vecWidth)
+{
+    return "";
+}
 
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <>
+const char* CLElectrosFunctor<float>::FindVecType(size_t vecWidth)
+{
+    switch(vecWidth)
+    {
+        case 1:
+            return "float";
+        case 2:
+            return "float2";
+        case 4:
+            return "float4";
+        default:
+            return "";
+    }
+}
 
+/**=============================================================================
+ * \brief 
+ *
+ * @return
+ * ===========================================================================*/
+template <>
+const char* CLElectrosFunctor<double>::FindVecType(size_t vecWidth)
+{
+    switch(vecWidth)
+    {
+        case 1:
+            return "double";
+        case 2:
+            return "double2";
+        case 4:
+            return "double4";
+        default:
+            return "";
+    }
+}
 

@@ -123,6 +123,8 @@ private:
         size_t elements;
         /// Number of steps
         size_t steps;
+        /// The preffered vector width of the device
+        size_t vecWidth;
         /// Global and local work-sizes
         size_t global[3], local[3];
         /// The OpenCL kernel
@@ -137,7 +139,10 @@ private:
     std::vector<FunctorData> m_functors;
 
     CLerror LoadKernels ( size_t deviceID );
-
+    
+    static size_t FindVectorWidth(OpenCL::ClManager::clDeviceProp &dev);\
+    static const char* FindPrecType();
+    static const char* FindVecType(size_t vecWidth);
 };
 ///@}
 extern CLElectrosFunctor<float> CLtest;
